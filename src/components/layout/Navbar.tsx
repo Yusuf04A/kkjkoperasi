@@ -17,6 +17,7 @@ export const Navbar = () => {
     const adminNavItems = [
         { label: 'Dashboard Admin', path: '/admin/dashboard' },
         { label: 'Verifikasi', path: '/admin/verifikasi' },
+        { label: 'Cek Transaksi', path: '/admin/transaksi' },
     ];
 
     const navItems = user?.role === 'admin' ? adminNavItems : memberNavItems;
