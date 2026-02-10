@@ -1,37 +1,37 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { MainLayout } from './components/layout/MainLayout';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+
+// AUTH PAGES
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { Welcome } from './pages/Welcome';
 import { PendingVerification } from './pages/auth/PendingVerification';
-import { Home } from './pages/dashboard/Home';
 
-// Import Halaman Utama
+// MEMBER PAGES
+import { Home } from './pages/dashboard/Home';
+import { Profile } from './pages/dashboard/Profile';
+import { Notifications } from './pages/Notifications'; // Halaman Notifikasi Asli
+
+// FINANCING
 import { FinancingMenu } from './pages/financing/Menu';
 import { SubmissionForm } from './pages/financing/SubmissionForm';
-import { Profile } from './pages/dashboard/Profile';
 
-// Import Admin
-import { AdminVerification } from './pages/admin/Verification';
-import { AdminDashboard } from './pages/admin/Dashboard';
-import { AdminTransactions } from './pages/admin/Transactions';
-
-// 🔹 TAMBAHAN ADMIN KABAR
-import AdminKabar from './pages/admin/AdminKabar';
-import AdminKabarForm from './pages/admin/AdminKabarForm';
-
-import { ProtectedRoute } from './components/layout/ProtectedRoute';
-
+// TRANSACTIONS
+import { TransactionMenu } from './pages/transactions/Menu'; // Menu HP Asli
 import { TopUp } from './pages/transactions/TopUp';
 import { TransactionHistory } from './pages/transactions/History';
 import { Withdraw } from './pages/transactions/Withdraw';
 import { Transfer } from './pages/transactions/Transfer';
-import { AdminFinancing } from './pages/admin/Financing';
 
-// Placeholder Pages
-const Transactions = () => <div className="p-4 pt-10">Halaman Transaksi</div>;
-const Notification = () => <div className="p-4 pt-10">Halaman Notifikasi</div>;
+// ADMIN PAGES
+import { AdminVerification } from './pages/admin/Verification';
+import { AdminDashboard } from './pages/admin/Dashboard';
+import { AdminTransactions } from './pages/admin/Transactions';
+import { AdminFinancing } from './pages/admin/Financing';
+import AdminKabar from './pages/admin/AdminKabar';
+import AdminKabarForm from './pages/admin/AdminKabarForm';
 
 function App() {
   return (
@@ -39,23 +39,24 @@ function App() {
       <Toaster position="top-center" reverseOrder={false} />
 
       <Routes>
-        {/* Public Routes */}
+        {/* === PUBLIC ROUTES (Bisa diakses tanpa login) === */}
         <Route path="/welcome" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/pending" element={<PendingVerification />} />
 
-        {/* Admin Routes (ASLI) */}
+        {/* === ADMIN ROUTES === */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/verifikasi" element={<AdminVerification />} />
         <Route path="/admin/transaksi" element={<AdminTransactions />} />
+        <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
 
-        {/* 🔹 Admin Kabar KKJ (TAMBAHAN, TIDAK MENGHAPUS APA PUN) */}
+        {/* Admin Kabar */}
         <Route path="/admin/kabar" element={<AdminKabar />} />
         <Route path="/admin/kabar/tambah" element={<AdminKabarForm />} />
         <Route path="/admin/kabar/edit/:id" element={<AdminKabarForm />} />
 
-        {/* Member Routes */}
+        {/* === PROTECTED MEMBER ROUTES (Pakai Navbar/MainLayout) === */}
         <Route
           element={
             <ProtectedRoute>
@@ -63,21 +64,30 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* Dashboard */}
           <Route path="/" element={<Home />} />
-          <Route path="/transaksi" element={<Transactions />} />
+          <Route path="/profil" element={<Profile />} />
+
+          {/* Notifikasi (SUDAH FIX) */}
+          <Route path="/notifikasi" element={<Notifications />} />
+
+          {/* Menu Transaksi (Khusus HP - SUDAH FIX) */}
+          <Route path="/transaksi" element={<TransactionMenu />} />
+
+          {/* Fitur Transaksi */}
+          <Route path="/transaksi/topup" element={<TopUp />} />
+          <Route path="/transaksi/tarik" element={<Withdraw />} />
+          <Route path="/transaksi/kirim" element={<Transfer />} />
+          <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
+
+          {/* Fitur Pembiayaan */}
           <Route path="/pembiayaan" element={<FinancingMenu />} />
           <Route path="/pembiayaan/ajukan" element={<SubmissionForm />} />
-          <Route path="/notifikasi" element={<Notification />} />
-          <Route path="/profil" element={<Profile />} />
         </Route>
 
-        {/* Lain-lain */}
-        <Route path="/transaksi/topup" element={<TopUp />} />
-        <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
+        {/* Redirect unknown routes ke Welcome */}
         <Route path="*" element={<Navigate to="/welcome" replace />} />
-        <Route path="/transaksi/tarik" element={<Withdraw />} />
-        <Route path="/transaksi/kirim" element={<Transfer />} />
-        <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
+
       </Routes>
     </BrowserRouter>
   );
