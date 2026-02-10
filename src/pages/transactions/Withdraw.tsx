@@ -10,14 +10,13 @@ import { formatRupiah } from '../../lib/utils';
 
 export const Withdraw = () => {
     const navigate = useNavigate();
-    const { user, checkSession } = useAuthStore(); // checkSession untuk refresh saldo terbaru
+    const { user } = useAuthStore();
 
     const [amount, setAmount] = useState('');
     const [bankInfo, setBankInfo] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [currentBalance, setCurrentBalance] = useState(0);
 
-    // Ambil saldo terbaru saat halaman dibuka
     useEffect(() => {
         if (user) {
             setCurrentBalance(user.tapro_balance || 0);
@@ -29,7 +28,6 @@ export const Withdraw = () => {
 
         const nominal = parseInt(amount.replace(/\D/g, ''));
 
-        // Validasi Client Side
         if (!nominal || nominal < 50000) {
             toast.error('Minimal penarikan Rp 50.000');
             return;
@@ -47,22 +45,19 @@ export const Withdraw = () => {
         const toastId = toast.loading('Mengajukan penarikan...');
 
         try {
-            const { error } = await supabase
-                .from('transactions')
-                .insert({
-                    user_id: user?.id,
-                    type: 'withdraw', // Tipe Withdraw
-                    amount: nominal,
-                    status: 'pending',
-                    description: `Penarikan ke: ${bankInfo}`,
-                    proof_url: null // Withdraw tidak butuh upload bukti di awal
-                });
+            const { error } = await supabase.from('transactions').insert({
+                user_id: user?.id,
+                type: 'withdraw',
+                amount: nominal,
+                status: 'pending',
+                description: `Penarikan ke: ${bankInfo}`,
+                proof_url: null
+            });
 
             if (error) throw error;
 
             toast.success('Pengajuan berhasil dikirim!', { id: toastId });
             navigate('/transaksi/riwayat');
-
         } catch (error: any) {
             toast.error('Gagal: ' + error.message, { id: toastId });
         } finally {
@@ -71,80 +66,120 @@ export const Withdraw = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-24">
 
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
-                    <ArrowLeft size={20} className="text-gray-700" />
-                </button>
-                <h1 className="text-lg font-bold text-gray-900">Tarik Tunai</h1>
-            </div>
+            {/* HEADER */}
+            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-blue-200">
+  <div className="px-4 py-4 flex items-center gap-3">
+    <button
+      onClick={() => navigate(-1)}
+      className="p-2 rounded-full hover:bg-blue-100 transition"
+    >
+      <ArrowLeft size={20} className="text-blue-900" />
+    </button>
 
-            <div className="max-w-xl mx-auto p-4 space-y-6">
+    <h1 className="text-base font-semibold text-blue-900">
+      Tarik Tunai
+    </h1>
+  </div>
+</div>
 
-                {/* Info Saldo */}
-                <div className="bg-gradient-to-r from-orange-500 to-red-600 p-6 rounded-2xl text-white shadow-lg shadow-orange-200">
-                    <p className="text-sm opacity-90 mb-1">Saldo Bisa Ditarik</p>
-                    <h2 className="text-3xl font-bold">{formatRupiah(currentBalance)}</h2>
+
+            <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
+
+                {/* SALDO CARD */}
+                <div className="rounded-3xl bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6 text-white shadow-xl shadow-blue-300">
+                    <p className="text-sm opacity-90 mb-1">
+                        Saldo Bisa Ditarik
+                    </p>
+                    <h2 className="text-3xl font-extrabold tracking-tight">
+                        {formatRupiah(currentBalance)}
+                    </h2>
                 </div>
 
-                {/* Form Input */}
-                <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+                {/* FORM */}
+                <form
+                    onSubmit={handleSubmit}
+                    className="bg-white rounded-3xl border border-blue-200 shadow-md p-6 space-y-6"
+                >
 
-                    {/* Input Nominal */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Nominal Penarikan</label>
+                    {/* NOMINAL */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-blue-900">
+                            Nominal Penarikan
+                        </label>
+
                         <div className="relative">
-                            <span className="absolute left-4 top-3.5 text-gray-400 font-bold">Rp</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-700">
+                                Rp
+                            </span>
                             <Input
                                 type="number"
                                 placeholder="0"
-                                className="pl-12 text-lg font-bold"
+                                className="pl-12 h-14 text-lg font-bold border-blue-300 focus:border-blue-700 focus:ring-blue-700"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                                 required
                             />
                         </div>
-                        <div className="flex justify-between mt-2">
-                            <p className="text-xs text-gray-400">Minimal Rp 50.000</p>
+
+                        <div className="flex justify-between text-xs">
+                            <span className="text-blue-600">
+                                Minimal Rp 50.000
+                            </span>
                             {parseInt(amount) > currentBalance && (
-                                <p className="text-xs text-red-500 font-bold">Saldo kurang!</p>
+                                <span className="text-red-600 font-semibold">
+                                    Saldo tidak mencukupi
+                                </span>
                             )}
                         </div>
                     </div>
 
-                    {/* Input Rekening Tujuan */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Rekening Tujuan</label>
+                    {/* REKENING */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-blue-900">
+                            Rekening Tujuan
+                        </label>
+
                         <div className="relative">
-                            <CreditCard className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                            <CreditCard
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-700"
+                                size={18}
+                            />
                             <Input
                                 type="text"
                                 placeholder="Contoh: BCA 12345678 a.n Rizki"
-                                className="pl-12"
+                                className="pl-12 h-14 border-blue-300 focus:border-blue-700 focus:ring-blue-700"
                                 value={bankInfo}
                                 onChange={(e) => setBankInfo(e.target.value)}
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">Pastikan nama pemilik rekening sama dengan akun.</p>
+
+                        <p className="text-xs text-blue-600">
+                            Pastikan nama pemilik rekening sesuai dengan akun
+                        </p>
                     </div>
 
+                    {/* SUBMIT */}
                     <Button
                         type="submit"
                         isLoading={isLoading}
                         disabled={isLoading || (parseInt(amount) > currentBalance)}
-                        className="w-full bg-orange-600 hover:bg-orange-700 py-6 text-lg rounded-xl shadow-lg shadow-orange-100"
+                        className="w-full h-14 text-base font-bold rounded-2xl bg-blue-900 hover:bg-blue-800 shadow-lg shadow-blue-300"
                     >
-                        <Banknote className="mr-2" /> Ajukan Penarikan
+                        <Banknote className="mr-2" />
+                        Ajukan Penarikan
                     </Button>
-
                 </form>
 
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-blue-800 text-sm flex gap-3 items-start">
+                {/* INFO */}
+                <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-900">
                     <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                    <p>Penarikan akan diproses Admin dalam waktu 1x24 jam kerja. Pastikan data rekening benar.</p>
+                    <p>
+                        Penarikan akan diproses Admin dalam waktu
+                        <b> 1×24 jam kerja</b>. Pastikan data rekening benar.
+                    </p>
                 </div>
 
             </div>
