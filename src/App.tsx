@@ -27,6 +27,7 @@ import { TopUp } from './pages/transactions/TopUp';
 import { TransactionHistory } from './pages/transactions/History';
 import { Withdraw } from './pages/transactions/Withdraw';
 import { Transfer } from './pages/transactions/Transfer';
+import { AdminFinancing } from './pages/admin/Financing';
 
 // Placeholder Pages
 const Transactions = () => <div className="p-4 pt-10">Halaman Transaksi</div>;
@@ -76,6 +77,7 @@ function App() {
         <Route path="*" element={<Navigate to="/welcome" replace />} />
         <Route path="/transaksi/tarik" element={<Withdraw />} />
         <Route path="/transaksi/kirim" element={<Transfer />} />
+        <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,76 +1,92 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Laptop, Store, BookOpen, GraduationCap, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, ArrowRight, FileText, Calendar, Clock } from 'lucide-react';
+import { formatRupiah } from '../../lib/utils';
+import { format } from 'date-fns';
 
 export const FinancingMenu = () => {
-    const loanTypes = [
-        {
-            id: 'barang',
-            title: 'Kredit Barang',
-            desc: 'Cicilan elektronik & furnitur',
-            icon: Laptop,
-            color: 'bg-blue-100 text-blue-600',
-            rate: 'Margin 10% / tahun' // 
-        },
-        {
-            id: 'modal',
-            title: 'Modal Usaha',
-            desc: 'Pengembangan bisnis anggota',
-            icon: Store,
-            color: 'bg-green-100 text-green-600',
-            rate: 'Margin 10% / tahun' // 
-        },
-        {
-            id: 'pelatihan',
-            title: 'Biaya Pelatihan',
-            desc: 'Peningkatan skill & sertifikasi',
-            icon: BookOpen,
-            color: 'bg-orange-100 text-orange-600',
-            rate: 'Jasa 0.6% / bulan' // 
-        },
-        {
-            id: 'pendidikan',
-            title: 'Biaya Pendidikan',
-            desc: 'Biaya sekolah & kuliah anak',
-            icon: GraduationCap,
-            color: 'bg-purple-100 text-purple-600',
-            rate: 'Jasa 0.6% / bulan' // 
-        }
-    ];
+    const { user } = useAuthStore();
+    const navigate = useNavigate();
+    const [loans, setLoans] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchLoans = async () => {
+            if (!user) return;
+            const { data } = await supabase
+                .from('loans')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (data) setLoans(data);
+        };
+        fetchLoans();
+    }, [user]);
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="bg-kkj-blue p-6 rounded-2xl text-white shadow-lg">
-                <h1 className="text-2xl font-bold mb-2">Layanan Pembiayaan</h1>
-                <p className="text-blue-100 opacity-90">
-                    Solusi keuangan syariah untuk kebutuhan produktif dan konsumtif anggota koperasi.
-                </p>
+        <div className="p-4 lg:p-8 space-y-6">
+            {/* Header */}
+            <div className="flex justify-between items-center bg-gradient-to-r from-kkj-blue to-blue-900 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
+                <div className="relative z-10">
+                    <h1 className="text-2xl font-bold">Pembiayaan</h1>
+                    <p className="text-blue-100 text-sm mt-1">Solusi dana cepat untuk kebutuhan Anda.</p>
+                </div>
+                {/* Tombol Ajukan */}
+                <Link to="/pembiayaan/ajukan" className="relative z-10 bg-white text-kkj-blue px-4 py-2 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm flex items-center gap-2">
+                    <Plus size={16} /> Ajukan Baru
+                </Link>
+                {/* Dekorasi */}
+                <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
             </div>
 
-            <h2 className="text-lg font-bold text-gray-800">Pilih Jenis Pembiayaan</h2>
+            {/* List Pinjaman */}
+            <h2 className="font-bold text-gray-800 text-lg">Riwayat Pengajuan</h2>
 
-            {/* Grid Layout: 1 kolom di HP, 2 kolom di Desktop */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {loanTypes.map((item) => (
-                    <Link
-                        key={item.id}
-                        to={`/pembiayaan/ajukan?type=${item.id}`}
-                        className="flex items-center p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md hover:border-kkj-gold transition-all group"
-                    >
-                        <div className={`p-4 rounded-xl ${item.color} mr-4 group-hover:scale-110 transition-transform`}>
-                            <item.icon size={28} />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-gray-900">{item.title}</h3>
-                            <p className="text-xs text-gray-500 mb-1">{item.desc}</p>
-                            <span className="text-[10px] font-semibold px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
-                                {item.rate}
-                            </span>
-                        </div>
-                        <ChevronRight className="text-gray-300 group-hover:text-kkj-blue" />
+            {loans.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-2xl border border-gray-200 border-dashed">
+                    <FileText size={40} className="mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 font-medium">Belum ada pengajuan pembiayaan.</p>
+                    <Link to="/pembiayaan/ajukan" className="text-kkj-blue font-bold text-sm mt-2 hover:underline">
+                        Mulai ajukan sekarang
                     </Link>
-                ))}
-            </div>
+                </div>
+            ) : (
+                <div className="grid gap-4">
+                    {loans.map((loan) => (
+                        <div key={loan.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="text-xs text-gray-400 font-bold mb-1">PINJAMAN #{loan.id.substring(0, 8)}</p>
+                                    <h3 className="text-xl font-bold text-gray-900">{formatRupiah(loan.amount)}</h3>
+                                    <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                                        <Calendar size={14} /> {loan.duration} Bulan
+                                    </p>
+                                </div>
+                                <div className={`px-3 py-1 rounded-full text-xs font-bold capitalize ${loan.status === 'active' ? 'bg-green-100 text-green-700' :
+                                        loan.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-gray-100 text-gray-600'
+                                    }`}>
+                                    {loan.status === 'active' ? 'Aktif' : loan.status}
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-100 pt-4 flex justify-between items-center">
+                                <div>
+                                    <p className="text-xs text-gray-400">Cicilan per bulan</p>
+                                    <p className="font-bold text-kkj-blue">{formatRupiah(loan.monthly_payment)}</p>
+                                </div>
+                                {loan.status === 'active' && (
+                                    <button className="text-sm font-bold text-gray-600 hover:text-kkj-blue flex items-center gap-1">
+                                        Detail <ArrowRight size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
