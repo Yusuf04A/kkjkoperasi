@@ -44,13 +44,20 @@ export const AdminTransactions = () => {
         fetchTransactions();
     }, [activeTab]); // Refresh saat ganti tab
 
-    const handleApprove = async (id: string, userName: string, amount: number) => {
-        const confirm = window.confirm(`Setujui Top Up Rp ${formatRupiah(amount)} untuk ${userName}?`);
+    const handleApprove = async (id: string, userName: string, amount: number, type: string) => {
+        const isTopup = type === 'topup';
+        const actionText = isTopup ? 'Top Up' : 'Penarikan';
+
+        const confirm = window.confirm(`Setujui ${actionText} Rp ${formatRupiah(amount)} untuk ${userName}?`);
         if (!confirm) return;
 
         const toastId = toast.loading('Memproses...');
         try {
-            const { error } = await supabase.rpc('approve_topup', { transaction_id: id });
+            let rpcName = 'approve_topup'; // Default Top Up
+            if (type === 'withdraw') {
+                rpcName = 'approve_withdraw'; // Kalau Withdraw, pakai fungsi baru tadi
+            }
+            const { error } = await supabase.rpc(rpcName, { transaction_id: id });
             if (error) throw error;
             toast.success('Berhasil disetujui!', { id: toastId });
             fetchTransactions(); // Refresh list
@@ -170,7 +177,11 @@ export const AdminTransactions = () => {
                                                     <button onClick={() => handleReject(tx.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-100">
                                                         <X size={16} />
                                                     </button>
-                                                    <button onClick={() => handleApprove(tx.id, tx.profiles?.full_name, tx.amount)} className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs font-bold flex items-center gap-2">
+                                                    <button
+                                                        /* JANGAN LUPA: Tambahkan parameter tx.type di paling belakang */
+                                                        onClick={() => handleApprove(tx.id, tx.profiles?.full_name, tx.amount, tx.type)}
+                                                        className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs font-bold flex items-center gap-2"
+                                                    >
                                                         <Check size={14} /> Setujui
                                                     </button>
                                                 </div>

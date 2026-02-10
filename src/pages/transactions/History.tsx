@@ -1,26 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
-import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ArrowRightLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
 
 export const TransactionHistory = () => {
-    const { user } = useAuthStore();
+    const { user, checkSession } = useAuthStore();
     const navigate = useNavigate();
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchHistory = async () => {
-            if (!user) return;
+            let currentUser = user;
+            if (!currentUser) {
+                await checkSession();
+                const { data } = await supabase.auth.getUser();
+                currentUser = data.user as any;
+            }
+
+            if (!currentUser) {
+                setLoading(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from('transactions')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', currentUser.id)
                 .order('created_at', { ascending: false });
 
             if (!error) setTransactions(data || []);
@@ -28,59 +38,97 @@ export const TransactionHistory = () => {
         };
 
         fetchHistory();
-    }, [user]);
+    }, []);
+
+    // Helper untuk menentukan ikon dan warna berdasarkan tipe transaksi
+    const getTransactionStyle = (type: string) => {
+        switch (type) {
+            case 'topup':
+                return {
+                    icon: <ArrowDownLeft size={20} />,
+                    bgColor: 'bg-green-50',
+                    textColor: 'text-green-700',
+                    label: 'Isi Saldo'
+                };
+            case 'withdraw':
+                return {
+                    icon: <ArrowUpRight size={20} />,
+                    bgColor: 'bg-red-50',
+                    textColor: 'text-red-700',
+                    label: 'Tarik Tunai'
+                };
+            // Nanti untuk fitur transfer
+            case 'transfer_in':
+                return { icon: <ArrowDownLeft size={20} />, bgColor: 'bg-green-50', textColor: 'text-green-700', label: 'Transfer Masuk' };
+            case 'transfer_out':
+                return { icon: <ArrowUpRight size={20} />, bgColor: 'bg-red-50', textColor: 'text-red-700', label: 'Transfer Keluar' };
+            default:
+                return { icon: <ArrowRightLeft size={20} />, bgColor: 'bg-gray-50', textColor: 'text-gray-700', label: type };
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            {/* Header */}
+            {/* Header - Tetap Putih Bersih */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="p-2 hover:bg-gray-100 rounded-full">
-                    <ArrowLeft size={20} className="text-gray-700" />
+                <button onClick={() => navigate('/')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <ArrowLeft size={20} className="text-kkj-blue" /> {/* Icon Back jadi Biru KKJ */}
                 </button>
-                <h1 className="text-lg font-bold text-gray-900">Riwayat Transaksi</h1>
+                <h1 className="text-lg font-bold text-kkj-blue">Riwayat Transaksi</h1> {/* Judul jadi Biru KKJ */}
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-4">
 
                 {loading ? (
-                    <p className="text-center text-gray-400 py-10">Memuat data...</p>
+                    <div className="text-center py-20">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-kkj-blue mx-auto mb-2"></div>
+                        <p className="text-gray-500 text-sm font-medium">Memuat data transaksi...</p>
+                    </div>
                 ) : transactions.length === 0 ? (
-                    <div className="text-center py-20 text-gray-400">
-                        <p>Belum ada riwayat transaksi.</p>
+                    <div className="text-center py-20 text-gray-400 flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <Clock size={32} className="text-gray-300" />
+                        </div>
+                        <p className="font-medium">Belum ada riwayat transaksi.</p>
                     </div>
                 ) : (
-                    transactions.map((tx) => (
-                        <div key={tx.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                {/* Icon Berdasarkan Tipe */}
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'topup' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                                    }`}>
-                                    {tx.type === 'topup' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                    transactions.map((tx) => {
+                        const style = getTransactionStyle(tx.type);
+                        const isIncome = tx.type === 'topup' || tx.type === 'transfer_in';
+
+                        return (
+                            <div key={tx.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-4">
+                                    {/* Icon dengan Warna yang Sudah Disesuaikan */}
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.bgColor} ${style.textColor}`}>
+                                        {style.icon}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-gray-900 capitalize text-[15px]">
+                                            {style.label}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                                            {format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-gray-900 capitalize">
-                                        {tx.type === 'topup' ? 'Isi Saldo' : tx.type}
+
+                                <div className="text-right">
+                                    {/* Nominal: Hijau untuk masuk, Merah untuk keluar */}
+                                    <p className={`font-mono font-bold text-lg ${isIncome ? 'text-green-700' : 'text-red-700'}`}>
+                                        {isIncome ? '+' : '-'}{formatRupiah(tx.amount)}
                                     </p>
-                                    <p className="text-xs text-gray-400">
-                                        {format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
-                                    </p>
+
+                                    {/* Badge Status dengan warna yang konsisten */}
+                                    <div className="flex justify-end mt-1.5">
+                                        {tx.status === 'pending' && <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full"><Clock size={12} /> Proses</span>}
+                                        {tx.status === 'success' && <span className="flex items-center gap-1 text-[10px] font-bold bg-green-50 text-green-700 px-2.5 py-1 rounded-full"><CheckCircle size={12} /> Berhasil</span>}
+                                        {tx.status === 'failed' && <span className="flex items-center gap-1 text-[10px] font-bold bg-red-50 text-red-700 px-2.5 py-1 rounded-full"><XCircle size={12} /> Gagal</span>}
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="text-right">
-                                <p className={`font-mono font-bold ${tx.type === 'topup' ? 'text-green-600' : 'text-gray-900'}`}>
-                                    {tx.type === 'topup' ? '+' : '-'}{formatRupiah(tx.amount)}
-                                </p>
-
-                                {/* Badge Status */}
-                                <div className="flex justify-end mt-1">
-                                    {tx.status === 'pending' && <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full"><Clock size={10} /> Proses</span>}
-                                    {tx.status === 'success' && <span className="flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-600 px-2 py-0.5 rounded-full"><CheckCircle size={10} /> Berhasil</span>}
-                                    {tx.status === 'failed' && <span className="flex items-center gap-1 text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full"><XCircle size={10} /> Gagal</span>}
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
 
             </div>

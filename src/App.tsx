@@ -25,6 +25,7 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 import { TopUp } from './pages/transactions/TopUp';
 import { TransactionHistory } from './pages/transactions/History';
+import { Withdraw } from './pages/transactions/Withdraw';
 
 // Placeholder Pages
 const Transactions = () => <div className="p-4 pt-10">Halaman Transaksi</div>;
@@ -72,6 +73,7 @@ function App() {
         <Route path="/transaksi/topup" element={<TopUp />} />
         <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
         <Route path="*" element={<Navigate to="/welcome" replace />} />
+        <Route path="/transaksi/tarik" element={<Withdraw />} />
       </Routes>
     </BrowserRouter>
   );
