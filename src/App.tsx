@@ -17,6 +17,10 @@ import { AdminVerification } from './pages/admin/Verification';
 import { AdminDashboard } from './pages/admin/Dashboard'; // Pastikan file ini ada
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
+import { TopUp } from './pages/transactions/TopUp';
+import { AdminTransactions } from './pages/admin/Transactions';
+import { TransactionHistory } from './pages/transactions/History';
+
 // Placeholder Pages (Hanya untuk halaman yang belum dibuat)
 const Transactions = () => <div className="p-4 pt-10">Halaman Transaksi</div>;
 const Notification = () => <div className="p-4 pt-10">Halaman Notifikasi</div>;
@@ -54,6 +58,9 @@ function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/welcome" replace />} />
+        <Route path="/transaksi/topup" element={<TopUp />} />
+        <Route path="/admin/transaksi" element={<AdminTransactions />} />
+        <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
       </Routes>
     </BrowserRouter>
   );
