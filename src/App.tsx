@@ -33,6 +33,9 @@ import { AdminFinancing } from './pages/admin/Financing';
 import AdminKabar from './pages/admin/AdminKabar';
 import AdminKabarForm from './pages/admin/AdminKabarForm';
 
+import { LoanDetail } from './pages/financing/LoanDetail';
+import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
+
 function App() {
   return (
     <BrowserRouter>
@@ -50,6 +53,7 @@ function App() {
         <Route path="/admin/verifikasi" element={<AdminVerification />} />
         <Route path="/admin/transaksi" element={<AdminTransactions />} />
         <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
+        <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
 
         {/* Admin Kabar */}
         <Route path="/admin/kabar" element={<AdminKabar />} />
@@ -83,6 +87,7 @@ function App() {
           {/* Fitur Pembiayaan */}
           <Route path="/pembiayaan" element={<FinancingMenu />} />
           <Route path="/pembiayaan/ajukan" element={<SubmissionForm />} />
+          <Route path="/pembiayaan/:id" element={<LoanDetail />} />
         </Route>
 
         {/* Redirect unknown routes ke Welcome */}
