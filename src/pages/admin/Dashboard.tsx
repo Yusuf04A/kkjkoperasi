@@ -3,6 +3,22 @@ import { Users, FileText, Wallet, Bell, ChevronRight, LogOut, ShieldCheck, Arrow
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
+import { Megaphone } from 'lucide-react';
+
+
+/* =======================
+   TYPE DATA KABAR KKJ
+   ======================= */
+interface KabarKKJ {
+  id: string;
+  title: string;
+  description: string;
+  type: 'PROMO' | 'INFO' | 'RAT' | 'PROGRAM';
+  color: 'blue' | 'yellow' | 'green';
+  is_active: boolean;
+  created_at: string;
+}
+
 
 export const AdminDashboard = () => {
     const { logout, user } = useAuthStore();
@@ -34,6 +50,36 @@ export const AdminDashboard = () => {
         await logout();
         navigate('/login');
     };
+
+
+     /* =======================
+     KABAR KKJ (TAMBAHAN)
+     ======================= */
+  const [kabarList, setKabarList] = useState<KabarKKJ[]>([]);
+
+  const colorMap: Record<KabarKKJ['color'], string> = {
+    blue: 'bg-blue-600',
+    yellow: 'bg-yellow-400',
+    green: 'bg-green-600',
+  };
+
+  useEffect(() => {
+    const fetchKabar = async () => {
+      const { data, error } = await supabase
+        .from('kabar_kkj')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetch kabar:', error);
+      } else {
+        setKabarList((data as KabarKKJ[]) || []);
+      }
+    };
+
+    fetchKabar();
+  }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -145,6 +191,78 @@ export const AdminDashboard = () => {
                     </div>
 
                 </div>
+
+                 {/* ================= KABAR KKJ ================= */}
+        {kabarList.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-800">
+                Kabar KKJ Hari Ini
+              </h2>
+              <Link
+                to="/admin/kabar"
+                className="text-sm font-semibold text-blue-600 hover:underline flex items-center gap-1"
+              >
+                Lihat Semua <ChevronRight size={16} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {kabarList.map(item => (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-2xl shadow-sm border overflow-hidden"
+                >
+                  <div
+                    className={`${colorMap[item.color]} text-white font-bold text-center py-10 text-xl`}
+                  >
+                    {item.type}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-900">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 5. KEL0LA KABAR KKJ (TAMBAHAN) */}
+<Link
+  to="/admin/kabar"
+  className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 
+             hover:shadow-lg hover:border-indigo-500 transition-all 
+             cursor-pointer relative overflow-hidden h-full flex flex-col justify-between"
+>
+  <div>
+    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl 
+                    flex items-center justify-center mb-4 
+                    group-hover:bg-indigo-600 group-hover:text-white 
+                    transition-colors">
+      <Megaphone size={24} />
+    </div>
+
+    <h3 className="text-lg font-bold text-gray-900">
+      Kabar KKJ
+    </h3>
+
+    <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+      Kelola berita, promo, dan informasi koperasi.
+    </p>
+  </div>
+
+  <div className="mt-4 flex items-center text-indigo-600 text-xs font-bold 
+                  group-hover:translate-x-1 transition-transform">
+    KELOLA KABAR <ChevronRight size={14} />
+  </div>
+</Link>
+
+
 
                 <div className="text-center text-gray-400 text-[10px] mt-10 tracking-widest uppercase">
                     Koperasi Karya Kita Jaya Admin Panel v1.0

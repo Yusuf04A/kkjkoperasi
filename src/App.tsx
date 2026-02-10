@@ -10,22 +10,25 @@ import { Home } from './pages/dashboard/Home';
 // Import Halaman Utama
 import { FinancingMenu } from './pages/financing/Menu';
 import { SubmissionForm } from './pages/financing/SubmissionForm';
-import { Profile } from './pages/dashboard/Profile'; // <--- INI PROFILE YANG ASLI
+import { Profile } from './pages/dashboard/Profile';
 
 // Import Admin
 import { AdminVerification } from './pages/admin/Verification';
-import { AdminDashboard } from './pages/admin/Dashboard'; // Pastikan file ini ada
+import { AdminDashboard } from './pages/admin/Dashboard';
+import { AdminTransactions } from './pages/admin/Transactions';
+
+// 🔹 TAMBAHAN ADMIN KABAR
+import AdminKabar from './pages/admin/AdminKabar';
+import AdminKabarForm from './pages/admin/AdminKabarForm';
+
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 import { TopUp } from './pages/transactions/TopUp';
-import { AdminTransactions } from './pages/admin/Transactions';
 import { TransactionHistory } from './pages/transactions/History';
 
-// Placeholder Pages (Hanya untuk halaman yang belum dibuat)
+// Placeholder Pages
 const Transactions = () => <div className="p-4 pt-10">Halaman Transaksi</div>;
 const Notification = () => <div className="p-4 pt-10">Halaman Notifikasi</div>;
-
-// HAPUS BARIS INI: const Profile = ... (Karena sudah di-import di atas)
 
 function App() {
   return (
@@ -39,28 +42,36 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/pending" element={<PendingVerification />} />
 
-        {/* Admin Routes */}
+        {/* Admin Routes (ASLI) */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/verifikasi" element={<AdminVerification />} />
+        <Route path="/admin/transaksi" element={<AdminTransactions />} />
+
+        {/* 🔹 Admin Kabar KKJ (TAMBAHAN, TIDAK MENGHAPUS APA PUN) */}
+        <Route path="/admin/kabar" element={<AdminKabar />} />
+        <Route path="/admin/kabar/tambah" element={<AdminKabarForm />} />
+        <Route path="/admin/kabar/edit/:id" element={<AdminKabarForm />} />
 
         {/* Member Routes */}
-        <Route element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }>
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/" element={<Home />} />
           <Route path="/transaksi" element={<Transactions />} />
           <Route path="/pembiayaan" element={<FinancingMenu />} />
           <Route path="/pembiayaan/ajukan" element={<SubmissionForm />} />
           <Route path="/notifikasi" element={<Notification />} />
-          <Route path="/profil" element={<Profile />} /> {/* Memanggil Profile Asli */}
+          <Route path="/profil" element={<Profile />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/welcome" replace />} />
+        {/* Lain-lain */}
         <Route path="/transaksi/topup" element={<TopUp />} />
-        <Route path="/admin/transaksi" element={<AdminTransactions />} />
         <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -6,6 +6,16 @@ import { Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft, History, ArrowRi
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
 
+interface KabarKKJ {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  color: 'blue' | 'yellow' | 'green';
+  is_active: boolean;
+  created_at: string;
+}
+
 export const Home = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate(); // Hook untuk pindah halaman
