@@ -8,7 +8,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Coins // Pastikan import icon Coins
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
@@ -78,6 +79,14 @@ export const TransactionHistory = () => {
           text: 'text-rose-700',
           label: 'Transfer Keluar'
         };
+      // 🔥 TAMBAHAN UNTUK TAMASA
+      case 'tamasa_buy':
+        return {
+          icon: <Coins size={20} />,
+          bg: 'bg-yellow-50',
+          text: 'text-yellow-700',
+          label: 'Beli Emas TAMASA'
+        };
       default:
         return {
           icon: <ArrowRightLeft size={20} />,
@@ -125,7 +134,11 @@ export const TransactionHistory = () => {
         ) : (
           transactions.map((tx) => {
             const style = getTransactionStyle(tx.type);
-            const isIncome = tx.type === 'topup' || tx.type === 'transfer_in';
+
+            // Logic Uang Masuk/Keluar
+            const isIncome = ['topup', 'transfer_in'].includes(tx.type);
+            // Tamasa Buy dianggap pengeluaran (uang berkurang)
+            const isExpense = ['withdraw', 'transfer_out', 'tamasa_buy'].includes(tx.type);
 
             return (
               <div
@@ -154,12 +167,10 @@ export const TransactionHistory = () => {
 
                 <div className="text-right">
                   <p
-                    className={`font-mono font-bold text-lg ${
-                      isIncome ? 'text-emerald-700' : 'text-rose-700'
-                    }`}
+                    className={`font-mono font-bold text-lg ${isIncome ? 'text-emerald-700' : 'text-rose-700'
+                      }`}
                   >
-                    {isIncome ? '+' : '-'}
-                    {formatRupiah(tx.amount)}
+                    {isIncome ? '+' : '-'} {formatRupiah(tx.amount)}
                   </p>
 
                   <div className="flex justify-end mt-1.5">
