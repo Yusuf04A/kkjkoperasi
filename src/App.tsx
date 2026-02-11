@@ -41,6 +41,7 @@ import { AdminTamasa } from './pages/admin/AdminTamasa';
 import { Tamasa } from './pages/program/Tamasa';
 import { Inflip } from './pages/program/Inflip';
 import { Pegadaian } from './pages/program/Pegadaian';
+import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 
 import { PPOB } from './pages/ppob/PPOB';
 
@@ -108,6 +109,7 @@ function App() {
         <Route path="/program/tamasa" element={<Tamasa />} />
         <Route path="/program/inflip" element={<Inflip />} />
         <Route path="/program/pegadaian" element={<Pegadaian />} />
+        <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
 
         <Route path="/ppob" element={<PPOB />} />
 

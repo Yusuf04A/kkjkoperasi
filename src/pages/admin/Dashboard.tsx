@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { 
-    Users, FileText, ChevronRight, LogOut, ShieldCheck, 
-    ArrowRightLeft, PieChart, Megaphone, AlertTriangle 
+import {
+    Users, FileText, ChevronRight, LogOut, ShieldCheck,
+    ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -21,13 +21,14 @@ export const AdminDashboard = () => {
     const { logout, user } = useAuthStore();
     const navigate = useNavigate();
 
-    // State Statistik (Hanya yang perlu untuk notifikasi)
+    // State Statistik
     const [stats, setStats] = useState({
         pendingUsers: 0,
         pendingTx: 0,
         pendingLoans: 0,
         pendingRestructures: 0,
-         pendingTamasa: 0, // 🔥 TAMBAHAN
+        pendingTamasa: 0,
+        pendingPawn: 0, // 🔥 TAMBAHAN: PEGADAIAN
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export const AdminDashboard = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
-            // 1. Cek User Pending (Verifikasi)
+            // 1. Cek User Pending
             const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
             // 2. Cek Transaksi Pending
@@ -50,19 +51,19 @@ export const AdminDashboard = () => {
                 .select('id', { count: 'exact' })
                 .eq('restructure_status', 'pending');
 
-                // 🔥 5. Cek TAMASA Pending
-const { count: pendingTamasa } = await supabase
-    .from('tamasa_transactions')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending');
+            // 5. Cek TAMASA Pending
+            const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
+            // 🔥 6. Cek PEGADAIAN Pending
+            const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
             setStats({
                 pendingUsers: pendingMember || 0,
                 pendingTx: pendingTrans || 0,
                 pendingLoans: pendingLoan || 0,
                 pendingRestructures: pendingRestructure || 0,
-                pendingTamasa: pendingTamasa || 0, // 🔥 TAMBAHAN
+                pendingTamasa: pendingTamasa || 0,
+                pendingPawn: pendingPawn || 0, // 🔥 TAMBAHAN
             });
 
             if (restructureData && restructureData.length > 0) {
@@ -96,52 +97,6 @@ const { count: pendingTamasa } = await supabase
         navigate('/login');
     };
 
-    const handleApprove = async (transaction: any) => {
-  try {
-    // 1️⃣ Ambil saldo existing
-    const { data: existingBalance } = await supabase
-      .from("tamasa_balances")
-      .select("*")
-      .eq("user_id", transaction.user_id)
-      .single();
-
-    if (existingBalance) {
-      // 2️⃣ Kalau sudah ada → update
-      await supabase
-        .from("tamasa_balances")
-        .update({
-          total_gram: existingBalance.total_gram + transaction.estimasi_gram
-        })
-        .eq("user_id", transaction.user_id);
-    } else {
-      // 3️⃣ Kalau belum ada → insert baru
-      await supabase
-        .from("tamasa_balances")
-        .insert({
-          user_id: transaction.user_id,
-          total_gram: transaction.estimasi_gram
-        });
-    }
-
-    // 4️⃣ Update status transaksi
-    await supabase
-      .from("tamasa_transactions")
-      .update({
-        status: "approved",
-        approved_at: new Date().toISOString()
-      })
-      .eq("id", transaction.id);
-
-    alert("Transaksi berhasil di-approve ✅");
-
-  } catch (error) {
-    console.error(error);
-    alert("Gagal approve transaksi");
-  }
-};
-
-
-
     const colorMap: Record<string, string> = {
         blue: 'bg-blue-600',
         yellow: 'bg-yellow-500',
@@ -163,7 +118,7 @@ const { count: pendingTamasa } = await supabase
                         </div>
                         <h1 className="text-3xl font-bold">Halo, {user?.full_name || 'Admin'}</h1>
                         <p className="text-blue-200 mt-1 text-sm">Selamat bertugas kembali.</p>
-                        
+
                         <div className="flex gap-2 mt-4">
                             <Link to="/admin/laporan" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors">
                                 <PieChart size={16} /> Laporan Keuangan
@@ -177,10 +132,10 @@ const { count: pendingTamasa } = await supabase
                     <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
                 </div>
 
-                {/* NOTIFIKASI BAR */}
+                {/* NOTIFIKASI BAR (URGENT TASKS) */}
                 <div className="space-y-3">
-                    
-                    {/* REQUEST PERPANJANGAN (URGENT) */}
+
+                    {/* REQUEST PERPANJANGAN */}
                     {stats.pendingRestructures > 0 && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2 shadow-sm">
                             <div className="flex items-center gap-3 text-red-800">
@@ -192,11 +147,11 @@ const { count: pendingTamasa } = await supabase
                                     <span className="text-xs text-red-600">Member meminta perubahan jadwal cicilan.</span>
                                 </div>
                             </div>
-                            <Link 
-                                to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} 
+                            <Link
+                                to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'}
                                 className="text-xs font-bold bg-white border border-red-200 text-red-700 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors shadow-sm flex items-center gap-1"
                             >
-                                Cek Sekarang <ChevronRight size={14}/>
+                                Cek Sekarang <ChevronRight size={14} />
                             </Link>
                         </div>
                     )}
@@ -228,25 +183,38 @@ const { count: pendingTamasa } = await supabase
                     )}
 
                     {/* Pending TAMASA */}
-{stats.pendingTamasa > 0 && (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-        <div className="flex items-center gap-3 text-yellow-800">
-            <div className="bg-yellow-100 p-2 rounded-full">
-                <ShieldCheck size={18} className="text-yellow-600" />
-            </div>
-            <span className="font-bold text-sm">
-                Ada {stats.pendingTamasa} Setoran TAMASA Menunggu Approval!
-            </span>
-        </div>
-        <Link
-            to="/admin/tamasa"
-            className="text-xs font-bold bg-white border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-100 transition-colors shadow-sm"
-        >
-            Review
-        </Link>
-    </div>
-)}
+                    {stats.pendingTamasa > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+                            <div className="flex items-center gap-3 text-yellow-800">
+                                <div className="bg-yellow-100 p-2 rounded-full">
+                                    <ShieldCheck size={18} className="text-yellow-600" />
+                                </div>
+                                <span className="font-bold text-sm">
+                                    Ada {stats.pendingTamasa} Setoran TAMASA Menunggu Approval!
+                                </span>
+                            </div>
+                            <Link to="/admin/tamasa" className="text-xs font-bold bg-white border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-100 transition-colors shadow-sm">
+                                Review
+                            </Link>
+                        </div>
+                    )}
 
+                    {/* 🔥 Pending PEGADAIAN (BARU) */}
+                    {stats.pendingPawn > 0 && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+                            <div className="flex items-center gap-3 text-emerald-800">
+                                <div className="bg-emerald-100 p-2 rounded-full">
+                                    <Scale size={18} className="text-emerald-600" />
+                                </div>
+                                <span className="font-bold text-sm">
+                                    Ada {stats.pendingPawn} Pengajuan Gadai Emas Baru!
+                                </span>
+                            </div>
+                            <Link to="/admin/pegadaian" className="text-xs font-bold bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm">
+                                Taksir
+                            </Link>
+                        </div>
+                    )}
 
                     {/* Pending Loan */}
                     {stats.pendingLoans > 0 && (
@@ -307,40 +275,49 @@ const { count: pendingTamasa } = await supabase
                         </div>
                     </Link>
 
-                    {/* TAMASA */}
-<Link
-  to="/admin/tamasa"
-  className="group bg-white p-6 rounded-2xl shadow-sm border border-yellow-200 hover:shadow-lg hover:border-yellow-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between"
->
-  <div>
-    <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
-      <ShieldCheck size={24} />
-    </div>
+                    {/* 4. TAMASA */}
+                    <Link to="/admin/tamasa" className="group bg-white p-6 rounded-2xl shadow-sm border border-yellow-200 hover:shadow-lg hover:border-yellow-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
+                        <div>
+                            <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                                <ShieldCheck size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">TAMASA</h3>
+                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval setoran Tabungan Emas anggota.</p>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between">
+                            <span className="text-yellow-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
+                                BUKA MENU <ChevronRight size={14} />
+                            </span>
+                            {stats.pendingTamasa > 0 && (
+                                <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {stats.pendingTamasa}
+                                </span>
+                            )}
+                        </div>
+                    </Link>
 
-    <h3 className="text-lg font-bold text-gray-900">
-      TAMASA
-    </h3>
+                    {/* 🔥 5. PEGADAIAN (BARU) */}
+                    <Link to="/admin/pegadaian" className="group bg-white p-6 rounded-2xl shadow-sm border border-emerald-200 hover:shadow-lg hover:border-emerald-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
+                        <div>
+                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                                <Scale size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">Pegadaian</h3>
+                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval & Taksiran Gadai Emas Syariah.</p>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between">
+                            <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
+                                BUKA MENU <ChevronRight size={14} />
+                            </span>
+                            {stats.pendingPawn > 0 && (
+                                <span className="bg-emerald-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {stats.pendingPawn}
+                                </span>
+                            )}
+                        </div>
+                    </Link>
 
-    <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-      Approval setoran Tabungan Emas anggota.
-    </p>
-  </div>
-
-  <div className="mt-4 flex items-center justify-between">
-    <span className="text-yellow-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-      BUKA MENU <ChevronRight size={14} />
-    </span>
-
-    {stats.pendingTamasa > 0 && (
-      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-        {stats.pendingTamasa}
-      </span>
-    )}
-  </div>
-</Link>
-
-
-                    {/* 4. KABAR KKJ */}
+                    {/* 6. KABAR KKJ */}
                     <Link to="/admin/kabar" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
                         <div>
                             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -353,8 +330,6 @@ const { count: pendingTamasa } = await supabase
                             KELOLA KABAR <ChevronRight size={14} />
                         </div>
                     </Link>
-
-                    
 
                 </div>
 
