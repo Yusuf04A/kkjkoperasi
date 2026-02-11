@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Users, FileText, Wallet, Bell, ChevronRight, LogOut, ShieldCheck, ArrowRightLeft, PieChart, Megaphone } from 'lucide-react';
+import { Users, FileText, Bell, ChevronRight, LogOut, ShieldCheck, ArrowRightLeft, PieChart, Megaphone, AlertTriangle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -23,8 +23,12 @@ export const AdminDashboard = () => {
     const [stats, setStats] = useState({
         pendingUsers: 0,
         pendingTx: 0,
-        pendingLoans: 0
+        pendingLoans: 0,
+        pendingRestructures: 0
     });
+
+    // State ID untuk Direct Link (Agar tombol Cek Sekarang langsung ke detail)
+    const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
 
     // State Kabar
     const [kabarList, setKabarList] = useState<KabarKKJ[]>([]);
@@ -37,31 +41,43 @@ export const AdminDashboard = () => {
             // 2. Cek Transaksi Pending
             const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
-            // 3. Cek Pinjaman Pending
+            // 3. Cek Pinjaman Pending (Pengajuan Baru)
             const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+
+            // 4. Cek Request Perpanjangan Tenor (Ambil ID-nya juga)
+            // Kita ambil ID loan pertama yang statusnya pending restructure
+            const { data: restructureData, count: pendingRestructure } = await supabase
+                .from('loans')
+                .select('id', { count: 'exact' })
+                .eq('restructure_status', 'pending');
 
             setStats({
                 pendingUsers: pendingMember || 0,
                 pendingTx: pendingTrans || 0,
-                pendingLoans: pendingLoan || 0
+                pendingLoans: pendingLoan || 0,
+                pendingRestructures: pendingRestructure || 0
             });
+
+            // Simpan ID pertama yang ditemukan untuk dijadikan link
+            if (restructureData && restructureData.length > 0) {
+                setFirstRestructureId(restructureData[0].id);
+            }
         };
 
         const fetchKabar = async () => {
-            // Cek apakah tabel kabar_kkj ada (Error handling jika tabel belum dibuat)
             try {
                 const { data, error } = await supabase
                     .from('kabar_kkj')
                     .select('*')
                     .eq('is_active', true)
                     .order('created_at', { ascending: false })
-                    .limit(3); // Ambil 3 terbaru saja untuk preview
+                    .limit(3);
 
                 if (!error && data) {
                     setKabarList(data as KabarKKJ[]);
                 }
             } catch (err) {
-                console.log("Tabel kabar_kkj mungkin belum ada, abaikan dulu.");
+                console.log("Tabel kabar_kkj mungkin belum ada.");
             }
         };
 
@@ -74,7 +90,6 @@ export const AdminDashboard = () => {
         navigate('/login');
     };
 
-    // Mapping warna untuk badge kabar
     const colorMap: Record<string, string> = {
         blue: 'bg-blue-600',
         yellow: 'bg-yellow-500',
@@ -89,11 +104,13 @@ export const AdminDashboard = () => {
                 <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-3xl p-8 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-2">
-                            <ShieldCheck className="text-yellow-400" size={28} />
-                            <span className="text-[10px] font-bold tracking-widest bg-white/10 border border-white/20 px-2 py-1 rounded uppercase">Administrator Panel</span>
+                            <div className="p-1 bg-white/10 rounded-lg border border-white/20">
+                                <ShieldCheck className="text-yellow-400" size={24} />
+                            </div>
+                            <span className="text-[10px] font-bold tracking-widest uppercase opacity-80">Administrator Panel</span>
                         </div>
                         <h1 className="text-3xl font-bold">Halo, {user?.full_name || 'Admin'}</h1>
-                        <p className="text-blue-200 mt-1 text-sm">Selamat bertugas kembali. Cek notifikasi di bawah.</p>
+                        <p className="text-blue-200 mt-1 text-sm">Selamat bertugas kembali.</p>
                     </div>
 
                     <button onClick={handleLogout} className="relative z-10 bg-white/10 hover:bg-white/20 p-3 rounded-xl transition-colors border border-white/20 group" title="Keluar">
@@ -104,11 +121,34 @@ export const AdminDashboard = () => {
 
                 {/* NOTIFIKASI BAR */}
                 <div className="space-y-3">
+
+                    {/* NOTIFIKASI PERPANJANGAN TENOR (URGENT - WARNA MERAH) */}
+                    {stats.pendingRestructures > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2 shadow-sm">
+                            <div className="flex items-center gap-3 text-red-800">
+                                <div className="bg-red-100 p-2 rounded-full animate-pulse">
+                                    <AlertTriangle size={18} className="text-red-600" />
+                                </div>
+                                <div>
+                                    <span className="font-bold text-sm block">PERHATIAN: {stats.pendingRestructures} Pengajuan Perpanjangan Tenor!</span>
+                                    <span className="text-xs text-red-600">Member meminta perubahan jadwal cicilan.</span>
+                                </div>
+                            </div>
+                            {/* TOMBOL DIRECT LINK KE DETAIL PINJAMAN TERSEBUT */}
+                            <Link
+                                to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'}
+                                className="text-xs font-bold bg-white border border-red-200 text-red-700 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors shadow-sm flex items-center gap-1"
+                            >
+                                Cek Sekarang <ChevronRight size={14} />
+                            </Link>
+                        </div>
+                    )}
+
                     {/* Notif Anggota */}
                     {stats.pendingUsers > 0 && (
                         <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
                             <div className="flex items-center gap-3 text-orange-800">
-                                <div className="bg-orange-100 p-2 rounded-full"><Bell size={18} className="text-orange-600" /></div>
+                                <div className="bg-orange-100 p-2 rounded-full"><Users size={18} className="text-orange-600" /></div>
                                 <span className="font-bold text-sm">Ada {stats.pendingUsers} Anggota Menunggu Verifikasi!</span>
                             </div>
                             <Link to="/admin/verifikasi" className="text-xs font-bold bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors shadow-sm">
@@ -130,7 +170,7 @@ export const AdminDashboard = () => {
                         </div>
                     )}
 
-                    {/* Notif Pinjaman */}
+                    {/* Notif Pinjaman Baru */}
                     {stats.pendingLoans > 0 && (
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
                             <div className="flex items-center gap-3 text-blue-800">
@@ -189,7 +229,7 @@ export const AdminDashboard = () => {
                         </div>
                     </Link>
 
-                    {/* 4. KABAR KKJ (POSISI KE-4 MENGGANTIKAN LAPORAN) */}
+                    {/* 4. KABAR KKJ */}
                     <Link to="/admin/kabar" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
                         <div>
                             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -205,7 +245,7 @@ export const AdminDashboard = () => {
 
                 </div>
 
-                {/* PREVIEW KABAR KKJ (JIKA ADA DATANYA) */}
+                {/* PREVIEW KABAR KKJ */}
                 {kabarList.length > 0 && (
                     <div className="space-y-4 pt-4 border-t border-gray-200">
                         <div className="flex items-center justify-between">
