@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -39,6 +39,12 @@ export const NewsCarousel = () => {
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<KabarKKJ[]>([]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isInteracting = useRef(false); // ✅ TAMBAHAN WAJIB
+
+  // Duplikat data untuk looping infinite
+  const newsLoop = [...news, ...news];
+
   /* =======================
      FETCH DARI SUPABASE
   ======================= */
@@ -61,32 +67,62 @@ export const NewsCarousel = () => {
     fetchKabar();
   }, []);
 
+  /* =======================
+     AUTO SCROLL + SWIPE SUPPORT
+  ======================= */
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || news.length === 0) return;
+
+    const scrollSpeed = 0.5; // smooth speed
+    let animationFrame: number;
+
+    const scroll = () => {
+      if (!isInteracting.current) {
+        container.scrollLeft += scrollSpeed;
+
+        // Reset ke awal saat sudah setengah (karena kita duplikat data)
+        if (container.scrollLeft >= container.scrollWidth / 2) {
+          container.scrollLeft = 0;
+        }
+      }
+
+      animationFrame = requestAnimationFrame(scroll);
+    };
+
+    animationFrame = requestAnimationFrame(scroll);
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [news]);
+
   return (
     <div className="py-6 px-4">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold text-gray-800 text-lg">
           Kabar KKJ Hari Ini
         </h3>
-
-        <button className="text-xs text-kkj-blue flex items-center gap-1 font-medium hover:underline">
-          Lihat Semua <ArrowRight size={12} />
-        </button>
       </div>
 
       {/* HORIZONTAL SCROLL */}
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-
+      <div
+        ref={scrollRef}
+        onMouseEnter={() => (isInteracting.current = true)}
+        onMouseLeave={() => (isInteracting.current = false)}
+        onTouchStart={() => (isInteracting.current = true)}
+        onTouchEnd={() => (isInteracting.current = false)}
+        className="flex gap-4 overflow-x-auto pb-4 snap-x scrollbar-hide scroll-smooth"
+      >
         {/* SKELETON */}
         {loading &&
           Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
 
-        {/* DATA SUPABASE */}
+        {/* DATA SUPABASE (LOOPING) */}
         {!loading &&
-          news.map((item) => (
+          newsLoop.map((item, index) => (
             <div
-              key={item.id}
+              key={`${item.id}-${index}`}
               className="min-w-[280px] snap-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition"
             >
               <div

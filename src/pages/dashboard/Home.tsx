@@ -5,7 +5,9 @@ import { formatRupiah, cn } from '../../lib/utils';
 import { Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft, History, ArrowRight, Wallet, Building, Coins, ShieldCheck, Download, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
-import { supabase } from '../../lib/supabase';
+
+
+
 
 interface KabarKKJ {
   id: string;
