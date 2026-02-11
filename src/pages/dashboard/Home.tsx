@@ -260,23 +260,44 @@ export const Home = () => {
                         <button className="text-xs font-medium text-kkj-blue hover:underline flex items-center gap-1">Lihat Semua <ArrowRight size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {featuredPrograms.map((program, idx) => (
-                            <div key={idx} className="group bg-white rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-100 relative overflow-hidden cursor-pointer">
-                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${program.color}`}></div>
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}>
-                                        <program.icon className={program.text} size={20} />
-                                    </div>
-                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-kkj-blue group-hover:text-white transition-colors">
-                                        <ArrowUpRight size={16} />
-                                    </div>
-                                </div>
-                                <h4 className="text-base font-bold text-gray-900 mb-0.5">{program.name}</h4>
-                                <p className="text-xs font-medium text-gray-600 mb-1">{program.title}</p>
-                                <p className="text-[10px] text-gray-400">{program.desc}</p>
-                            </div>
-                        ))}
-                    </div>
+  {featuredPrograms.map((program, idx) => (
+    <Link
+      key={idx}
+      to={
+        program.name === 'TAMASA'
+          ? '/program/tamasa'
+          : program.name === 'INFLIP'
+          ? '/program/inflip'
+          : '/program/pegadaian'
+      }
+      className="group bg-white rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-100 relative overflow-hidden cursor-pointer"
+    >
+
+      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${program.color}`}></div>
+
+      <div className="flex justify-between items-start mb-3">
+        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}>
+          <program.icon className={program.text} size={20} />
+        </div>
+        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-kkj-blue group-hover:text-white transition-colors">
+          <ArrowUpRight size={16} />
+        </div>
+      </div>
+
+      <h4 className="text-base font-bold text-gray-900 mb-0.5">
+        {program.name}
+      </h4>
+      <p className="text-xs font-medium text-gray-600 mb-1">
+        {program.title}
+      </p>
+      <p className="text-[10px] text-gray-400">
+        {program.desc}
+      </p>
+
+    </Link>
+  ))}
+</div>
+
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, TrendingUp, Home, Calculator, Building } from 'lucide-react';
+import { ArrowLeft, Calculator, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
 
@@ -13,49 +13,47 @@ export const Inflip = () => {
 
   const totalModal = modal + biayaRenovasi;
   const keuntungan = hargaJual - totalModal;
-  const roi = ((keuntungan / totalModal) * 100).toFixed(1);
+  const roi =
+    totalModal > 0
+      ? ((keuntungan / totalModal) * 100).toFixed(1)
+      : '0';
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
 
       {/* HEADER */}
-<div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
-  <button
-    onClick={() => navigate(-1)}
-    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-  >
-    <ArrowLeft size={20} className="text-kkj-blue" />
-  </button>
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <ArrowLeft size={20} className="text-kkj-blue" />
+        </button>
 
-  <h1 className="text-lg font-bold text-kkj-blue">
-    INFLIP - Investasi Flipping Property
-  </h1>
-</div>
-
+        <h1 className="text-lg font-bold text-kkj-blue">
+          INFLIP - Investasi Flipping Property
+        </h1>
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 mt-10 space-y-10">
 
-
-        {/* PENJELASAN */}
         {/* HERO SECTION */}
-<div className="max-w-4xl mx-auto mb-8">
-  <div className="bg-[#0B2B4B] text-white rounded-2xl shadow-xl p-8">
-    <div className="flex items-start gap-3">
-      <Building className="w-6 h-6 mt-1" />
-      <div>
-        <h2 className="text-xl font-bold mb-2">
-          Investasi Properti Syariah
-        </h2>
-        <p className="text-sm text-blue-100 leading-relaxed">
-          INFLIP adalah program investasi properti berbasis sistem flipping,
-          yaitu membeli properti di bawah harga pasar, melakukan renovasi ringan,
-          lalu menjual kembali untuk memperoleh keuntungan. Dikelola dengan prinsip
-          syariah tanpa riba.
-        </p>
-      </div>
-    </div>
-  </div>
-</div>
+        <div className="bg-[#0B2B4B] text-white rounded-2xl shadow-xl p-8">
+          <div className="flex items-start gap-3">
+            <Building className="w-6 h-6 mt-1" />
+            <div>
+              <h2 className="text-xl font-bold mb-2">
+                Investasi Properti Syariah
+              </h2>
+              <p className="text-sm text-blue-100 leading-relaxed">
+                INFLIP adalah program investasi properti berbasis sistem flipping,
+                yaitu membeli properti di bawah harga pasar, melakukan renovasi ringan,
+                lalu menjual kembali untuk memperoleh keuntungan. Dikelola dengan prinsip
+                syariah tanpa riba.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* CARA KERJA */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -115,23 +113,40 @@ export const Inflip = () => {
 
             {/* HASIL */}
             <div className="mt-6 bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
-              <p>Total Modal: <span className="font-bold">{formatRupiah(totalModal)}</span></p>
               <p>
-                Keuntungan: 
-                <span className={`font-bold ml-2 ${keuntungan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                Total Modal:
+                <span className="font-bold ml-2">
+                  {formatRupiah(totalModal)}
+                </span>
+              </p>
+
+              <p>
+                Keuntungan:
+                <span
+                  className={`font-bold ml-2 ${
+                    keuntungan >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
                   {formatRupiah(keuntungan)}
                 </span>
               </p>
-              <p>ROI: <span className="font-bold">{roi}%</span></p>
-            </div>
-          </div>
-        </div>
 
-        {/* CTA */}
-        <div className="text-center">
-          <button className="bg-kkj-blue text-white px-6 py-3 rounded-xl shadow hover:opacity-90 transition">
-            Ajukan Investasi INFLIP
-          </button>
+              <p>
+                ROI:
+                <span className="font-bold ml-2">
+                  {roi}%
+                </span>
+              </p>
+            </div>
+
+            {/* BUTTON DI DALAM BORDER */}
+            <button
+              className="w-full mt-6 bg-kkj-blue text-white py-3 rounded-xl font-semibold hover:opacity-90 transition"
+            >
+              Ajukan Investasi INFLIP
+            </button>
+
+          </div>
         </div>
 
       </div>
