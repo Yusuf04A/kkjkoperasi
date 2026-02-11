@@ -35,6 +35,7 @@ import AdminKabarForm from './pages/admin/AdminKabarForm';
 import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { LoanDetail } from './pages/financing/LoanDetail';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
+import { AdminTamasa } from './pages/admin/AdminTamasa';
 
 // PROGRAM
 import { Tamasa } from './pages/program/Tamasa';
@@ -60,6 +61,8 @@ function App() {
         <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
         <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
         <Route path="/admin/laporan" element={<AdminFinancialReport />} />
+        <Route path="/admin/tamasa" element={<AdminTamasa />} />
+
 
         {/* Admin Kabar */}
         <Route path="/admin/kabar" element={<AdminKabar />} />

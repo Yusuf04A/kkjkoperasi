@@ -27,6 +27,7 @@ export const AdminDashboard = () => {
         pendingTx: 0,
         pendingLoans: 0,
         pendingRestructures: 0,
+         pendingTamasa: 0, // 🔥 TAMBAHAN
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
@@ -49,11 +50,19 @@ export const AdminDashboard = () => {
                 .select('id', { count: 'exact' })
                 .eq('restructure_status', 'pending');
 
+                // 🔥 5. Cek TAMASA Pending
+const { count: pendingTamasa } = await supabase
+    .from('tamasa_transactions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+
             setStats({
                 pendingUsers: pendingMember || 0,
                 pendingTx: pendingTrans || 0,
                 pendingLoans: pendingLoan || 0,
                 pendingRestructures: pendingRestructure || 0,
+                pendingTamasa: pendingTamasa || 0, // 🔥 TAMBAHAN
             });
 
             if (restructureData && restructureData.length > 0) {
@@ -86,6 +95,52 @@ export const AdminDashboard = () => {
         await logout();
         navigate('/login');
     };
+
+    const handleApprove = async (transaction: any) => {
+  try {
+    // 1️⃣ Ambil saldo existing
+    const { data: existingBalance } = await supabase
+      .from("tamasa_balances")
+      .select("*")
+      .eq("user_id", transaction.user_id)
+      .single();
+
+    if (existingBalance) {
+      // 2️⃣ Kalau sudah ada → update
+      await supabase
+        .from("tamasa_balances")
+        .update({
+          total_gram: existingBalance.total_gram + transaction.estimasi_gram
+        })
+        .eq("user_id", transaction.user_id);
+    } else {
+      // 3️⃣ Kalau belum ada → insert baru
+      await supabase
+        .from("tamasa_balances")
+        .insert({
+          user_id: transaction.user_id,
+          total_gram: transaction.estimasi_gram
+        });
+    }
+
+    // 4️⃣ Update status transaksi
+    await supabase
+      .from("tamasa_transactions")
+      .update({
+        status: "approved",
+        approved_at: new Date().toISOString()
+      })
+      .eq("id", transaction.id);
+
+    alert("Transaksi berhasil di-approve ✅");
+
+  } catch (error) {
+    console.error(error);
+    alert("Gagal approve transaksi");
+  }
+};
+
+
 
     const colorMap: Record<string, string> = {
         blue: 'bg-blue-600',
@@ -172,6 +227,27 @@ export const AdminDashboard = () => {
                         </div>
                     )}
 
+                    {/* Pending TAMASA */}
+{stats.pendingTamasa > 0 && (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+        <div className="flex items-center gap-3 text-yellow-800">
+            <div className="bg-yellow-100 p-2 rounded-full">
+                <ShieldCheck size={18} className="text-yellow-600" />
+            </div>
+            <span className="font-bold text-sm">
+                Ada {stats.pendingTamasa} Setoran TAMASA Menunggu Approval!
+            </span>
+        </div>
+        <Link
+            to="/admin/tamasa"
+            className="text-xs font-bold bg-white border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-100 transition-colors shadow-sm"
+        >
+            Review
+        </Link>
+    </div>
+)}
+
+
                     {/* Pending Loan */}
                     {stats.pendingLoans > 0 && (
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
@@ -231,6 +307,39 @@ export const AdminDashboard = () => {
                         </div>
                     </Link>
 
+                    {/* TAMASA */}
+<Link
+  to="/admin/tamasa"
+  className="group bg-white p-6 rounded-2xl shadow-sm border border-yellow-200 hover:shadow-lg hover:border-yellow-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between"
+>
+  <div>
+    <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+      <ShieldCheck size={24} />
+    </div>
+
+    <h3 className="text-lg font-bold text-gray-900">
+      TAMASA
+    </h3>
+
+    <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+      Approval setoran Tabungan Emas anggota.
+    </p>
+  </div>
+
+  <div className="mt-4 flex items-center justify-between">
+    <span className="text-yellow-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
+      BUKA MENU <ChevronRight size={14} />
+    </span>
+
+    {stats.pendingTamasa > 0 && (
+      <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+        {stats.pendingTamasa}
+      </span>
+    )}
+  </div>
+</Link>
+
+
                     {/* 4. KABAR KKJ */}
                     <Link to="/admin/kabar" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
                         <div>
@@ -244,6 +353,8 @@ export const AdminDashboard = () => {
                             KELOLA KABAR <ChevronRight size={14} />
                         </div>
                     </Link>
+
+                    
 
                 </div>
 

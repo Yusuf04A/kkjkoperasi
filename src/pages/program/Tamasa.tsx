@@ -1,20 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Coins, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
+import { supabase } from "../../lib/supabase";
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const Tamasa = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   // State simulasi
   const [monthlyAmount, setMonthlyAmount] = useState(500000);
   const [duration, setDuration] = useState(12);
-  const [goldPrice, setGoldPrice] = useState(1000000); // harga emas per gram
+  const [goldPrice, setGoldPrice] = useState(1000000);
+
+  // 🔥 State tambahan
+  const [isSubmitting, setIsSubmitting] = useState(false);
+const [userBalance, setUserBalance] = useState<number>(0);
+
+// 🔥 Ambil saldo user saat component load
+useEffect(() => {
+  const fetchBalance = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("tamasa_balances")
+      .select("total_gram")
+      .eq("user_id", user.id)
+      .single();
+
+    if (data) {
+      setUserBalance(data.total_gram);
+    } else {
+      setUserBalance(0);
+    }
+  };
+
+  fetchBalance();
+}, [user]);
+
 
   // Perhitungan
   const totalInvestment = monthlyAmount * duration;
   const estimatedGram = totalInvestment / goldPrice;
   const estimatedFutureValue = estimatedGram * goldPrice;
+
+  // 🔥 HANDLE SUBMIT TAMASA
+  const handleSubmit = async () => {
+    if (!user) {
+      alert("Silakan login terlebih dahulu.");
+      return;
+    }
+
+    if (monthlyAmount <= 0 || duration <= 0 || goldPrice <= 0) {
+      alert("Input tidak valid.");
+      return;
+    }
+
+
+ 
+    try {
+      setIsSubmitting(true);
+
+      const { error } = await supabase
+        .from("tamasa_transactions")
+        .insert([
+          {
+            user_id: user.id,
+            setoran: totalInvestment,
+            harga_per_gram: goldPrice,
+            estimasi_gram: estimatedGram,
+            status: "pending"
+          }
+        ]);
+
+      if (error) {
+        console.error(error);
+        alert("Gagal menyimpan transaksi.");
+      } else {
+        alert("Transaksi berhasil dikirim. Menunggu approval admin.");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -70,6 +143,17 @@ export const Tamasa = () => {
           </div>
         </div>
 
+        {/* SALDO EMAS USER */}
+<div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl">
+  <p className="text-sm text-gray-600">
+    Total Emas Anda:
+    <span className="font-bold text-yellow-700 ml-2">
+      {userBalance.toFixed(2)} gram
+    </span>
+  </p>
+</div>
+
+
         {/* SIMULASI */}
         <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200 space-y-6">
 
@@ -77,7 +161,6 @@ export const Tamasa = () => {
             Simulasi Tabungan Emas
           </h2>
 
-          {/* Input Nominal */}
           <div>
             <label className="text-sm font-semibold text-gray-700">
               Setoran per Bulan
@@ -90,7 +173,6 @@ export const Tamasa = () => {
             />
           </div>
 
-          {/* Input Durasi */}
           <div>
             <label className="text-sm font-semibold text-gray-700">
               Durasi (Bulan)
@@ -103,7 +185,6 @@ export const Tamasa = () => {
             />
           </div>
 
-          {/* Input Harga Emas */}
           <div>
             <label className="text-sm font-semibold text-gray-700">
               Harga Emas per Gram
@@ -141,9 +222,14 @@ export const Tamasa = () => {
           </div>
 
           {/* BUTTON */}
-          <button className="w-full bg-kkj-blue text-white py-4 rounded-xl font-bold hover:opacity-90 transition">
-            Mulai Tabungan Emas
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-kkj-blue text-white py-4 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-50"
+          >
+            {isSubmitting ? "Memproses..." : "Mulai Tabungan Emas"}
           </button>
+
         </div>
       </div>
     </div>
