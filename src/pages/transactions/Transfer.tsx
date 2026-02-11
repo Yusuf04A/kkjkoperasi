@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { ArrowLeft, Phone, Send, Search, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
+import { PinModal } from '../../components/PinModal'; // Pastikan path import benar
 
 export const Transfer = () => {
     const navigate = useNavigate();
@@ -18,6 +19,10 @@ export const Transfer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
 
+    // STATE UNTUK MODAL PIN
+    const [showPinModal, setShowPinModal] = useState(false);
+
+    // --- CEK PENERIMA ---
     const checkRecipient = async () => {
         if (phone.length < 10) return;
         setIsChecking(true);
@@ -38,22 +43,11 @@ export const Transfer = () => {
         setIsChecking(false);
     };
 
-    const handleTransfer = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const nominal = parseInt(amount.replace(/\D/g, ''));
-
-        if (!recipientName) {
-            toast.error('Pastikan nomor tujuan benar.');
-            return;
-        }
-
-        const confirm = window.confirm(
-            `Yakin kirim ${formatRupiah(nominal)} ke ${recipientName}?`
-        );
-        if (!confirm) return;
-
+    // --- EXECUTE TRANSFER (Dipanggil setelah PIN Sukses) ---
+    const executeTransfer = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Memproses transfer...');
+        const nominal = parseInt(amount.replace(/\D/g, ''));
 
         try {
             const { error } = await supabase.rpc('transfer_balance', {
@@ -71,6 +65,29 @@ export const Transfer = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // --- HANDLE TOMBOL KIRIM (Cek Validasi & Buka Modal) ---
+    const handleTransferClick = (e: React.FormEvent) => {
+        e.preventDefault();
+        const nominal = parseInt(amount.replace(/\D/g, ''));
+
+        // 1. Validasi Input
+        if (!recipientName) {
+            toast.error('Pastikan nomor tujuan benar.');
+            return;
+        }
+        if (!nominal || nominal < 10000) {
+            toast.error('Minimal transfer Rp 10.000');
+            return;
+        }
+        if (nominal > (user?.tapro_balance || 0)) {
+            toast.error('Saldo tidak mencukupi.');
+            return;
+        }
+
+        // 2. Buka Modal PIN
+        setShowPinModal(true);
     };
 
     return (
@@ -103,7 +120,7 @@ export const Transfer = () => {
 
                 {/* FORM */}
                 <form
-                    onSubmit={handleTransfer}
+                    onSubmit={handleTransferClick} // Ganti handler ke handleTransferClick
                     className="bg-white p-6 rounded-2xl border border-blue-200 space-y-6"
                 >
 
@@ -175,7 +192,7 @@ export const Transfer = () => {
                         </p>
                     </div>
 
-                    {/* BUTTON */}
+                    {/* BUTTON SUBMIT */}
                     <Button
                         type="submit"
                         isLoading={isLoading}
@@ -188,6 +205,14 @@ export const Transfer = () => {
                 </form>
 
             </div>
+
+            {/* MODAL PIN */}
+            <PinModal
+                isOpen={showPinModal}
+                onClose={() => setShowPinModal(false)}
+                onSuccess={executeTransfer} // JIKA PIN BENAR, JALANKAN TRANSFER
+                title="Konfirmasi Transfer"
+            />
         </div>
     );
 };

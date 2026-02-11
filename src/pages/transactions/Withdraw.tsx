@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { ArrowLeft, CreditCard, Banknote, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
+import { PinModal } from '../../components/PinModal'; // Pastikan path benar
 
 export const Withdraw = () => {
     const navigate = useNavigate();
@@ -17,32 +18,20 @@ export const Withdraw = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [currentBalance, setCurrentBalance] = useState(0);
 
+    // STATE MODAL PIN
+    const [showPinModal, setShowPinModal] = useState(false);
+
     useEffect(() => {
         if (user) {
             setCurrentBalance(user.tapro_balance || 0);
         }
     }, [user]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const nominal = parseInt(amount.replace(/\D/g, ''));
-
-        if (!nominal || nominal < 50000) {
-            toast.error('Minimal penarikan Rp 50.000');
-            return;
-        }
-        if (nominal > currentBalance) {
-            toast.error('Saldo tidak mencukupi!');
-            return;
-        }
-        if (!bankInfo.trim()) {
-            toast.error('Info rekening tujuan wajib diisi!');
-            return;
-        }
-
+    // --- EXECUTE WITHDRAW (Dipanggil setelah PIN Sukses) ---
+    const executeWithdraw = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Mengajukan penarikan...');
+        const nominal = parseInt(amount.replace(/\D/g, ''));
 
         try {
             const { error } = await supabase.from('transactions').insert({
@@ -65,25 +54,47 @@ export const Withdraw = () => {
         }
     };
 
+    // --- HANDLE CLICK (Validasi & Buka Modal) ---
+    const handleWithdrawClick = (e: React.FormEvent) => {
+        e.preventDefault();
+        const nominal = parseInt(amount.replace(/\D/g, ''));
+
+        // 1. Validasi
+        if (!nominal || nominal < 50000) {
+            toast.error('Minimal penarikan Rp 50.000');
+            return;
+        }
+        if (nominal > currentBalance) {
+            toast.error('Saldo tidak mencukupi!');
+            return;
+        }
+        if (!bankInfo.trim()) {
+            toast.error('Info rekening tujuan wajib diisi!');
+            return;
+        }
+
+        // 2. Buka Modal PIN
+        setShowPinModal(true);
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-24">
 
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-blue-200">
-  <div className="px-4 py-4 flex items-center gap-3">
-    <button
-      onClick={() => navigate(-1)}
-      className="p-2 rounded-full hover:bg-blue-100 transition"
-    >
-      <ArrowLeft size={20} className="text-blue-900" />
-    </button>
+                <div className="px-4 py-4 flex items-center gap-3">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-full hover:bg-blue-100 transition"
+                    >
+                        <ArrowLeft size={20} className="text-blue-900" />
+                    </button>
 
-    <h1 className="text-base font-semibold text-blue-900">
-      Tarik Tunai
-    </h1>
-  </div>
-</div>
-
+                    <h1 className="text-base font-semibold text-blue-900">
+                        Tarik Tunai
+                    </h1>
+                </div>
+            </div>
 
             <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
 
@@ -99,7 +110,7 @@ export const Withdraw = () => {
 
                 {/* FORM */}
                 <form
-                    onSubmit={handleSubmit}
+                    onSubmit={handleWithdrawClick} // Ganti handler
                     className="bg-white rounded-3xl border border-blue-200 shadow-md p-6 space-y-6"
                 >
 
@@ -183,6 +194,14 @@ export const Withdraw = () => {
                 </div>
 
             </div>
+
+            {/* MODAL PIN */}
+            <PinModal
+                isOpen={showPinModal}
+                onClose={() => setShowPinModal(false)}
+                onSuccess={executeWithdraw}
+                title="Konfirmasi Penarikan"
+            />
         </div>
     );
 };

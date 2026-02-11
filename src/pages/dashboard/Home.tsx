@@ -5,7 +5,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
-    Download, Share2
+    Download, Share2, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
@@ -17,6 +17,9 @@ export const Home = () => {
     const navigate = useNavigate();
     const [showBalance, setShowBalance] = useState(true);
 
+    // STATE UNTUK MODAL RINCIAN ASET
+    const [showDetailAssets, setShowDetailAssets] = useState(false);
+
     const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -27,6 +30,7 @@ export const Home = () => {
 
     if (user?.role === 'admin') return null;
 
+    // --- DATA ANGGOTA ---
     const userData = {
         name: user?.full_name || user?.email?.split('@')[0] || 'Anggota KKJ',
         memberId: user?.member_id || 'MENUNGGU NIAK',
@@ -37,39 +41,47 @@ export const Home = () => {
         branch: 'Pusat'
     };
 
-    // --- FITUR DOWNLOAD KARTU (FIXED) ---
+    // --- DATA 8 JENIS SIMPANAN LAIN (NON-TAPRO) ---
+    const otherSavings = [
+        { name: 'Simpanan Pokok', val: user?.simpok_balance || 0 },
+        { name: 'Simpanan Wajib', val: user?.simwa_balance || 0 },
+        { name: 'Simpanan Masa Depan', val: user?.simade_balance || 0 },
+        { name: 'Simpanan Pendidikan', val: user?.sipena_balance || 0 },
+        { name: 'Simpanan Hari Raya', val: user?.sihara_balance || 0 },
+        { name: 'Simpanan Qurban', val: user?.siqurma_balance || 0 },
+        { name: 'Simpanan Haji/Umroh', val: user?.siuji_balance || 0 },
+        { name: 'Simpanan Walimah', val: user?.siwalima_balance || 0 },
+    ];
+
+    // Hitung Total Aset Lain (Real Calculation)
+    const totalOtherAssets = otherSavings.reduce((acc, curr) => acc + curr.val, 0);
+
+    // --- FITUR DOWNLOAD KARTU (SOLUSI LAYAR HP) ---
     const handleDownloadCard = async () => {
         if (!cardRef.current) return;
         const toastId = toast.loading('Mencetak kartu HD...');
 
         try {
-            // Tunggu sebentar biar gambar load
             await new Promise(resolve => setTimeout(resolve, 500));
 
             const canvas = await html2canvas(cardRef.current, {
                 backgroundColor: null,
-                scale: 3, // Kualitas Tinggi
+                scale: 3,
                 useCORS: true,
-                // PAKSA UKURAN DESKTOP SAAT RENDER (Trik agar tidak kepotong di HP)
                 windowWidth: 1920,
                 windowHeight: 1080,
                 onclone: (clonedDoc) => {
-                    // Cari elemen kartu di dalam hasil clone
                     const clonedCard = clonedDoc.querySelector('[data-card="member-card"]') as HTMLElement;
                     if (clonedCard) {
-                        // Paksa ukuran kartu menjadi rasio tetap (seperti kartu ATM asli)
-                        // Agar teks tidak turun ke bawah
                         clonedCard.style.width = '600px';
-                        clonedCard.style.height = '379px'; // Rasio 1.58:1
+                        clonedCard.style.height = '380px';
                         clonedCard.style.position = 'absolute';
                         clonedCard.style.top = '0';
                         clonedCard.style.left = '0';
-                        clonedCard.style.transform = 'none'; // Hilangkan efek hover
+                        clonedCard.style.transform = 'none';
                         clonedCard.style.margin = '0';
-
-                        // Perbaiki ukuran font judul agar muat
-                        const title = clonedCard.querySelector('h1');
-                        if (title) title.style.fontSize = '24px';
+                        const nameTitle = clonedCard.querySelector('h1');
+                        if (nameTitle) nameTitle.style.fontSize = '24px';
                     }
                 }
             });
@@ -81,7 +93,6 @@ export const Home = () => {
 
             toast.success('Kartu berhasil disimpan!', { id: toastId });
         } catch (err) {
-            console.error(err);
             toast.error('Gagal menyimpan kartu', { id: toastId });
         }
     };
@@ -94,7 +105,7 @@ export const Home = () => {
             const canvas = await html2canvas(cardRef.current, {
                 scale: 2,
                 useCORS: true,
-                windowWidth: 1200 // Paksa lebar desktop juga saat share
+                windowWidth: 1200
             });
 
             canvas.toBlob(async (blob) => {
@@ -132,6 +143,7 @@ export const Home = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-10">
+            {/* 1. HERO SECTION */}
             <div className="w-full bg-kkj-blue relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-400 opacity-10 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl"></div>
@@ -142,6 +154,7 @@ export const Home = () => {
                         data-card="member-card"
                         className="w-full bg-gradient-to-br from-[#003366] to-[#0055a5] rounded-xl shadow-2xl overflow-hidden border border-yellow-500/40 relative group aspect-[1.58/1] flex flex-col justify-between"
                     >
+                        {/* ... (Konten Kartu Sama Seperti Sebelumnya) ... */}
                         <div className="absolute inset-0 pointer-events-none">
                             <div className="absolute -top-10 -right-10 w-40 h-40 bg-yellow-400/10 rounded-full blur-2xl"></div>
                             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-400/20 rounded-full blur-2xl"></div>
@@ -217,23 +230,35 @@ export const Home = () => {
                 </div>
             </div>
 
+            {/* 2. TOTAL SIMPANAN (Floating Overlay) */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
                 <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-6 items-center transform transition-transform hover:-translate-y-1 duration-300">
-                    <div className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-6">
+
+                    {/* BAGIAN KIRI: KLIK UNTUK LIHAT DETAIL */}
+                    <div
+                        onClick={() => setShowDetailAssets(true)} // TRIGGER MODAL
+                        className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-6 cursor-pointer group hover:bg-gray-50/50 p-2 rounded-lg transition-colors"
+                    >
                         <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2 text-gray-500">
-                                <span className="text-xs font-bold tracking-wider uppercase">Total Aset (Non-Tapro)</span>
-                                <button onClick={() => setShowBalance(!showBalance)} className="hover:text-kkj-blue transition-colors">
+                                <span className="text-xs font-bold tracking-wider uppercase group-hover:text-kkj-blue transition-colors">Total Aset (Non-Tapro)</span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}
+                                    className="hover:text-kkj-blue transition-colors"
+                                >
                                     {showBalance ? <Eye size={14} /> : <EyeOff size={14} />}
                                 </button>
                             </div>
-                            <div className="bg-blue-50 text-kkj-blue text-[10px] font-bold px-2 py-0.5 rounded">IDR</div>
+                            <div className="bg-blue-50 text-kkj-blue text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                8 JENIS <ArrowRight size={10} />
+                            </div>
                         </div>
-                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">
-                            {showBalance ? formatRupiah(userData.otherAssetsBalance) : 'Rp ••••••••'}
+                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight group-hover:text-kkj-blue transition-colors">
+                            {showBalance ? formatRupiah(totalOtherAssets) : 'Rp ••••••••'}
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-1">*Akumulasi dari 8 jenis simpanan lain</p>
+                        <p className="text-[10px] text-gray-400 mt-1">*Klik untuk rincian Simpok, Simwa, dll</p>
                     </div>
+
                     <div className="w-full md:w-7/12">
                         <div className="grid grid-cols-4 gap-4">
                             {quickActions.map((action) => (
@@ -249,6 +274,7 @@ export const Home = () => {
                 </div>
             </div>
 
+            {/* 3. MAIN CONTENT (Berita & Program) */}
             <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
                 <NewsCarousel />
                 <div className="pb-8">
@@ -260,46 +286,79 @@ export const Home = () => {
                         <button className="text-xs font-medium text-kkj-blue hover:underline flex items-center gap-1">Lihat Semua <ArrowRight size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-  {featuredPrograms.map((program, idx) => (
-    <Link
-      key={idx}
-      to={
-        program.name === 'TAMASA'
-          ? '/program/tamasa'
-          : program.name === 'INFLIP'
-          ? '/program/inflip'
-          : '/program/pegadaian'
-      }
-      className="group bg-white rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-100 relative overflow-hidden cursor-pointer"
-    >
-
-      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${program.color}`}></div>
-
-      <div className="flex justify-between items-start mb-3">
-        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}>
-          <program.icon className={program.text} size={20} />
-        </div>
-        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-kkj-blue group-hover:text-white transition-colors">
-          <ArrowUpRight size={16} />
-        </div>
-      </div>
-
-      <h4 className="text-base font-bold text-gray-900 mb-0.5">
-        {program.name}
-      </h4>
-      <p className="text-xs font-medium text-gray-600 mb-1">
-        {program.title}
-      </p>
-      <p className="text-[10px] text-gray-400">
-        {program.desc}
-      </p>
-
-    </Link>
-  ))}
-</div>
-
+                        {featuredPrograms.map((program, idx) => (
+                            <Link
+                                key={idx}
+                                to={
+                                    program.name === 'TAMASA'
+                                        ? '/program/tamasa'
+                                        : program.name === 'INFLIP'
+                                            ? '/program/inflip'
+                                            : '/program/pegadaian'
+                                }
+                                className="group bg-white rounded-xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-100 relative overflow-hidden cursor-pointer"
+                            >
+                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${program.color}`}></div>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}>
+                                        <program.icon className={program.text} size={20} />
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-kkj-blue group-hover:text-white transition-colors">
+                                        <ArrowUpRight size={16} />
+                                    </div>
+                                </div>
+                                <h4 className="text-base font-bold text-gray-900 mb-0.5">{program.name}</h4>
+                                <p className="text-xs font-medium text-gray-600 mb-1">{program.title}</p>
+                                <p className="text-[10px] text-gray-400">{program.desc}</p>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
             </div>
+
+            {/* MODAL RINCIAN ASET (FIXED LAYOUT) */}
+            {showDetailAssets && (
+                <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
+
+                    {/* OVERLAY HITAM (Klik untuk tutup) */}
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowDetailAssets(false)}
+                    ></div>
+
+                    {/* CONTENT MODAL (Wider on Desktop) */}
+                    <div className="relative bg-white w-full max-w-sm sm:max-w-2xl rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 flex flex-col max-h-[85vh]">
+
+                        {/* Header Modal (Diam) */}
+                        <div className="flex justify-between items-center mb-6 shrink-0 border-b border-gray-100 pb-4">
+                            <h3 className="font-bold text-xl text-gray-900">Rincian Aset Koperasi</h3>
+                            <button onClick={() => setShowDetailAssets(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                                <X size={20} className="text-gray-600" />
+                            </button>
+                        </div>
+
+                        {/* List Scrollable (Grid di Desktop biar lebar) */}
+                        <div className="overflow-y-auto pr-2 flex-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {otherSavings.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-blue-200 transition-colors">
+                                        <span className="text-sm font-medium text-gray-600">{item.name}</span>
+                                        <span className="text-base font-bold text-gray-900 font-mono">{formatRupiah(item.val)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer Modal (Diam) */}
+                        <div className="mt-6 pt-4 border-t border-gray-100 shrink-0">
+                            <div className="flex justify-between items-center bg-blue-50 p-4 rounded-2xl">
+                                <span className="font-bold text-blue-900 uppercase text-xs tracking-wider">Total Aset Lain</span>
+                                <span className="font-bold text-xl text-kkj-blue">{formatRupiah(totalOtherAssets)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
