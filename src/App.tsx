@@ -36,6 +36,11 @@ import AdminKabarForm from './pages/admin/AdminKabarForm';
 import { LoanDetail } from './pages/financing/LoanDetail';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 
+// PROGRAM
+import { Tamasa } from './pages/program/Tamasa';
+import { Inflip } from './pages/program/Inflip';
+import { Pegadaian } from './pages/program/Pegadaian';
+
 function App() {
   return (
     <BrowserRouter>
@@ -92,6 +97,11 @@ function App() {
 
         {/* Redirect unknown routes ke Welcome */}
         <Route path="*" element={<Navigate to="/welcome" replace />} />
+
+        
+        <Route path="/program/tamasa" element={<Tamasa />} />
+        <Route path="/program/inflip" element={<Inflip />} />
+        <Route path="/program/pegadaian" element={<Pegadaian />} />
 
       </Routes>
     </BrowserRouter>
