@@ -6,7 +6,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
   ArrowLeft, Upload, Loader2, Clock, CheckCircle,
   XCircle, Coins, Scale, Camera, AlertCircle, ShoppingBag,
-  RefreshCw, ChevronRight, History
+  ChevronRight, History, ShieldCheck, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PinModal } from '../../components/PinModal';
@@ -15,7 +15,6 @@ export const Pegadaian = () => {
   const navigate = useNavigate();
   const { user, checkSession } = useAuthStore();
 
-  // 1. STATE & STORAGE
   const [activeTab, setActiveTab] = useState<'apply' | 'history'>(() => {
     return (localStorage.getItem('pegadaian_active_tab') as 'apply' | 'history') || 'apply';
   });
@@ -24,38 +23,26 @@ export const Pegadaian = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // History & Redeem State
   const [history, setHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [itemToRedeem, setItemToRedeem] = useState<any>(null);
   const [showPinModal, setShowPinModal] = useState(false);
 
-  // 2. EFFECT: Simpan Tab Terakhir
   useEffect(() => {
     localStorage.setItem('pegadaian_active_tab', activeTab);
   }, [activeTab]);
 
-  // 3. EFFECT: Fetch Data (Fix Refresh Issue)
   useEffect(() => {
     const init = async () => {
-      // Cek sesi jika user null (misal pas refresh)
-      if (!user) {
-        await checkSession();
-      }
-      // Jika tab history aktif, ambil data
-      if (activeTab === 'history') {
-        fetchHistory();
-      }
+      if (!user) await checkSession();
+      if (activeTab === 'history') fetchHistory();
     };
     init();
-  }, [user, activeTab]); // Dependencies penting: user & activeTab
+  }, [user, activeTab]);
 
   const fetchHistory = async () => {
-    // Pastikan user ada sebelum fetch (Supabase butuh user_id untuk policy RLS)
     const currentUser = user || (await supabase.auth.getUser()).data.user;
     if (!currentUser) return;
-
     setLoadingHistory(true);
     try {
       const { data, error } = await supabase
@@ -63,7 +50,6 @@ export const Pegadaian = () => {
         .select('*')
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setHistory(data || []);
     } catch (err) {
@@ -73,7 +59,6 @@ export const Pegadaian = () => {
     }
   };
 
-  // --- FORM HANDLERS ---
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -91,20 +76,15 @@ export const Pegadaian = () => {
     e.preventDefault();
     if (!user) return toast.error("Silakan login terlebih dahulu");
     if (!imageFile) return toast.error("Wajib upload foto barang");
-
     setIsSubmitting(true);
-    const toastId = toast.loading("Mengunggah data...");
-
+    const toastId = toast.loading("Mengunggah pengajuan...");
     try {
-      // Upload Foto
       const fileExt = imageFile.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage.from('pawn_images').upload(fileName, imageFile);
       if (uploadError) throw uploadError;
-
       const imageUrl = supabase.storage.from('pawn_images').getPublicUrl(fileName).data.publicUrl;
 
-      // Insert Data
       const { error: insertError } = await supabase.from('pawn_transactions').insert({
         user_id: user.id,
         item_name: formData.itemName,
@@ -114,286 +94,204 @@ export const Pegadaian = () => {
         image_url: imageUrl,
         status: 'pending'
       });
-
       if (insertError) throw insertError;
-
       toast.success("Pengajuan berhasil dikirim!", { id: toastId });
-
-      // Reset
       setFormData({ itemName: '', weight: '', karat: '24', condition: 'Baik' });
       setImageFile(null);
       setImagePreview(null);
-      setActiveTab('history'); // Pindah ke tab history untuk lihat status
-
+      setActiveTab('history');
     } catch (err: any) {
       toast.error("Gagal: " + err.message, { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // --- REDEEM LOGIC (TEBUS) ---
-  const handleRedeemClick = (item: any) => {
-    if ((user?.tapro_balance || 0) < item.loan_amount) {
-      toast.error("Saldo Tapro tidak mencukupi untuk menebus barang ini.");
-      return;
-    }
-    setItemToRedeem(item);
-    setShowPinModal(true);
   };
 
   const executeRedeem = async () => {
     if (!itemToRedeem) return;
     const toastId = toast.loading("Memproses penebusan...");
-
     try {
-      // 1. Kurangi Saldo Tapro
       const { error: errSaldo } = await supabase.from('profiles')
         .update({ tapro_balance: (user?.tapro_balance || 0) - itemToRedeem.loan_amount })
         .eq('id', user?.id);
       if (errSaldo) throw errSaldo;
 
-      // 2. Update Status Gadai -> Completed
-      const { error: errUpdate } = await supabase.from('pawn_transactions')
-        .update({ status: 'completed' })
-        .eq('id', itemToRedeem.id);
-      if (errUpdate) throw errUpdate;
-
-      // 3. Catat Transaksi Keluar
+      await supabase.from('pawn_transactions').update({ status: 'completed' }).eq('id', itemToRedeem.id);
       await supabase.from('transactions').insert({
         user_id: user?.id,
-        type: 'withdraw', // Uang keluar
+        type: 'withdraw',
         amount: itemToRedeem.loan_amount,
         status: 'success',
         description: `Tebus Gadai: ${itemToRedeem.item_name}`
       });
 
-      // 4. Notifikasi
-      await supabase.from('notifications').insert({
-        user_id: user?.id,
-        title: 'Barang Ditebus ✅',
-        message: `Anda berhasil menebus ${itemToRedeem.item_name}.`,
-        type: 'success'
-      });
-
       toast.success("Barang berhasil ditebus!", { id: toastId });
-      await checkSession(); // Update saldo di UI
-      fetchHistory(); // Refresh list
+      await checkSession();
+      fetchHistory();
       setItemToRedeem(null);
-
     } catch (err: any) {
       toast.error("Gagal: " + err.message, { id: toastId });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 overflow-y-scroll">
-
+    <div className="min-h-screen bg-slate-50 pb-24">
       {/* HEADER */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition"><ArrowLeft size={20} /></button>
-          <h1 className="text-base font-bold text-gray-900">Pegadaian Syariah</h1>
-        </div>
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-4 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="text-lg font-bold text-slate-900">Pegadaian Emas</h1>
       </div>
 
-      <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
-
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
         {/* HERO SECTION */}
-        <div className="bg-gradient-to-r from-emerald-700 to-teal-600 rounded-3xl p-6 lg:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-          <div className="relative z-10 flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Scale className="text-emerald-200" size={20} />
-              <span className="font-bold tracking-widest text-emerald-200 text-xs uppercase">Solusi Dana Cepat</span>
+        <div className="bg-[#0B2B4B] rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden flex items-center justify-between">
+          <div className="relative z-10 max-w-md">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="text-amber-400" size={18} />
+              <span className="font-bold tracking-widest text-amber-400 text-[10px] uppercase">Layanan Amanah KKJ</span>
             </div>
-            <h2 className="text-2xl lg:text-4xl font-bold mb-4 leading-tight">
-              Gadai Emas Amanah <br /> Cair Dalam Hitungan Menit
-            </h2>
-            <p className="text-emerald-50 text-sm lg:text-base leading-relaxed mb-6 max-w-lg">
-              Dapatkan dana tunai dengan agunan emas Anda. Taksiran tinggi, biaya titip ringan, dan barang aman berasuransi.
+            <h2 className="text-xl lg:text-3xl font-bold mb-2 leading-tight">Gadai Emas Cepat & Syariah</h2>
+            <p className="text-blue-100/80 text-xs lg:text-sm leading-relaxed">
+              Taksiran harga pasar tinggi dengan biaya titip yang transparan. Amanah dan diawasi pengurus.
             </p>
-            <div className="flex gap-4 text-xs font-medium">
-              <div className="bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/10">
-                <CheckCircle size={14} /> Syariah
-              </div>
-              <div className="bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2 border border-white/10">
-                <CheckCircle size={14} /> Aman
-              </div>
-            </div>
           </div>
-          <div className="hidden md:block w-1/3 flex justify-center">
-            <div className="bg-white/10 p-6 rounded-full backdrop-blur-md border border-white/20">
-              <Coins size={64} className="text-white drop-shadow-md" />
-            </div>
-          </div>
+          <Coins className="hidden sm:block text-amber-500/20 absolute -right-4 -bottom-4 w-32 h-32 rotate-12" />
         </div>
 
         {/* TABS NAVIGATION */}
-        <div className="flex p-1 bg-gray-200/60 rounded-xl w-full max-w-md mx-auto mb-6">
+        <div className="flex p-1.5 bg-slate-200 rounded-2xl w-full max-w-sm mx-auto shadow-inner">
           <button
             onClick={() => setActiveTab('apply')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'apply' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all",
+              activeTab === 'apply' ? "bg-white text-[#0B2B4B] shadow-md" : "text-slate-500 hover:text-slate-700"
+            )}
           >
-            <Upload size={16} /> Ajukan Gadai
+            <Upload size={14} /> Pengajuan
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'history' ? 'bg-white text-emerald-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all",
+              activeTab === 'history' ? "bg-white text-[#0B2B4B] shadow-md" : "text-slate-500 hover:text-slate-700"
+            )}
           >
-            <History size={16} /> Riwayat Gadai
+            <History size={14} /> Riwayat
           </button>
         </div>
 
         {/* CONTENT AREA */}
         {activeTab === 'apply' ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:p-8 max-w-2xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Upload Foto */}
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Foto Barang</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative bg-gray-50 group">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                  <Camera size={14} /> Foto Barang Emas
+                </label>
+                <div className="relative group">
                   <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                  {imagePreview ? (
-                    <div className="relative h-56 w-full">
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-contain rounded-lg shadow-sm" />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity rounded-lg backdrop-blur-sm">
-                        <Camera size={24} className="mr-2" /> Ganti Foto
+                  <div className={cn(
+                    "border-2 border-dashed rounded-2xl p-4 text-center transition-all min-h-[180px] flex flex-col items-center justify-center bg-slate-50 group-hover:bg-slate-100",
+                    imagePreview ? "border-amber-400" : "border-slate-300"
+                  )}>
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="h-40 w-full object-contain rounded-lg" />
+                    ) : (
+                      <div className="text-slate-400">
+                        <Camera size={40} className="mx-auto mb-2 opacity-20" />
+                        <p className="text-sm font-semibold">Ambil foto atau pilih galeri</p>
+                        <p className="text-[10px] mt-1 italic">Pastikan pencahayaan cukup terang</p>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="py-10 text-gray-400 flex flex-col items-center group-hover:text-emerald-600 transition-colors">
-                      <div className="bg-white p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                        <Camera size={32} />
-                      </div>
-                      <span className="text-sm font-medium">Ketuk untuk ambil foto emas</span>
-                      <span className="text-xs text-gray-300 mt-1">Format JPG/PNG, Max 5MB</span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Inputs */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Barang</label>
-                  <input required name="itemName" value={formData.itemName} onChange={handleChange} placeholder="Contoh: Kalung Emas 5 Gram" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all" />
+              {/* Grid Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Perhiasan / LM</label>
+                  <input required name="itemName" value={formData.itemName} onChange={handleChange} placeholder="Misal: Cincin Kawin" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-[#0B2B4B] outline-none text-sm font-semibold" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Berat (Gram)</label>
-                    <input required type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} placeholder="0.00" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Berat (gr)</label>
+                    <input required type="number" step="0.01" name="weight" value={formData.weight} onChange={handleChange} placeholder="0.00" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-sm font-bold" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Karat</label>
-                    <select name="karat" value={formData.karat} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all">
-                      <option value="24">24 Karat (99%)</option>
-                      <option value="23">23 Karat</option>
-                      <option value="22">22 Karat</option>
-                      <option value="18">18 Karat</option>
-                      <option value="16">16 Karat</option>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Karat</label>
+                    <select name="karat" value={formData.karat} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold cursor-pointer">
+                      <option value="24">24K</option>
+                      <option value="22">22K</option>
+                      <option value="18">18K</option>
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Kondisi Fisik</label>
-                  <input required name="condition" value={formData.condition} onChange={handleChange} placeholder="Contoh: Mulus, Nota Lengkap" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 outline-none transition-all" />
-                </div>
               </div>
 
-              <div className="bg-yellow-50 p-4 rounded-xl flex gap-3 items-start border border-yellow-100">
-                <AlertCircle size={18} className="text-yellow-600 mt-0.5 shrink-0" />
-                <p className="text-xs text-yellow-800 leading-relaxed">
-                  Admin akan meninjau foto dan data untuk menentukan <b>Nilai Taksiran</b>. Jika Anda setuju dengan nilai tersebut, dana akan langsung cair ke Saldo Tapro.
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Kondisi & Kelengkapan</label>
+                <input required name="condition" value={formData.condition} onChange={handleChange} placeholder="Ada Nota, Box, atau Surat Toko" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" />
+              </div>
+
+              <div className="bg-amber-50 p-4 rounded-2xl flex gap-3 border border-amber-100 shadow-sm shadow-amber-900/5">
+                <Info size={18} className="text-amber-600 shrink-0" />
+                <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
+                  Pengajuan Anda akan ditinjau Admin. Setelah <b>Taksiran Harga</b> disetujui, dana langsung cair ke <b>Saldo Tapro</b>.
                 </p>
               </div>
 
               <button
                 disabled={isSubmitting}
-                className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.98]"
+                className="w-full bg-[#0B2B4B] text-white py-4 rounded-2xl font-bold text-sm shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-transform"
               >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : "Kirim Pengajuan Gadai"}
+                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : "Kirim Pengajuan"}
               </button>
             </form>
           </div>
         ) : (
-          // --- TAB RIWAYAT ---
-          <div className="max-w-3xl mx-auto space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-4 animate-in fade-in duration-500">
             {loadingHistory ? (
-              <div className="text-center py-20 text-gray-400 flex flex-col items-center">
-                <Loader2 className="animate-spin mb-2" size={32} />
-                <p>Memuat riwayat...</p>
-              </div>
+              <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-[#0B2B4B]" /></div>
             ) : history.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-2xl border border-gray-200 border-dashed">
-                <Scale size={48} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-bold text-gray-900">Belum ada gadai</h3>
-                <p className="text-gray-500 text-sm mt-1">Ajukan gadai sekarang untuk mendapatkan dana cepat.</p>
-                <button onClick={() => setActiveTab('apply')} className="mt-4 text-emerald-600 font-bold text-sm hover:underline">
-                  Mulai Pengajuan
-                </button>
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
+                <Scale size={48} className="mx-auto text-slate-200 mb-4" />
+                <h3 className="font-bold text-slate-400">Belum ada riwayat gadai</h3>
               </div>
             ) : (
               history.map((item) => (
-                <div key={item.id} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-5 items-start transition-all hover:border-emerald-200 hover:shadow-md">
-
-                  {/* Gambar */}
-                  <div className="w-full md:w-24 h-24 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-gray-100">
-                    <img src={item.image_url} alt="Item" className="w-full h-full object-cover" />
-                  </div>
-
-                  {/* Detail */}
-                  <div className="flex-1 min-w-0 w-full">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-gray-900 text-base truncate pr-2">{item.item_name}</h4>
-                      <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${item.status === 'approved' ? 'bg-orange-100 text-orange-700' :
-                          item.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            item.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
-                        }`}>
-                        {item.status === 'pending' ? 'Review Admin' :
-                          item.status === 'approved' ? 'Sedang Gadai' :
-                            item.status === 'completed' ? 'Selesai / Lunas' : 'Ditolak'}
+                <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-4 transition-all hover:shadow-md">
+                  <img src={item.image_url} className="w-20 h-20 rounded-xl object-cover border border-slate-100" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-bold text-sm text-slate-900 truncate">{item.item_name}</h4>
+                      <span className={cn(
+                        "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase",
+                        item.status === 'approved' ? "bg-amber-100 text-amber-700" :
+                        item.status === 'completed' ? "bg-green-100 text-green-700" :
+                        "bg-slate-100 text-slate-500"
+                      )}>
+                        {item.status}
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
-                      <span className="bg-gray-100 px-2 py-0.5 rounded">{item.item_weight} Gram</span>
-                      <span className="bg-gray-100 px-2 py-0.5 rounded">{item.item_karat} Karat</span>
-                      <span className="italic truncate max-w-[150px]">{item.item_condition}</span>
-                    </div>
-
-                    {/* Info Nominal & Tombol */}
-                    <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-3 border-t border-gray-50 pt-3">
+                    <p className="text-[10px] text-slate-400 font-medium mb-2">{item.item_weight}gr • {item.item_karat}K</p>
+                    
+                    <div className="flex justify-between items-center border-t border-slate-50 pt-2">
                       <div>
-                        {(item.status === 'approved' || item.status === 'completed') ? (
-                          <>
-                            <p className="text-[10px] text-gray-400 uppercase font-bold">Nilai Pinjaman</p>
-                            <p className="font-bold text-emerald-700 text-lg">{formatRupiah(item.loan_amount)}</p>
-                          </>
-                        ) : (
-                          <p className="text-xs text-gray-400 italic">Menunggu taksiran admin...</p>
+                        {item.loan_amount > 0 && (
+                          <p className="font-bold text-[#0B2B4B] text-sm">{formatRupiah(item.loan_amount)}</p>
                         )}
                       </div>
-
-                      {/* Tombol Tebus */}
                       {item.status === 'approved' && (
-                        <button
-                          onClick={() => handleRedeemClick(item)}
-                          className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-orange-500/20"
+                        <button 
+                          onClick={() => { setItemToRedeem(item); setShowPinModal(true); }}
+                          className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm transition-colors"
                         >
-                          <ShoppingBag size={14} /> Tebus Barang
+                          <ShoppingBag size={12} /> Tebus
                         </button>
-                      )}
-
-                      {item.status === 'completed' && (
-                        <span className="text-xs font-bold text-green-600 flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg">
-                          <CheckCircle size={14} /> Barang Sudah Ditebus
-                        </span>
                       )}
                     </div>
                   </div>
@@ -404,13 +302,14 @@ export const Pegadaian = () => {
         )}
       </div>
 
-      {/* Modal PIN Konfirmasi Tebus */}
       <PinModal
         isOpen={showPinModal}
         onClose={() => setShowPinModal(false)}
         onSuccess={executeRedeem}
-        title="Konfirmasi Penebusan"
+        title="Konfirmasi Tebus"
       />
     </div>
   );
 };
+
+export default Pegadaian;

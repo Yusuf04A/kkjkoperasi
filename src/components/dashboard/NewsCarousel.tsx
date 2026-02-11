@@ -3,27 +3,30 @@ import { ArrowRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 /* =======================
-   TYPE
+    TYPE
 ======================= */
 interface KabarKKJ {
   id: string;
   title: string;
   description: string;
   type: string;
-  color: 'blue' | 'yellow' | 'green';
+  color: 'blue' | 'yellow' | 'green' | 'biru_tua' | 'red';
 }
 
 /* =======================
-   COLOR MAP
+    COLOR MAP
+    Daftar warna yang didukung oleh UI
 ======================= */
-const colorMap: Record<KabarKKJ['color'], string> = {
+const colorMap: Record<string, string> = {
   blue: 'bg-blue-600',
   yellow: 'bg-yellow-400',
   green: 'bg-green-600',
+  biru_tua: 'bg-[#003366]', // Warna Biru Tua KKJ
+  red: 'bg-red-600',       // Mendukung pilihan warna Merah
 };
 
 /* =======================
-   SKELETON CARD
+    SKELETON CARD
 ======================= */
 const SkeletonCard = () => (
   <div className="min-w-[280px] snap-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
@@ -40,13 +43,13 @@ export const NewsCarousel = () => {
   const [news, setNews] = useState<KabarKKJ[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isInteracting = useRef(false); // ✅ TAMBAHAN WAJIB
+  const isInteracting = useRef(false);
 
   // Duplikat data untuk looping infinite
   const newsLoop = [...news, ...news];
 
   /* =======================
-     FETCH DARI SUPABASE
+      FETCH DARI SUPABASE
   ======================= */
   useEffect(() => {
     const fetchKabar = async () => {
@@ -58,7 +61,7 @@ export const NewsCarousel = () => {
         .limit(5);
 
       if (!error) {
-        setNews(data || []);
+        setNews(data as KabarKKJ[] || []);
       }
 
       setLoading(false);
@@ -68,30 +71,27 @@ export const NewsCarousel = () => {
   }, []);
 
   /* =======================
-     AUTO SCROLL + SWIPE SUPPORT
+      AUTO SCROLL LOGIC
   ======================= */
   useEffect(() => {
     const container = scrollRef.current;
     if (!container || news.length === 0) return;
 
-    const scrollSpeed = 0.5; // smooth speed
+    const scrollSpeed = 0.5;
     let animationFrame: number;
 
     const scroll = () => {
       if (!isInteracting.current) {
         container.scrollLeft += scrollSpeed;
 
-        // Reset ke awal saat sudah setengah (karena kita duplikat data)
         if (container.scrollLeft >= container.scrollWidth / 2) {
           container.scrollLeft = 0;
         }
       }
-
       animationFrame = requestAnimationFrame(scroll);
     };
 
     animationFrame = requestAnimationFrame(scroll);
-
     return () => cancelAnimationFrame(animationFrame);
   }, [news]);
 
@@ -103,7 +103,7 @@ export const NewsCarousel = () => {
         </h3>
       </div>
 
-      {/* HORIZONTAL SCROLL */}
+      {/* HORIZONTAL SCROLL CONTAINER */}
       <div
         ref={scrollRef}
         onMouseEnter={() => (isInteracting.current = true)}
@@ -112,21 +112,22 @@ export const NewsCarousel = () => {
         onTouchEnd={() => (isInteracting.current = false)}
         className="flex gap-4 overflow-x-auto pb-4 snap-x scrollbar-hide scroll-smooth"
       >
-        {/* SKELETON */}
+        {/* LOADING STATE */}
         {loading &&
           Array.from({ length: 3 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
 
-        {/* DATA SUPABASE (LOOPING) */}
+        {/* DATA NEWS */}
         {!loading &&
           newsLoop.map((item, index) => (
             <div
               key={`${item.id}-${index}`}
               className="min-w-[280px] snap-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition"
             >
+              {/* Header Warna menggunakan Color Map yang sudah diperbarui */}
               <div
-                className={`h-32 w-full ${colorMap[item.color]} flex items-center justify-center text-white font-bold text-xs tracking-widest`}
+                className={`h-32 w-full ${colorMap[item.color] || 'bg-gray-500'} flex items-center justify-center text-white font-bold text-xs tracking-widest uppercase`}
               >
                 {item.type}
               </div>
@@ -144,7 +145,7 @@ export const NewsCarousel = () => {
 
         {/* EMPTY STATE */}
         {!loading && news.length === 0 && (
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-400 py-10">
             Belum ada kabar terbaru
           </div>
         )}
