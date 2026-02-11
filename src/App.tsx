@@ -32,7 +32,7 @@ import { AdminTransactions } from './pages/admin/Transactions';
 import { AdminFinancing } from './pages/admin/Financing';
 import AdminKabar from './pages/admin/AdminKabar';
 import AdminKabarForm from './pages/admin/AdminKabarForm';
-
+import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { LoanDetail } from './pages/financing/LoanDetail';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 
@@ -59,6 +59,7 @@ function App() {
         <Route path="/admin/transaksi" element={<AdminTransactions />} />
         <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
         <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
+        <Route path="/admin/laporan" element={<AdminFinancialReport />} />
 
         {/* Admin Kabar */}
         <Route path="/admin/kabar" element={<AdminKabar />} />

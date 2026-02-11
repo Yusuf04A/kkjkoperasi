@@ -111,6 +111,11 @@ export const AdminDashboard = () => {
                         </div>
                         <h1 className="text-3xl font-bold">Halo, {user?.full_name || 'Admin'}</h1>
                         <p className="text-blue-200 mt-1 text-sm">Selamat bertugas kembali.</p>
+                        <div className="flex gap-2 mt-4">
+                            <Link to="/admin/laporan" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors">
+                                <PieChart size={16} /> Laporan Keuangan
+                            </Link>
+                        </div>
                     </div>
 
                     <button onClick={handleLogout} className="relative z-10 bg-white/10 hover:bg-white/20 p-3 rounded-xl transition-colors border border-white/20 group" title="Keluar">
