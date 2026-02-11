@@ -5,7 +5,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
-    Download, Share2, X
+    Download, Share2, X, Smartphone // <--- TAMBAHKAN INI
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
@@ -133,6 +133,7 @@ export const Home = () => {
         { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
         { label: 'Riwayat', icon: History, color: 'text-purple-600', bg: 'bg-purple-50', link: '/transaksi/riwayat' },
+        { label: 'PPOB', icon: Smartphone, color: 'text-indigo-600', bg: 'bg-indigo-50', link: '/ppob' },
     ];
 
     const featuredPrograms = [
@@ -260,7 +261,7 @@ export const Home = () => {
                     </div>
 
                     <div className="w-full md:w-7/12">
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-5 gap-3"> {/* Ubah grid jadi 5 kolom agar muat */}
                             {quickActions.map((action) => (
                                 <Link key={action.label} to={action.link} className="flex flex-col items-center gap-2 group cursor-pointer">
                                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm border border-gray-50 group-hover:shadow-md", action.bg)}>

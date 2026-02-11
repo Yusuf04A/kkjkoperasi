@@ -14,7 +14,7 @@ export const Tamasa = () => {
   // --- STATE ---
   const [monthlyAmount, setMonthlyAmount] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
-  const [goldPrice, setGoldPrice] = useState(1350000);
+  const [goldPrice, setGoldPrice] = useState(2947000);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userBalanceGram, setUserBalanceGram] = useState<number>(0);

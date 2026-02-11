@@ -42,6 +42,8 @@ import { Tamasa } from './pages/program/Tamasa';
 import { Inflip } from './pages/program/Inflip';
 import { Pegadaian } from './pages/program/Pegadaian';
 
+import { PPOB } from './pages/ppob/PPOB';
+
 function App() {
   return (
     <BrowserRouter>
@@ -106,6 +108,8 @@ function App() {
         <Route path="/program/tamasa" element={<Tamasa />} />
         <Route path="/program/inflip" element={<Inflip />} />
         <Route path="/program/pegadaian" element={<Pegadaian />} />
+
+        <Route path="/ppob" element={<PPOB />} />
 
       </Routes>
     </BrowserRouter>
