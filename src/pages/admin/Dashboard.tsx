@@ -1,69 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import {
     Users, FileText, ChevronRight, LogOut, ShieldCheck,
-    ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale
+    ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale, 
+    Bell, Settings, Activity, ExternalLink, Gem, ShoppingBag,
+    PackageCheck
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
-
-interface KabarKKJ {
-    id: string;
-    title: string;
-    description: string;
-    type: 'PROMO' | 'INFO' | 'RAT' | 'PROGRAM';
-    color: 'blue' | 'yellow' | 'green';
-    is_active: boolean;
-    created_at: string;
-}
+import { cn } from '../../lib/utils';
 
 export const AdminDashboard = () => {
     const { logout, user } = useAuthStore();
     const navigate = useNavigate();
 
-    // State Statistik
     const [stats, setStats] = useState({
         pendingUsers: 0,
         pendingTx: 0,
         pendingLoans: 0,
         pendingRestructures: 0,
         pendingTamasa: 0,
-        pendingPawn: 0, // 🔥 TAMBAHAN: PEGADAIAN
+        pendingPawn: 0,
+        pendingOrders: 0, // 🔥 TERHUBUNG DENGAN TOKO
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
-    const [kabarList, setKabarList] = useState<KabarKKJ[]>([]);
 
     useEffect(() => {
         const fetchStats = async () => {
-            // 1. Cek User Pending
+            // 1. Verifikasi Anggota
             const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-
-            // 2. Cek Transaksi Pending
+            // 2. Transaksi Keuangan
             const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-
-            // 3. Cek Pinjaman Pending
+            // 3. Pinjaman Baru
             const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-
-            // 4. Cek Request Perpanjangan Tenor
-            const { data: restructureData, count: pendingRestructure } = await supabase
-                .from('loans')
-                .select('id', { count: 'exact' })
-                .eq('restructure_status', 'pending');
-
-            // 5. Cek TAMASA Pending
+            // 4. Restrukturisasi Tenor
+            const { data: restructureData } = await supabase.from('loans').select('id').eq('restructure_status', 'pending');
+            // 5. TAMASA
             const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-
-            // 🔥 6. Cek PEGADAIAN Pending
+            // 6. Gadai Emas
             const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+            
+            // 7. 🔥 TOKO: Pesanan Masuk (Status 'diproses' yang butuh disiapkan barangnya)
+            const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
 
             setStats({
                 pendingUsers: pendingMember || 0,
                 pendingTx: pendingTrans || 0,
                 pendingLoans: pendingLoan || 0,
-                pendingRestructures: pendingRestructure || 0,
+                pendingRestructures: restructureData?.length || 0,
                 pendingTamasa: pendingTamasa || 0,
-                pendingPawn: pendingPawn || 0, // 🔥 TAMBAHAN
+                pendingPawn: pendingPawn || 0,
+                pendingOrders: pendingOrders || 0,
             });
 
             if (restructureData && restructureData.length > 0) {
@@ -71,25 +59,15 @@ export const AdminDashboard = () => {
             }
         };
 
-        const fetchKabar = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('kabar_kkj')
-                    .select('*')
-                    .eq('is_active', true)
-                    .order('created_at', { ascending: false })
-                    .limit(3);
-
-                if (!error && data) {
-                    setKabarList(data as KabarKKJ[]);
-                }
-            } catch (err) {
-                console.log("Tabel kabar_kkj mungkin belum ada.");
-            }
-        };
-
         fetchStats();
-        fetchKabar();
+        
+        // Setup realtime subscription agar dashboard update otomatis
+        const channel = supabase
+            .channel('dashboard-updates')
+            .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchStats())
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     const handleLogout = async () => {
@@ -97,274 +75,176 @@ export const AdminDashboard = () => {
         navigate('/login');
     };
 
-    const colorMap: Record<string, string> = {
-        blue: 'bg-blue-600',
-        yellow: 'bg-yellow-500',
-        green: 'bg-green-600',
-    };
-
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-6xl mx-auto space-y-8">
-
-                {/* HEADER ADMIN */}
-                <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-3xl p-8 text-white shadow-xl flex justify-between items-center relative overflow-hidden">
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-1 bg-white/10 rounded-lg border border-white/20">
-                                <ShieldCheck className="text-yellow-400" size={24} />
-                            </div>
-                            <span className="text-[10px] font-bold tracking-widest uppercase opacity-80">Administrator Panel</span>
+        <div className="min-h-screen bg-[#F8FAFC] pb-12">
+            {/* TOP BAR RINGKAS */}
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-3 shadow-sm">
+                <div className="max-w-[1600px] mx-auto flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#003366] rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
+                            <ShieldCheck className="text-white" size={18} />
                         </div>
-                        <h1 className="text-3xl font-bold">Halo, {user?.full_name || 'Admin'}</h1>
-                        <p className="text-blue-200 mt-1 text-sm">Selamat bertugas kembali.</p>
-
-                        <div className="flex gap-2 mt-4">
-                            <Link to="/admin/laporan" className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors">
-                                <PieChart size={16} /> Laporan Keuangan
-                            </Link>
-                        </div>
+                        <h1 className="font-black text-slate-900 tracking-tighter text-base uppercase">KKJ <span className="text-[#003366]">Control Center</span></h1>
                     </div>
+                    
+                    <div className="flex items-center gap-4">
+                         <div className="hidden md:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Active</span>
+                        </div>
+                        <button onClick={handleLogout} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-all border border-transparent hover:border-rose-100">
+                            <LogOut size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                    <button onClick={handleLogout} className="relative z-10 bg-white/10 hover:bg-white/20 p-3 rounded-xl transition-colors border border-white/20 group" title="Keluar">
-                        <LogOut size={20} className="group-hover:scale-110 transition-transform" />
-                    </button>
-                    <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            <div className="max-w-[1600px] mx-auto px-6 pt-6 space-y-8">
+                
+                {/* HERO SECTION COMPACT */}
+                <div className="relative bg-[#003366] rounded-[1.5rem] p-6 md:p-8 overflow-hidden shadow-2xl shadow-blue-900/20">
+                    <div className="absolute right-0 top-0 w-80 h-80 bg-white/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+                        <div className="space-y-2">
+                            <h1 className="text-2xl md:text-4xl font-[1000] text-white tracking-tight uppercase leading-none">
+                                Halo, {user?.full_name?.split(' ')[0] || 'Admin'}
+                            </h1>
+                            <p className="text-blue-100/60 text-[10px] font-bold uppercase tracking-[0.3em]">Master Administrator Panel</p>
+                        </div>
+                        <Link to="/admin/laporan" className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 backdrop-blur-sm flex items-center gap-2">
+                            <PieChart size={14} /> Analytics
+                        </Link>
+                    </div>
                 </div>
 
-                {/* NOTIFIKASI BAR (URGENT TASKS) */}
-                <div className="space-y-3">
-
-                    {/* REQUEST PERPANJANGAN */}
-                    {stats.pendingRestructures > 0 && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2 shadow-sm">
-                            <div className="flex items-center gap-3 text-red-800">
-                                <div className="bg-red-100 p-2 rounded-full animate-pulse">
-                                    <AlertTriangle size={18} className="text-red-600" />
-                                </div>
-                                <div>
-                                    <span className="font-bold text-sm block">PERHATIAN: {stats.pendingRestructures} Pengajuan Perpanjangan Tenor!</span>
-                                    <span className="text-xs text-red-600">Member meminta perubahan jadwal cicilan.</span>
-                                </div>
-                            </div>
-                            <Link
+                {/* NOTIFIKASI URGENT (Prioritas Berdasarkan Urutan Kepentingan) */}
+                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingOrders > 0) && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {stats.pendingRestructures > 0 && (
+                            <AlertCard 
                                 to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'}
-                                className="text-xs font-bold bg-white border border-red-200 text-red-700 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors shadow-sm flex items-center gap-1"
-                            >
-                                Cek Sekarang <ChevronRight size={14} />
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Pending Users */}
-                    {stats.pendingUsers > 0 && (
-                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3 text-orange-800">
-                                <div className="bg-orange-100 p-2 rounded-full"><Users size={18} className="text-orange-600" /></div>
-                                <span className="font-bold text-sm">Ada {stats.pendingUsers} Anggota Menunggu Verifikasi!</span>
-                            </div>
-                            <Link to="/admin/verifikasi" className="text-xs font-bold bg-white border border-orange-200 text-orange-700 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors shadow-sm">
-                                Proses
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Pending Tx */}
-                    {stats.pendingTx > 0 && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3 text-green-800">
-                                <div className="bg-green-100 p-2 rounded-full"><ArrowRightLeft size={18} className="text-green-600" /></div>
-                                <span className="font-bold text-sm">Ada {stats.pendingTx} Transaksi Baru Masuk!</span>
-                            </div>
-                            <Link to="/admin/transaksi" className="text-xs font-bold bg-white border border-green-200 text-green-700 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors shadow-sm">
-                                Cek
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Pending TAMASA */}
-                    {stats.pendingTamasa > 0 && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3 text-yellow-800">
-                                <div className="bg-yellow-100 p-2 rounded-full">
-                                    <ShieldCheck size={18} className="text-yellow-600" />
-                                </div>
-                                <span className="font-bold text-sm">
-                                    Ada {stats.pendingTamasa} Setoran TAMASA Menunggu Approval!
-                                </span>
-                            </div>
-                            <Link to="/admin/tamasa" className="text-xs font-bold bg-white border border-yellow-200 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-100 transition-colors shadow-sm">
-                                Review
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* 🔥 Pending PEGADAIAN (BARU) */}
-                    {stats.pendingPawn > 0 && (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3 text-emerald-800">
-                                <div className="bg-emerald-100 p-2 rounded-full">
-                                    <Scale size={18} className="text-emerald-600" />
-                                </div>
-                                <span className="font-bold text-sm">
-                                    Ada {stats.pendingPawn} Pengajuan Gadai Emas Baru!
-                                </span>
-                            </div>
-                            <Link to="/admin/pegadaian" className="text-xs font-bold bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-100 transition-colors shadow-sm">
-                                Taksir
-                            </Link>
-                        </div>
-                    )}
-
-                    {/* Pending Loan */}
-                    {stats.pendingLoans > 0 && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-3 text-blue-800">
-                                <div className="bg-blue-100 p-2 rounded-full"><PieChart size={18} className="text-blue-600" /></div>
-                                <span className="font-bold text-sm">Ada {stats.pendingLoans} Pengajuan Pinjaman Baru!</span>
-                            </div>
-                            <Link to="/admin/pembiayaan" className="text-xs font-bold bg-white border border-blue-200 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors shadow-sm">
-                                Review
-                            </Link>
-                        </div>
-                    )}
-                </div>
-
-                {/* MENU GRID UTAMA */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                    {/* 1. MANAJEMEN ANGGOTA */}
-                    <Link to="/admin/verifikasi" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                <Users size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Manajemen Anggota</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Verifikasi pendaftaran, Data Anggota & Reset PIN.</p>
-                        </div>
-                        <div className="mt-4 flex items-center text-blue-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                            BUKA MENU <ChevronRight size={14} />
-                        </div>
-                    </Link>
-
-                    {/* 2. TRANSAKSI */}
-                    <Link to="/admin/transaksi" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-green-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                                <ArrowRightLeft size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Transaksi</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval Top Up & Penarikan Saldo.</p>
-                        </div>
-                        <div className="mt-4 flex items-center text-green-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                            BUKA MENU <ChevronRight size={14} />
-                        </div>
-                    </Link>
-
-                    {/* 3. PINJAMAN */}
-                    <Link to="/admin/pembiayaan" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-orange-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-colors">
-                                <FileText size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Pinjaman</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval pengajuan kredit & Restrukturisasi.</p>
-                        </div>
-                        <div className="mt-4 flex items-center text-orange-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                            BUKA MENU <ChevronRight size={14} />
-                        </div>
-                    </Link>
-
-                    {/* 4. TAMASA */}
-                    <Link to="/admin/tamasa" className="group bg-white p-6 rounded-2xl shadow-sm border border-yellow-200 hover:shadow-lg hover:border-yellow-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-yellow-50 text-yellow-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
-                                <ShieldCheck size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">TAMASA</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval setoran Tabungan Emas anggota.</p>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                            <span className="text-yellow-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                                BUKA MENU <ChevronRight size={14} />
-                            </span>
-                            {stats.pendingTamasa > 0 && (
-                                <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-                                    {stats.pendingTamasa}
-                                </span>
-                            )}
-                        </div>
-                    </Link>
-
-                    {/* 🔥 5. PEGADAIAN (BARU) */}
-                    <Link to="/admin/pegadaian" className="group bg-white p-6 rounded-2xl shadow-sm border border-emerald-200 hover:shadow-lg hover:border-emerald-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                                <Scale size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Pegadaian</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Approval & Taksiran Gadai Emas Syariah.</p>
-                        </div>
-                        <div className="mt-4 flex items-center justify-between">
-                            <span className="text-emerald-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                                BUKA MENU <ChevronRight size={14} />
-                            </span>
-                            {stats.pendingPawn > 0 && (
-                                <span className="bg-emerald-500 text-white text-xs px-2 py-1 rounded-full">
-                                    {stats.pendingPawn}
-                                </span>
-                            )}
-                        </div>
-                    </Link>
-
-                    {/* 6. KABAR KKJ */}
-                    <Link to="/admin/kabar" className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-500 transition-all cursor-pointer relative overflow-hidden h-full flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <Megaphone size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Kabar KKJ</h3>
-                            <p className="text-sm text-gray-500 mt-1 leading-relaxed">Kelola berita, promo, dan info koperasi.</p>
-                        </div>
-                        <div className="mt-4 flex items-center text-indigo-600 text-xs font-bold group-hover:translate-x-1 transition-transform">
-                            KELOLA KABAR <ChevronRight size={14} />
-                        </div>
-                    </Link>
-
-                </div>
-
-                {/* PREVIEW KABAR */}
-                {kabarList.length > 0 && (
-                    <div className="space-y-4 pt-4 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <Megaphone size={20} className="text-indigo-600" /> Kabar Aktif Saat Ini
-                            </h2>
-                            <Link to="/admin/kabar" className="text-sm font-semibold text-indigo-600 hover:underline flex items-center gap-1">
-                                Lihat Semua <ChevronRight size={16} />
-                            </Link>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {kabarList.map(item => (
-                                <div key={item.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col">
-                                    <div className={`${colorMap[item.color] || 'bg-gray-500'} text-white font-bold text-center py-6 text-sm tracking-widest uppercase`}>
-                                        {item.type}
-                                    </div>
-                                    <div className="p-5 flex-1 flex flex-col">
-                                        <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                                        <p className="text-sm text-gray-500 line-clamp-3">{item.description}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                title={`${stats.pendingRestructures} Request Tenor`}
+                                type="danger"
+                            />
+                        )}
+                        {stats.pendingUsers > 0 && (
+                            <AlertCard 
+                                to="/admin/verifikasi"
+                                title={`${stats.pendingUsers} Verifikasi Anggota`}
+                                type="warning"
+                            />
+                        )}
+                        {/* 🔥 ALERT BARU UNTUK TOKO */}
+                        {stats.pendingOrders > 0 && (
+                            <AlertCard 
+                                to="/admin/toko"
+                                title={`${stats.pendingOrders} Pesanan Toko`}
+                                type="info"
+                            />
+                        )}
                     </div>
                 )}
 
-                <div className="text-center text-gray-400 text-[10px] mt-10 tracking-widest uppercase">
-                    Koperasi Karya Kita Jaya Admin Panel v1.0
+                {/* 6-COLUMN GRID (DIPERHUBUNGKAN DENGAN SELURUH MODAL) */}
+                <div className="space-y-3">
+                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-1">Layanan Utama Koperasi</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <DashboardCard to="/admin/verifikasi" icon={<Users size={22} />} title="ANGGOTA" color="indigo" count={stats.pendingUsers} />
+                        <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={22} />} title="FINANCE" color="emerald" count={stats.pendingTx} />
+                        <DashboardCard to="/admin/pembiayaan" icon={<FileText size={22} />} title="PINJAMAN" color="orange" count={stats.pendingLoans} />
+                        <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={22} />} title="TAMASA" color="amber" count={stats.pendingTamasa} />
+                        <DashboardCard to="/admin/pegadaian" icon={<Scale size={22} />} title="GADAI" color="blue" count={stats.pendingPawn} />
+                        {/* 🔥 MENU TOKO TERHUBUNG */}
+                        <DashboardCard to="/admin/toko" icon={<ShoppingBag size={22} />} title="TOKO" color="violet" count={stats.pendingOrders} />
+                    </div>
+                </div>
+
+                {/* TOOLS & SHORTCUTS */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+                    <ToolCard to="/admin/kabar" icon={<Megaphone size={16}/>} title="Kabar KKJ" />
+                    {/* 🔥 SHORTCUT KE INVENTARIS PRODUK */}
+                    <ToolCard to="/admin/toko/katalog" icon={<PackageCheck size={16}/>} title="Stok Produk" />
+                    <ToolCard to="/admin/laporan" icon={<PieChart size={16}/>} title="Laporan Labo" />
+                    <ToolCard to="/admin/pegadaian" icon={<Gem size={16}/>} title="Log Emas" />
+                </div>
+
+                <div className="text-center pt-8 border-t border-slate-100">
+                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.6em]">
+                        Internal Control Panel v3.5 • Build 2026.02
+                    </p>
                 </div>
             </div>
         </div>
     );
 };
+
+/* --- SUB-COMPONENTS (COMPACT & BOLD) --- */
+
+const DashboardCard = ({ to, icon, title, color, count }: any) => {
+    const colorStyles: any = {
+        indigo: "bg-indigo-50 text-indigo-600 shadow-indigo-100",
+        emerald: "bg-emerald-50 text-emerald-600 shadow-emerald-100",
+        orange: "bg-orange-50 text-orange-600 shadow-orange-100",
+        amber: "bg-amber-50 text-amber-600 shadow-amber-100",
+        blue: "bg-blue-50 text-blue-600 shadow-blue-100",
+        violet: "bg-violet-50 text-violet-600 shadow-violet-100",
+    };
+
+    return (
+        <Link to={to} className="group bg-white p-5 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between h-[180px] relative overflow-hidden hover:border-[#003366] hover:-translate-y-1">
+            <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12 group-hover:scale-110 duration-500">
+                {React.cloneElement(icon as React.ReactElement, { size: 100 })}
+            </div>
+            
+            <div>
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm transition-transform group-hover:scale-110", colorStyles[color])}>
+                    {icon}
+                </div>
+                <h3 className="text-xs font-black text-slate-900 tracking-tight uppercase leading-tight">{title}</h3>
+            </div>
+
+            <div className="flex items-center justify-between mt-auto z-10">
+                <span className="text-[8px] font-black text-[#003366] uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Detail <ChevronRight size={10} />
+                </span>
+                {count > 0 && (
+                    <span className="bg-[#003366] text-white text-[8px] font-black px-2 py-0.5 rounded-full animate-pulse shadow-lg shadow-blue-900/30">
+                        {count} NEW
+                    </span>
+                )}
+            </div>
+        </Link>
+    );
+};
+
+const AlertCard = ({ to, title, type }: any) => (
+    <Link to={to} className={cn(
+        "p-3 rounded-2xl flex items-center justify-between group transition-all shadow-sm border",
+        type === 'danger' ? "bg-rose-50 border-rose-100 hover:bg-rose-600 hover:border-rose-600 shadow-rose-100" : 
+        type === 'warning' ? "bg-amber-50 border-amber-100 hover:bg-amber-500 hover:border-amber-500 shadow-amber-100" :
+        "bg-blue-50 border-blue-100 hover:bg-[#003366] hover:border-[#003366] shadow-blue-100"
+    )}>
+        <div className="flex items-center gap-3">
+            <div className={cn("p-2 rounded-lg group-hover:bg-white/20 transition-colors", 
+                type === 'danger' ? "bg-rose-100 text-rose-600 group-hover:text-white" : 
+                type === 'warning' ? "bg-amber-100 text-amber-600 group-hover:text-white" :
+                "bg-blue-100 text-blue-600 group-hover:text-white")}>
+                <AlertTriangle size={16} />
+            </div>
+            <h4 className={cn("text-[10px] font-black uppercase tracking-tight", 
+                type === 'danger' ? "text-rose-900 group-hover:text-white" : 
+                type === 'warning' ? "text-amber-900 group-hover:text-white" :
+                "text-[#003366] group-hover:text-white")}>{title}</h4>
+        </div>
+        <ChevronRight size={14} className={cn("transition-colors", "group-hover:text-white")} />
+    </Link>
+);
+
+const ToolCard = ({ to, icon, title }: any) => (
+    <Link to={to} className="bg-white p-4 rounded-[1rem] border border-slate-200 flex items-center gap-3 hover:border-[#003366] hover:shadow-md transition-all group shadow-sm">
+        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#003366] group-hover:text-white transition-all">
+            {icon}
+        </div>
+        <h4 className="text-[9px] font-black text-slate-700 uppercase tracking-widest">{title}</h4>
+    </Link>
+);

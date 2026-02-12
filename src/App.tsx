@@ -37,12 +37,16 @@ import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { LoanDetail } from './pages/financing/LoanDetail';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 import { AdminTamasa } from './pages/admin/AdminTamasa';
+import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog'; // Sesuaikan path-nya
 
 // PROGRAM
 import { Tamasa } from './pages/program/Tamasa';
 import { Inflip } from './pages/program/Inflip';
 import { Pegadaian } from './pages/program/Pegadaian';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
+
+// katalog
+import { CheckoutBelanja } from './pages/katalog/CheckoutBelanja';
 
 import { PPOB } from './pages/ppob/PPOB';
 
@@ -66,6 +70,8 @@ function App() {
         <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
         <Route path="/admin/laporan" element={<AdminFinancialReport />} />
         <Route path="/admin/tamasa" element={<AdminTamasa />} />
+        <Route path="/admin/toko" element={<AdminTokoKatalog />} />
+<Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
 
 
         {/* Admin Kabar */}
@@ -106,6 +112,8 @@ function App() {
 
         {/* Redirect unknown routes ke Welcome */}
         <Route path="*" element={<Navigate to="/welcome" replace />} />
+
+        <Route path="/belanja/checkout" element={<CheckoutBelanja />} />
 
         
         <Route path="/program/tamasa" element={<Tamasa />} />
