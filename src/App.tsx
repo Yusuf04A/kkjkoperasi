@@ -24,6 +24,7 @@ import { TopUp } from './pages/transactions/TopUp';
 import { TransactionHistory } from './pages/transactions/History';
 import { Withdraw } from './pages/transactions/Withdraw';
 import { Transfer } from './pages/transactions/Transfer';
+import { SetorSimpanan } from './pages/transactions/SetorSimpanan';
 
 // ADMIN PAGES
 import { AdminVerification } from './pages/admin/Verification';
@@ -95,6 +96,7 @@ function App() {
           <Route path="/transaksi/tarik" element={<Withdraw />} />
           <Route path="/transaksi/kirim" element={<Transfer />} />
           <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
+          <Route path="/transaksi/setor" element={<SetorSimpanan />} />
 
           {/* Fitur Pembiayaan */}
           <Route path="/pembiayaan" element={<FinancingMenu />} />

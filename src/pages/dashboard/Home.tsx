@@ -5,7 +5,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
-    Download, Share2, X, Smartphone
+    Download, Share2, X, Smartphone, PiggyBank,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
@@ -101,7 +101,6 @@ export const Home = () => {
         { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
         { label: 'Riwayat', icon: History, color: 'text-purple-600', bg: 'bg-purple-50', link: '/transaksi/riwayat' },
-        { label: 'PPOB', icon: Smartphone, color: 'text-indigo-600', bg: 'bg-indigo-50', link: '/ppob' },
     ];
 
     // --- WARNA PEGADAIAN DISESUAIKAN KE BIRU-EMAS ---

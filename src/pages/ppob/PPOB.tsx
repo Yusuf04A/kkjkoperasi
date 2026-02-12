@@ -22,7 +22,7 @@ export const PPOB = () => {
             <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
                 <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate(-1)}
                         className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors"
                     >
                         <ArrowLeft size={20} />
@@ -59,7 +59,7 @@ export const PPOB = () => {
                             </p>
 
                             <button
-                                onClick={() => navigate('/')}
+                                onClick={() => navigate('/transaksi')}
                                 className="px-8 py-3.5 bg-kkj-blue text-white rounded-xl font-bold text-sm lg:text-base hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/10 flex items-center gap-2 group-hover:gap-3"
                             >
                                 Kembali ke Dashboard <ChevronRight size={18} />

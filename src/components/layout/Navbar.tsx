@@ -67,8 +67,8 @@ export const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 className={`text-sm font-medium transition-colors border-b-2 py-5 ${isActive(link.path)
-                                        ? 'border-kkj-blue text-kkj-blue font-bold'
-                                        : 'border-transparent text-gray-500 hover:text-gray-900'
+                                    ? 'border-kkj-blue text-kkj-blue font-bold'
+                                    : 'border-transparent text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 {link.label}
@@ -76,25 +76,18 @@ export const Navbar = () => {
                         ))}
 
                         {!isAdmin && (
-                            <div className="relative group h-full flex items-center">
-                                <button
-                                    className={`text-sm font-medium transition-colors border-b-2 py-5 flex items-center gap-1 ${location.pathname.includes('/transaksi')
-                                            ? 'border-kkj-blue text-kkj-blue font-bold'
-                                            : 'border-transparent text-gray-500 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Transaksi <ChevronDown size={14} />
+                            <div className="relative group">
+                                <button className="flex items-center gap-1 text-gray-700 hover:text-kkj-blue font-medium py-2">
+                                    Transaksi <ChevronDown size={16} />
                                 </button>
-                                <div className="absolute top-[60px] left-1/2 -translate-x-1/2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top">
-                                    {transactionLinks.map((item) => (
-                                        <Link
-                                            key={item.path}
-                                            to={item.path}
-                                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
-                                            {item.icon} {item.label}
-                                        </Link>
-                                    ))}
+                                {/* Dropdown Content */}
+                                <div className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-xl border border-gray-100 p-2 hidden group-hover:block z-50">
+                                    <Link to="/transaksi/topup" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Isi Saldo</Link>
+                                    <Link to="/transaksi/tarik" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Tarik Tunai</Link>
+                                    <Link to="/transaksi/kirim" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Kirim Uang</Link>
+                                    <Link to="/transaksi/riwayat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Riwayat</Link>
+                                    <div className="h-px bg-gray-100 my-1"></div>
+                                    <Link to="/transaksi" className="block px-4 py-2 text-sm font-bold text-kkj-blue hover:bg-blue-50 rounded-lg">Semua Menu</Link>
                                 </div>
                             </div>
                         )}
