@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { useNavigate } from "react-router-dom";
-import { formatRupiah } from "../../lib/utils";
-import { ArrowLeft, Check, X, RefreshCw, Scale, ExternalLink, Archive, LayoutList } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { formatRupiah, cn } from "../../lib/utils";
+import { 
+    ArrowLeft, Check, X, RefreshCw, Scale, 
+    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins 
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 import { id as indonesia } from "date-fns/locale";
@@ -12,7 +15,7 @@ export const AdminPegadaian = () => {
     const [dataList, setDataList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Tab: 'pending' vs 'history'
+    // Tab: 'pending' vs 'history' konsisten dengan TAMASA
     const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
 
     useEffect(() => {
@@ -30,7 +33,7 @@ export const AdminPegadaian = () => {
             if (activeTab === 'pending') {
                 query = query.eq("status", "pending");
             } else {
-                query = query.neq("status", "pending"); // All processed items
+                query = query.neq("status", "pending");
             }
 
             const { data, error } = await query;
@@ -49,17 +52,15 @@ export const AdminPegadaian = () => {
         const loanAmount = parseInt(input.replace(/\D/g, ''));
         if (loanAmount <= 0) return toast.error("Nominal tidak valid!");
 
-        const confirm = window.confirm(`Cairkan dana ${formatRupiah(loanAmount)} ke saldo user?`);
+        const confirm = window.confirm(`Setujui dan cairkan dana ${formatRupiah(loanAmount)} ke saldo user?`);
         if (!confirm) return;
 
         const toastId = toast.loading("Memproses pencairan...");
         try {
-            // 1. Update Transaksi
             await supabase.from("pawn_transactions").update({ status: "approved", loan_amount: loanAmount }).eq("id", req.id);
-            // 2. Update Saldo
             const currentBalance = req.profiles?.tapro_balance || 0;
             await supabase.from("profiles").update({ tapro_balance: currentBalance + loanAmount }).eq("id", req.user_id);
-            // 3. Catat History
+            
             await supabase.from("transactions").insert({
                 user_id: req.user_id,
                 type: "topup",
@@ -67,7 +68,7 @@ export const AdminPegadaian = () => {
                 status: "success",
                 description: `Pencairan Gadai: ${req.item_name}`
             });
-            // 4. Notifikasi
+
             await supabase.from("notifications").insert({
                 user_id: req.user_id,
                 title: "Gadai Disetujui ✅",
@@ -83,118 +84,168 @@ export const AdminPegadaian = () => {
     };
 
     const handleReject = async (req: any) => {
-        const reason = window.prompt("Alasan penolakan:", "Foto buram / Barang tidak sesuai");
+        const reason = window.prompt("Alasan penolakan:", "Foto kurang jelas / Kualitas barang tidak sesuai");
         if (!reason) return;
+        const toastId = toast.loading("Memproses penolakan...");
         try {
             await supabase.from("pawn_transactions").update({ status: "rejected", admin_note: reason }).eq("id", req.id);
-
             await supabase.from("notifications").insert({
                 user_id: req.user_id,
                 title: "Gadai Ditolak ❌",
                 message: `Pengajuan gadai ${req.item_name} ditolak. Alasan: ${reason}`,
                 type: "error"
             });
-
-            toast.success("Ditolak");
+            toast.success("Pengajuan ditolak", { id: toastId });
             fetchData();
-        } catch (err) { toast.error("Error"); }
+        } catch (err) { toast.error("Gagal memproses penolakan", { id: toastId }); }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
-            <div className="max-w-6xl mx-auto">
-
-                {/* HEADER */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <div className="flex items-center gap-3 w-full">
-                        <button onClick={() => navigate(-1)} className="p-2 bg-white rounded-full border border-gray-200 hover:bg-gray-100 transition"><ArrowLeft size={20} /></button>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Approval Gadai</h1>
-                            <p className="text-sm text-gray-500">Manajemen Gadai Emas Syariah</p>
-                        </div>
+        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans">
+            {/* Header Konsisten */}
+            <div className="mb-6">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
+                    <ArrowLeft size={18} /> Kembali
+                </Link>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Approval Gadai</h1>
+                        <p className="text-sm text-gray-500">Verifikasi & Taksiran Gadai Emas Syariah Anggota</p>
                     </div>
-
-                    {/* TABS */}
-                    <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm w-full md:w-auto shrink-0">
-                        <button
-                            onClick={() => setActiveTab('pending')}
-                            className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'pending' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <LayoutList size={16} /> Permintaan Baru
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('history')}
-                            className={`px-5 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <Archive size={16} /> Riwayat
-                        </button>
-                    </div>
+                    <button 
+                        onClick={fetchData} 
+                        className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95"
+                    >
+                        <RefreshCw size={20} className={cn(loading && "animate-spin text-kkj-blue")} />
+                    </button>
                 </div>
+            </div>
 
-                {/* LIST */}
+            {/* Tab Navigation Konsisten */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
+                <button
+                    onClick={() => setActiveTab('pending')}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'pending' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <Clock size={16} /> Permintaan Baru
+                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('history')}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'history' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <Archive size={16} /> Riwayat (Selesai)
+                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                </button>
+            </div>
+
+            {/* Content Section */}
+            <div className="space-y-4">
                 {loading ? (
-                    <div className="text-center py-12 text-gray-400">Memuat data...</div>
+                    <div className="p-12 text-center"><RefreshCw className="animate-spin mx-auto text-kkj-blue" /></div>
                 ) : dataList.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-gray-300">
-                        <Scale size={48} className="text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-gray-900">Tidak ada data</h3>
-                        <p className="text-gray-500">List {activeTab === 'pending' ? 'pending' : 'riwayat'} kosong.</p>
+                    <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 flex flex-col items-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3 text-gray-300">
+                            <Scale size={32} />
+                        </div>
+                        <p>Tidak ada data pengajuan gadai di antrean {activeTab === 'pending' ? 'pending' : 'riwayat'}.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {dataList.map((req) => (
-                            <div key={req.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 transition-all hover:border-blue-300">
-
-                                {/* Foto */}
-                                <div className="w-full md:w-48 h-48 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative group border border-gray-100">
+                            <div key={req.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row gap-6 hover:shadow-md transition-all duration-300">
+                                
+                                {/* Foto Barang - Gaya Konsisten */}
+                                <div className="w-full lg:w-44 h-44 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative group border border-gray-100 shadow-inner">
                                     <img src={req.image_url} alt="Emas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <a href={req.image_url} target="_blank" rel="noreferrer" className="bg-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-gray-100"><ExternalLink size={14} /> Perbesar</a>
                                     </div>
                                 </div>
 
-                                {/* Detail */}
-                                <div className="flex-1 space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">{req.item_name}</h3>
-                                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                                                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold text-gray-700">{req.profiles?.full_name}</span>
-                                                <span className="text-gray-300">|</span>
-                                                <span className="text-xs">{format(new Date(req.created_at), "dd MMM yyyy, HH:mm", { locale: indonesia })}</span>
+                                {/* Info Detail - Gaya TAMASA */}
+                                <div className="flex-1 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-blue-50 text-kkj-blue rounded-full flex items-center justify-center shadow-sm">
+                                                <Coins size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-gray-900">{req.item_name}</h3>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 uppercase tracking-wider">
+                                                    <span className="font-bold text-gray-700">{req.profiles?.full_name}</span>
+                                                    <span>•</span>
+                                                    <span className="font-mono">{req.profiles?.member_id}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider ${req.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                        <div className="text-right">
+                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", 
+                                                req.status === 'pending' ? 'bg-orange-100 text-orange-700' :
                                                 req.status === 'approved' ? 'bg-blue-100 text-blue-700' :
-                                                    req.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        'bg-red-100 text-red-700'
-                                            }`}>
-                                            {req.status}
-                                        </span>
+                                                req.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            )}>
+                                                {req.status}
+                                            </span>
+                                            <p className="text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1">
+                                                <Calendar size={10} /> {format(new Date(req.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-3 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                                        <div><p className="text-[10px] text-gray-400 uppercase font-bold">Berat</p><p className="font-bold text-gray-900">{req.item_weight} gr</p></div>
-                                        <div><p className="text-[10px] text-gray-400 uppercase font-bold">Karat</p><p className="font-bold text-gray-900">{req.item_karat} K</p></div>
-                                        <div><p className="text-[10px] text-gray-400 uppercase font-bold">Kondisi</p><p className="font-bold text-gray-900 truncate px-1">{req.item_condition}</p></div>
+                                    {/* Grid Spek Barang - Gaya TAMASA */}
+                                    <div className="grid grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center shadow-sm">
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Berat</p>
+                                            <p className="text-sm font-bold text-gray-900">{req.item_weight} gr</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Karat</p>
+                                            <p className="text-sm font-bold text-gray-900">{req.item_karat} K</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Kondisi</p>
+                                            <p className="text-sm font-bold text-gray-900 truncate px-1">{req.item_condition}</p>
+                                        </div>
                                     </div>
 
-                                    {/* Nilai Cair (Jika Approved) */}
+                                    {/* Hasil Taksiran (Muncul di Riwayat) */}
                                     {req.loan_amount > 0 && (
-                                        <div className="flex items-center gap-2 text-sm bg-blue-50 p-2 rounded-lg border border-blue-100 text-blue-900">
-                                            <span>Taksiran Cair:</span>
-                                            <span className="font-bold text-lg">{formatRupiah(req.loan_amount)}</span>
+                                        <div className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
+                                            <span className="text-xs font-bold text-blue-800 uppercase tracking-widest">Taksiran Cair:</span>
+                                            <span className="font-bold text-blue-900 text-lg">{formatRupiah(req.loan_amount)}</span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Action Buttons */}
-                                {activeTab === 'pending' && (
-                                    <div className="flex flex-col justify-center gap-3 min-w-[150px] border-t md:border-t-0 md:border-l border-gray-100 md:pl-6 pt-4 md:pt-0">
-                                        <button onClick={() => handleApprove(req)} className="w-full bg-green-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-green-700 shadow-lg shadow-green-900/10 flex items-center justify-center gap-2 transform active:scale-95 transition-all"><Check size={16} /> Setujui</button>
-                                        <button onClick={() => handleReject(req)} className="w-full bg-white border border-red-200 text-red-600 py-2.5 rounded-xl font-bold text-sm hover:bg-red-50 flex items-center justify-center gap-2 transform active:scale-95 transition-all"><X size={16} /> Tolak</button>
-                                    </div>
-                                )}
+                                {/* Kolom Aksi Vertikal - Konsisten TAMASA */}
+                                <div className="flex flex-col justify-center gap-3 lg:border-l lg:pl-6 border-gray-100 min-w-[200px]">
+                                    {activeTab === 'pending' ? (
+                                        <>
+                                            <button 
+                                                onClick={() => handleApprove(req)} 
+                                                className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
+                                            >
+                                                <Check size={18} /> Setujui
+                                            </button>
+                                            <button 
+                                                onClick={() => handleReject(req)} 
+                                                className="w-full py-3 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                                            >
+                                                <X size={18} /> Tolak
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-center">
+                                            <CheckCircle size={24} className={cn(req.status === 'rejected' ? "text-red-400" : "text-green-500", "mb-2")} />
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">
+                                                Transaksi<br/>{req.status === 'rejected' ? 'Ditolak' : 'Selesai'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
                         ))}
                     </div>

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatRupiah, cn } from '../../lib/utils';
 import { 
-    Plus, Pencil, Trash2, ArrowLeft, Package, 
-    Save, X, Search, RefreshCw, Image as ImageIcon, 
-    Loader2, ShoppingCart, Check, Ban, Clock, PackageCheck
+    Plus, Pencil, ArrowLeft, Package, 
+    Save, X, RefreshCw, Image as ImageIcon, 
+    Loader2, Clock, Check, Archive, CheckCircle, Calendar, Eye, EyeOff
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { format } from "date-fns";
+import { id as indonesia } from "date-fns/locale";
 
 export const AdminTokoKatalog = () => {
     const navigate = useNavigate();
@@ -35,24 +37,20 @@ export const AdminTokoKatalog = () => {
         setLoading(false);
     };
 
-    // 🔥 FIX QUERY: Menarik data pesanan secara mandiri terlebih dahulu untuk menghindari error relasi
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            // Kita tarik data orders dan profiles secara terpisah jika relasi join gagal
             const { data: ordersData, error: ordersError } = await supabase
                 .from('shop_orders')
-                .select('*')
+                .select('*, shop_order_items(*)')
                 .order('created_at', { ascending: false });
 
             if (ordersError) throw ordersError;
 
-            // Tarik data profil untuk mencocokkan nama pengguna
             const { data: profilesData } = await supabase
                 .from('profiles')
                 .select('id, full_name, member_id, tapro_balance');
 
-            // Gabungkan data secara manual di frontend untuk keamanan data
             const combinedData = ordersData?.map(order => ({
                 ...order,
                 profiles: profilesData?.find(p => p.id === order.user_id)
@@ -60,47 +58,58 @@ export const AdminTokoKatalog = () => {
 
             setOrders(combinedData || []);
         } catch (err: any) {
-            console.error("Fetch Error:", err.message);
             toast.error("Gagal sinkronisasi antrean");
         } finally {
             setLoading(false);
         }
     };
 
-    // LOGIKA APPROVE/REJECT
+    // 🔥 FITUR BARU: MENONAKTIFKAN / MENGAKTIFKAN STOK
+    const toggleProductStatus = async (id: string, currentStatus: boolean) => {
+        const toastId = toast.loading('Memperbarui status produk...');
+        try {
+            const { error } = await supabase
+                .from('shop_products')
+                .update({ is_active: !currentStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+            toast.success(`Produk berhasil ${!currentStatus ? 'diaktifkan' : 'dinonaktifkan'}`, { id: toastId });
+            fetchProducts();
+        } catch (err: any) {
+            toast.error("Gagal memperbarui status", { id: toastId });
+        }
+    };
+
     const handleUpdateOrderStatus = async (order: any, newStatus: string) => {
-        const toastId = toast.loading(`Sedang memperbarui...`);
+        const confirm = window.confirm(`Update status pesanan ini menjadi ${newStatus.replace('_', ' ')}?`);
+        if (!confirm) return;
+        const toastId = toast.loading(`Memproses...`);
+
         try {
             if (newStatus === 'siap_diambil') {
                 const currentBalance = order.profiles?.tapro_balance || 0;
                 if (currentBalance < order.total_amount) throw new Error("Saldo anggota tidak cukup");
 
-                // 1. Potong Saldo Tapro
-                const { error: balanceErr } = await supabase.from('profiles')
-                    .update({ tapro_balance: currentBalance - order.total_amount })
-                    .eq('id', order.user_id);
-                if (balanceErr) throw balanceErr;
+                await supabase.from('profiles').update({ tapro_balance: currentBalance - order.total_amount }).eq('id', order.user_id);
 
-                // 2. Berhasilkan Transaksi
-                await supabase.from('transactions').update({ status: 'success' })
-                    .eq('user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`);
+                const { data: items } = await supabase.from('shop_order_items').select('product_id, quantity').eq('order_id', order.id);
+                if (items) {
+                    for (const item of items) {
+                        const { data: p } = await supabase.from('shop_products').select('stock').eq('id', item.product_id).single();
+                        if (p) await supabase.from('shop_products').update({ stock: Math.max(0, p.stock - item.quantity) }).eq('id', item.product_id);
+                    }
+                }
+                await supabase.from('transactions').update({ status: 'success' }).eq('user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`);
             }
-
             if (newStatus === 'ditolak') {
-                await supabase.from('transactions').update({ status: 'failed' })
-                    .eq('user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`);
+                await supabase.from('transactions').update({ status: 'failed' }).eq('user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`);
             }
-
-            // 3. Update Status Utama
-            const { error: orderErr } = await supabase.from('shop_orders')
-                .update({ status: newStatus }).eq('id', order.id);
-            if (orderErr) throw orderErr;
-
-            toast.success("Antrean diperbarui", { id: toastId });
+            const { error } = await supabase.from('shop_orders').update({ status: newStatus }).eq('id', order.id);
+            if (error) throw error;
+            toast.success(`Pesanan diperbarui`, { id: toastId });
             fetchOrders();
-        } catch (err: any) {
-            toast.error(err.message, { id: toastId });
-        }
+        } catch (err: any) { toast.error(err.message, { id: toastId }); }
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,79 +127,125 @@ export const AdminTokoKatalog = () => {
 
     const handleSaveProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+        const toastId = toast.loading("Menyimpan...");
         try {
             if (editingId) await supabase.from('shop_products').update(formData).eq('id', editingId);
             else await supabase.from('shop_products').insert([formData]);
             setIsModalOpen(false);
             fetchProducts();
-            toast.success('Stok diperbarui');
-        } catch (err) { toast.error("Gagal simpan"); }
+            toast.success('Katalog diperbarui', { id: toastId });
+        } catch (err) { toast.error("Gagal simpan", { id: toastId }); }
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-900 font-sans">
-            {/* STICKY HEADER */}
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-30 px-6 py-4 shadow-sm">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4 w-full">
-                        <button onClick={() => navigate('/admin/dashboard')} className="p-2 hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-500"><ArrowLeft size={20} /></button>
-                        <div>
-                            <h1 className="text-xl font-[1000] uppercase tracking-tight flex items-center gap-2">
-                                <Package className="text-[#003366]" size={24} /> Toko Center
-                            </h1>
-                            <div className="flex gap-4 mt-2">
-                                <button onClick={() => setActiveTab('pesanan')} className={cn("text-[10px] font-black uppercase tracking-widest pb-1 border-b-2 transition-all", activeTab === 'pesanan' ? "border-[#003366] text-[#003366]" : "border-transparent text-slate-400")}>Antrean Pesanan</button>
-                                <button onClick={() => setActiveTab('katalog')} className={cn("text-[10px] font-black uppercase tracking-widest pb-1 border-b-2 transition-all", activeTab === 'katalog' ? "border-[#003366] text-[#003366]" : "border-transparent text-slate-400")}>Gudang Stok</button>
-                            </div>
-                        </div>
+        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans text-slate-900">
+            {/* Header Konsisten Admin */}
+            <div className="mb-6">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
+                    <ArrowLeft size={18} /> Kembali
+                </Link>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold">Manajemen Toko</h1>
+                        <p className="text-sm text-gray-500">Verifikasi Belanja & Kontrol Inventaris Anggota</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={fetchOrders} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50"><RefreshCw size={18} className={cn(loading && "animate-spin")} /></button>
-                        {activeTab === 'katalog' && (
-                            <button onClick={() => { setEditingId(null); setFormData({name:'', price:0, stock:0, image_url:'', category:'Sembako', is_active:true}); setIsModalOpen(true); }} className="bg-[#003366] text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2"><Plus size={18} /> Tambah</button>
-                        )}
-                    </div>
+                    <button 
+                        onClick={() => activeTab === 'pesanan' ? fetchOrders() : fetchProducts()} 
+                        className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95"
+                    >
+                        <RefreshCw size={20} className={cn(loading && "animate-spin text-kkj-blue")} />
+                    </button>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto p-6">
-                {activeTab === 'pesanan' ? (
-                    /* VIEW ANTREAN PESANAN */
-                    <div className="space-y-4">
-                        {loading ? <div className="text-center py-20 font-bold text-slate-300 uppercase tracking-widest">Memuat Antrean...</div> : orders.length === 0 ? (
-                            <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed">
-                                <ShoppingCart size={48} className="mx-auto text-slate-200 mb-4" />
-                                <p className="text-sm font-black text-slate-400 uppercase">Antrean Kosong</p>
+            {/* Tab Navigation Konsisten */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
+                <button
+                    onClick={() => setActiveTab('pesanan')}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'pesanan' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <Clock size={16} /> Menunggu Konfirmasi
+                    {activeTab === 'pesanan' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('katalog')}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'katalog' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    <Archive size={16} /> Gudang Stok
+                    {activeTab === 'katalog' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                </button>
+            </div>
+
+            {/* Content Section */}
+            <div className="space-y-4">
+                {loading ? (
+                    <div className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-kkj-blue" /></div>
+                ) : activeTab === 'pesanan' ? (
+                    /* VIEW ANTREAN PESANAN GAYA TAMASA */
+                    <div className="grid grid-cols-1 gap-4">
+                        {orders.length === 0 ? (
+                            <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 flex flex-col items-center">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3 text-gray-300">
+                                    <Clock size={32} />
+                                </div>
+                                <p>Tidak ada data pesanan di antrean.</p>
                             </div>
                         ) : (
                             orders.map((o) => (
-                                <div key={o.id} className="bg-white rounded-[2rem] p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-                                    <div className="flex items-center gap-4 w-full md:w-auto">
-                                        <div className="p-4 bg-blue-50 text-[#003366] rounded-2xl"><Clock size={24} /></div>
-                                        <div>
-                                            <h4 className="text-sm font-[1000] uppercase tracking-tight">{o.profiles?.full_name || 'User Tanpa Nama'}</h4>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase">{o.profiles?.member_id || 'ID TIDAK TERDETEKSI'}</p>
-                                            <span className={cn("inline-block mt-2 text-[8px] font-black px-2 py-0.5 rounded uppercase", 
-                                                o.status === 'diproses' ? "bg-amber-100 text-amber-600" : 
-                                                o.status === 'siap_diambil' ? "bg-blue-100 text-blue-600" : "bg-emerald-100 text-emerald-600")}>
-                                                {o.status.replace('_', ' ')}
-                                            </span>
+                                <div key={o.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 hover:shadow-md transition-all duration-300">
+                                    <div className="flex-1 space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-blue-50 text-kkj-blue rounded-full flex items-center justify-center shadow-inner">
+                                                    <Package size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-lg font-bold">{o.profiles?.full_name || 'Member'}</h3>
+                                                    <p className="text-xs text-gray-500 font-mono tracking-wider uppercase">{o.profiles?.member_id}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", 
+                                                    o.status === 'diproses' ? 'bg-orange-100 text-orange-700' : 
+                                                    o.status === 'siap_diambil' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700')}>
+                                                    {o.status.replace('_', ' ')}
+                                                </span>
+                                                <p className="text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1">
+                                                    <Calendar size={10} /> {format(new Date(o.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tagihan Saldo Tapro</p>
+                                                <p className="text-xl font-bold text-kkj-blue">{formatRupiah(o.total_amount)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Metode Pickup</p>
+                                                <p className="text-sm font-bold text-gray-700 flex items-center gap-1.5 mt-1">
+                                                    <CheckCircle size={14} className="text-green-500" /> Self Pickup (Tapro Pay)
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="bg-slate-50 px-6 py-4 rounded-2xl flex-1 w-full text-center md:text-left border border-slate-100">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Tagihan Saldo Tapro</p>
-                                        <p className="text-lg font-black text-[#003366]">{formatRupiah(o.total_amount)}</p>
-                                    </div>
-                                    <div className="flex gap-2 w-full md:w-auto">
+
+                                    <div className="flex flex-col justify-center gap-3 md:border-l md:pl-6 border-gray-100 min-w-[200px]">
                                         {o.status === 'diproses' ? (
                                             <>
-                                                <button onClick={() => handleUpdateOrderStatus(o, 'siap_diambil')} className="flex-1 md:flex-none bg-[#10B981] text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase flex items-center gap-2 shadow-sm"><Check size={16}/> Approve</button>
-                                                <button onClick={() => handleUpdateOrderStatus(o, 'ditolak')} className="flex-1 md:flex-none bg-white border border-rose-200 text-rose-500 px-6 py-3 rounded-xl font-black text-[10px] uppercase flex items-center gap-2"><Ban size={16}/> Reject</button>
+                                                <button onClick={() => handleUpdateOrderStatus(o, 'siap_diambil')} className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95">
+                                                    <Check size={18} /> Setujui
+                                                </button>
+                                                <button onClick={() => handleUpdateOrderStatus(o, 'ditolak')} className="w-full py-3 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+                                                    <X size={18} /> Tolak
+                                                </button>
                                             </>
-                                        ) : o.status === 'siap_diambil' ? (
-                                            <button onClick={() => handleUpdateOrderStatus(o, 'selesai')} className="w-full bg-[#003366] text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase flex items-center gap-2"><PackageCheck size={16}/> Selesaikan Pickup</button>
                                         ) : (
-                                            <span className="text-[10px] font-black text-emerald-500 uppercase flex items-center gap-1 px-4 py-2 bg-emerald-50 rounded-xl"><PackageCheck size={16}/> Selesai</span>
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-center">
+                                                <CheckCircle size={24} className="text-green-500 mb-2" />
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Pesanan<br/>{o.status.replace('_', ' ')}</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -198,47 +253,85 @@ export const AdminTokoKatalog = () => {
                         )}
                     </div>
                 ) : (
-                    /* KATALOG VIEW */
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {products.map((p) => (
-                            <div key={p.id} className="bg-white rounded-[2rem] p-5 border border-slate-200 flex gap-5 group shadow-sm hover:shadow-xl transition-all">
-                                <img src={p.image_url} className="w-24 h-24 rounded-2xl object-cover border border-slate-100 shadow-inner" />
-                                <div className="flex-1 flex flex-col justify-between">
-                                    <div>
-                                        <span className="text-[9px] font-black text-[#003366] bg-blue-50 px-2 py-0.5 rounded uppercase">{p.category}</span>
-                                        <h3 className="text-sm font-black uppercase mt-1 leading-tight">{p.name}</h3>
-                                        <p className="text-xs font-bold text-slate-400">{formatRupiah(p.price)}</p>
+                    /* VIEW KATALOG GUDANG STOK GAYA TAMASA */
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                <Archive size={18} className="text-kkj-blue" /> Ketersediaan Stok Barang
+                            </h3>
+                            <button onClick={() => { setEditingId(null); setFormData({name:'', price:0, stock:0, image_url:'', category:'Sembako', is_active:true}); setIsModalOpen(true); }} className="bg-kkj-blue text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-opacity-90 shadow-md transition-all active:scale-95">
+                                <Plus size={16} /> Tambah Stok
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {products.map((p) => (
+                                <div key={p.id} className={cn("bg-white rounded-xl p-5 border shadow-sm flex gap-4 transition-all duration-300", !p.is_active ? "opacity-60 grayscale border-dashed" : "hover:border-kkj-blue/50")}>
+                                    <div className="relative shrink-0">
+                                        <img src={p.image_url} className="w-20 h-20 rounded-lg object-cover border border-gray-100 shadow-inner" />
+                                        {(!p.is_active || p.stock === 0) && (
+                                            <div className="absolute inset-0 bg-black/60 rounded-lg flex items-center justify-center">
+                                                <span className="text-[8px] text-white font-black uppercase tracking-tighter">
+                                                    {!p.is_active ? 'Nonaktif' : 'Habis'}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <button onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="w-full bg-slate-50 py-2 rounded-xl text-[10px] font-black uppercase text-slate-400 hover:bg-[#003366] hover:text-white transition-all"><Pencil size={12}/> Edit</button>
+                                    <div className="flex-1 flex flex-col justify-between py-0.5">
+                                        <div>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-[9px] font-bold text-kkj-blue bg-blue-50 px-2 py-0.5 rounded uppercase">{p.category}</span>
+                                                <span className={cn("text-[9px] font-bold uppercase", p.stock < 5 && p.is_active ? "text-red-500 animate-pulse" : "text-green-600")}>Stok: {p.stock}</span>
+                                            </div>
+                                            <h3 className="text-sm font-bold leading-tight line-clamp-1">{p.name}</h3>
+                                            <p className="text-xs font-medium text-gray-500 mt-1">{formatRupiah(p.price)}</p>
+                                        </div>
+                                        <div className="flex gap-1.5 mt-3">
+                                            <button 
+                                                onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} 
+                                                className="flex-1 bg-gray-50 py-2 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-kkj-blue hover:text-white transition-all flex items-center justify-center gap-1 border border-gray-100"
+                                            >
+                                                <Pencil size={12}/> Edit
+                                            </button>
+                                            {/* 🔥 TOMBOL NONAKTIFKAN BARU */}
+                                            <button 
+                                                onClick={() => toggleProductStatus(p.id, p.is_active)}
+                                                className={cn("px-3 py-2 rounded-lg transition-all border", 
+                                                    p.is_active ? "bg-white text-rose-500 border-rose-100 hover:bg-rose-50" : "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600")}
+                                                title={p.is_active ? "Nonaktifkan Produk" : "Aktifkan Produk"}
+                                            >
+                                                {p.is_active ? <EyeOff size={14}/> : <Eye size={14}/>}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* MODAL FORM */}
+            {/* MODAL EDIT/TAMBAH TETAP SAMA */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                    <form onSubmit={handleSaveProduct} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl space-y-6">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <form onSubmit={handleSaveProduct} className="bg-white w-full max-w-lg rounded-2xl p-8 shadow-2xl space-y-6 animate-in zoom-in-95 duration-300 border border-gray-200">
                         <div className="flex justify-between items-center border-b pb-4">
-                            <h2 className="text-xl font-[1000] text-[#003366] uppercase">{editingId ? 'Update Produk' : 'Tambah Produk'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-100 rounded-full"><X size={20}/></button>
+                            <h2 className="text-xl font-bold text-gray-900">{editingId ? 'Edit Stok Barang' : 'Tambah Produk Baru'}</h2>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"><X size={20}/></button>
                         </div>
                         <div className="space-y-4">
-                            <label className="block w-full h-40 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
+                            <label className="block w-full h-40 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors group">
                                 <input type="file" className="hidden" onChange={handleFileUpload} />
-                                {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-contain p-2" /> : <div className="text-center"><ImageIcon className="mx-auto text-slate-300 mb-2" size={32}/><p className="text-[10px] font-black text-slate-400">Pilih Foto Produk</p></div>}
+                                {formData.image_url ? <img src={formData.image_url} className="w-full h-full object-contain p-2" /> : <div className="text-center group-hover:scale-105 transition-transform"><ImageIcon className="mx-auto text-gray-300 mb-2" size={32}/><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pilih Foto Produk</p></div>}
                             </label>
-                            <input type="text" required placeholder="Nama Produk" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border p-4 rounded-2xl font-bold outline-none" />
+                            <input type="text" required placeholder="Nama Produk" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-lg font-medium outline-none focus:bg-white focus:ring-2 focus:ring-kkj-blue/20 transition-all" />
                             <div className="grid grid-cols-2 gap-4">
-                                <input type="number" required placeholder="Harga" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="bg-slate-50 border p-4 rounded-2xl font-bold" />
-                                <input type="number" required placeholder="Stok" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="bg-slate-50 border p-4 rounded-2xl font-bold" />
+                                <input type="number" required placeholder="Harga" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-lg font-medium outline-none" />
+                                <input type="number" required placeholder="Stok" value={formData.stock} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full bg-gray-50 border border-gray-200 p-3.5 rounded-lg font-medium outline-none" />
                             </div>
                         </div>
-                        <div className="flex gap-3 pt-4 border-t">
-                            <button type="submit" className="flex-1 bg-[#003366] text-white py-4 rounded-2xl font-black uppercase active:scale-95"><Save size={18} className="inline mr-2"/> Simpan</button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-slate-200 rounded-2xl font-black text-slate-400">Batal</button>
+                        <div className="flex gap-3 pt-2">
+                            <button type="submit" className="flex-1 bg-kkj-blue text-white py-3.5 rounded-xl font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"><Save size={18} /> Simpan Data</button>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 border border-gray-200 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition-all text-xs uppercase">Batal</button>
                         </div>
                     </form>
                 </div>

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
     Users, FileText, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale, 
-    Bell, Settings, Activity, ExternalLink, Gem, ShoppingBag,
-    PackageCheck
+    Bell, Settings, Activity, Gem, ShoppingBag,
+    PackageCheck, TrendingUp, Receipt
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -21,47 +21,49 @@ export const AdminDashboard = () => {
         pendingRestructures: 0,
         pendingTamasa: 0,
         pendingPawn: 0,
-        pendingOrders: 0, // 🔥 TERHUBUNG DENGAN TOKO
+        pendingOrders: 0,
+        pendingLHU: 0, // 🔥 State LHU baru
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
 
+    const fetchStats = async () => {
+        // 1. Verifikasi Anggota
+        const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        // 2. Transaksi Keuangan
+        const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        // 3. Pinjaman Baru
+        const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        // 4. Restrukturisasi Tenor
+        const { data: restructureData } = await supabase.from('loans').select('id').eq('restructure_status', 'pending');
+        // 5. TAMASA
+        const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        // 6. Gadai Emas
+        const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        // 7. Toko: Pesanan Masuk
+        const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
+        // 8. 🔥 LHU: Pembagian yang menunggu eksekusi
+        const { count: pendingLHU } = await supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting');
+
+        setStats({
+            pendingUsers: pendingMember || 0,
+            pendingTx: pendingTrans || 0,
+            pendingLoans: pendingLoan || 0,
+            pendingRestructures: restructureData?.length || 0,
+            pendingTamasa: pendingTamasa || 0,
+            pendingPawn: pendingPawn || 0,
+            pendingOrders: pendingOrders || 0,
+            pendingLHU: pendingLHU || 0,
+        });
+
+        if (restructureData && restructureData.length > 0) {
+            setFirstRestructureId(restructureData[0].id);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            // 1. Verifikasi Anggota
-            const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-            // 2. Transaksi Keuangan
-            const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-            // 3. Pinjaman Baru
-            const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-            // 4. Restrukturisasi Tenor
-            const { data: restructureData } = await supabase.from('loans').select('id').eq('restructure_status', 'pending');
-            // 5. TAMASA
-            const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-            // 6. Gadai Emas
-            const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-            
-            // 7. 🔥 TOKO: Pesanan Masuk (Status 'diproses' yang butuh disiapkan barangnya)
-            const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
-
-            setStats({
-                pendingUsers: pendingMember || 0,
-                pendingTx: pendingTrans || 0,
-                pendingLoans: pendingLoan || 0,
-                pendingRestructures: restructureData?.length || 0,
-                pendingTamasa: pendingTamasa || 0,
-                pendingPawn: pendingPawn || 0,
-                pendingOrders: pendingOrders || 0,
-            });
-
-            if (restructureData && restructureData.length > 0) {
-                setFirstRestructureId(restructureData[0].id);
-            }
-        };
-
         fetchStats();
         
-        // Setup realtime subscription agar dashboard update otomatis
         const channel = supabase
             .channel('dashboard-updates')
             .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchStats())
@@ -76,7 +78,7 @@ export const AdminDashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-12">
+        <div className="min-h-screen bg-[#F8FAFC] pb-12 font-sans">
             {/* TOP BAR RINGKAS */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-3 shadow-sm">
                 <div className="max-w-[1600px] mx-auto flex justify-between items-center">
@@ -111,14 +113,14 @@ export const AdminDashboard = () => {
                             </h1>
                             <p className="text-blue-100/60 text-[10px] font-bold uppercase tracking-[0.3em]">Master Administrator Panel</p>
                         </div>
-                        <Link to="/admin/laporan" className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 backdrop-blur-sm flex items-center gap-2">
-                            <PieChart size={14} /> Analytics
+                        <Link to="/admin/labarugi" className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/10 backdrop-blur-sm flex items-center gap-2">
+                            <PieChart size={14} /> Keuangan Real-time
                         </Link>
                     </div>
                 </div>
 
-                {/* NOTIFIKASI URGENT (Prioritas Berdasarkan Urutan Kepentingan) */}
-                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingOrders > 0) && (
+                {/* NOTIFIKASI URGENT */}
+                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0) && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {stats.pendingRestructures > 0 && (
                             <AlertCard 
@@ -128,49 +130,40 @@ export const AdminDashboard = () => {
                             />
                         )}
                         {stats.pendingUsers > 0 && (
-                            <AlertCard 
-                                to="/admin/verifikasi"
-                                title={`${stats.pendingUsers} Verifikasi Anggota`}
-                                type="warning"
-                            />
+                            <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />
                         )}
-                        {/* 🔥 ALERT BARU UNTUK TOKO */}
-                        {stats.pendingOrders > 0 && (
-                            <AlertCard 
-                                to="/admin/toko"
-                                title={`${stats.pendingOrders} Pesanan Toko`}
-                                type="info"
-                            />
+                        {stats.pendingLHU > 0 && (
+                            <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />
                         )}
                     </div>
                 )}
 
-                {/* 6-COLUMN GRID (DIPERHUBUNGKAN DENGAN SELURUH MODAL) */}
+                {/* 7-COLUMN GRID - INTEGRATED */}
                 <div className="space-y-3">
                     <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-1">Layanan Utama Koperasi</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
                         <DashboardCard to="/admin/verifikasi" icon={<Users size={22} />} title="ANGGOTA" color="indigo" count={stats.pendingUsers} />
                         <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={22} />} title="FINANCE" color="emerald" count={stats.pendingTx} />
-                        <DashboardCard to="/admin/pembiayaan" icon={<FileText size={22} />} title="PINJAMAN" color="orange" count={stats.pendingLoans} />
                         <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={22} />} title="TAMASA" color="amber" count={stats.pendingTamasa} />
                         <DashboardCard to="/admin/pegadaian" icon={<Scale size={22} />} title="GADAI" color="blue" count={stats.pendingPawn} />
-                        {/* 🔥 MENU TOKO TERHUBUNG */}
                         <DashboardCard to="/admin/toko" icon={<ShoppingBag size={22} />} title="TOKO" color="violet" count={stats.pendingOrders} />
+                        <DashboardCard to="/admin/lhu" icon={<TrendingUp size={22} />} title="LHU" color="emerald" count={stats.pendingLHU} />
+                        <DashboardCard to="/admin/labarugi" icon={<Receipt size={22} />} title="LABA RUGI" color="rose" count={0} />
                     </div>
                 </div>
 
                 {/* TOOLS & SHORTCUTS */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-4 border-t border-slate-200">
                     <ToolCard to="/admin/kabar" icon={<Megaphone size={16}/>} title="Kabar KKJ" />
-                    {/* 🔥 SHORTCUT KE INVENTARIS PRODUK */}
                     <ToolCard to="/admin/toko/katalog" icon={<PackageCheck size={16}/>} title="Stok Produk" />
-                    <ToolCard to="/admin/laporan" icon={<PieChart size={16}/>} title="Laporan Labo" />
+                    <ToolCard to="/admin/labarugi" icon={<PieChart size={16}/>} title="Arus Kas" />
+                    <ToolCard to="/admin/lhu" icon={<Activity size={16}/>} title="Bagi Hasil" />
                     <ToolCard to="/admin/pegadaian" icon={<Gem size={16}/>} title="Log Emas" />
                 </div>
 
                 <div className="text-center pt-8 border-t border-slate-100">
                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.6em]">
-                        Internal Control Panel v3.5 • Build 2026.02
+                        Internal Control Panel v3.6 • Build 2026.02
                     </p>
                 </div>
             </div>
@@ -178,7 +171,7 @@ export const AdminDashboard = () => {
     );
 };
 
-/* --- SUB-COMPONENTS (COMPACT & BOLD) --- */
+/* --- SUB-COMPONENTS --- */
 
 const DashboardCard = ({ to, icon, title, color, count }: any) => {
     const colorStyles: any = {
@@ -188,6 +181,7 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
         amber: "bg-amber-50 text-amber-600 shadow-amber-100",
         blue: "bg-blue-50 text-blue-600 shadow-blue-100",
         violet: "bg-violet-50 text-violet-600 shadow-violet-100",
+        rose: "bg-rose-50 text-rose-600 shadow-rose-100",
     };
 
     return (
@@ -195,14 +189,12 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
             <div className="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12 group-hover:scale-110 duration-500">
                 {React.cloneElement(icon as React.ReactElement, { size: 100 })}
             </div>
-            
             <div>
                 <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-sm transition-transform group-hover:scale-110", colorStyles[color])}>
                     {icon}
                 </div>
                 <h3 className="text-xs font-black text-slate-900 tracking-tight uppercase leading-tight">{title}</h3>
             </div>
-
             <div className="flex items-center justify-between mt-auto z-10">
                 <span className="text-[8px] font-black text-[#003366] uppercase tracking-widest flex items-center gap-1 group-hover:gap-2 transition-all">
                     Detail <ChevronRight size={10} />

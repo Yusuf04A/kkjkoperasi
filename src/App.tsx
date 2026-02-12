@@ -44,6 +44,9 @@ import { Tamasa } from './pages/program/Tamasa';
 import { Inflip } from './pages/program/Inflip';
 import { Pegadaian } from './pages/program/Pegadaian';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
+import { AdminLHU } from './pages/admin/AdminLHU';
+import { AdminLabaRugi } from './pages/admin/AdminLabaRugi';
+import { UserLHURiwayat } from './pages/lhu/UserLHURiwayat';
 
 // katalog
 import { CheckoutBelanja } from './pages/katalog/CheckoutBelanja';
@@ -120,6 +123,11 @@ function App() {
         <Route path="/program/inflip" element={<Inflip />} />
         <Route path="/program/pegadaian" element={<Pegadaian />} />
         <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
+        <Route path="/admin/lhu" element={<AdminLHU />} />
+      <Route path="/admin/labarugi" element={<AdminLabaRugi />} />
+
+      {/* RUTE USER (RIWAYAT LHU) */}
+      <Route path="/lhu/riwayat" element={<UserLHURiwayat />} />
 
         <Route path="/ppob" element={<PPOB />} />
 
