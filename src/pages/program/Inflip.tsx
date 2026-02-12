@@ -157,16 +157,20 @@ export const Inflip = () => {
     // FIX LAYOUT GESER: overflow-y-scroll memaksa scrollbar selalu ada
     <div className="min-h-screen bg-gray-50 pb-24 overflow-y-scroll">
 
-      {/* HEADER */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition">
-            <ArrowLeft size={20} className="text-gray-700" />
-          </button>
-          <h1 className="text-base font-bold text-gray-900">INFLIP (Properti)</h1>
-        </div>
-      </div>
-
+     {/* HEADER STICKY - RATA KIRI */}
+<div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+  <div className="px-4 py-4 flex items-center gap-3">
+    <button
+      onClick={() => navigate(-1)}
+      className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
+    >
+      <ArrowLeft size={20} strokeWidth={2.5} />
+    </button>
+    <h1 className="text-base font-semibold text-[#003366] leading-none">
+     INFLIP (Properti)
+    </h1>
+  </div>
+</div>
       <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
 
         {/* HERO SECTION */}

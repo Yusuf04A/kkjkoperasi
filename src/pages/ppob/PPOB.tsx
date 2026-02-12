@@ -18,16 +18,16 @@ export const PPOB = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-10">
 
-            {/* HEADER STICKY */}
-            <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-                <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors"
+         {/* HEADER STICKY - RATA KIRI */}
+            <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+                <div className="px-4 py-4 flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={20} strokeWidth={2.5} />
                     </button>
-                    <h1 className="text-base font-bold text-gray-900">
+                    <h1 className="text-base font-semibold text-[#003366] leading-none">
                         Layanan PPOB
                     </h1>
                 </div>

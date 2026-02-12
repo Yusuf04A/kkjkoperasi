@@ -136,14 +136,20 @@ export const Pegadaian = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
-      {/* HEADER */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
-          <ArrowLeft size={20} />
-        </button>
-        <h1 className="text-lg font-bold text-slate-900">Pegadaian Emas</h1>
-      </div>
-
+    {/* HEADER STICKY - RATA KIRI */}
+<div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+  <div className="px-4 py-4 flex items-center gap-3">
+    <button
+      onClick={() => navigate(-1)}
+      className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
+    >
+      <ArrowLeft size={20} strokeWidth={2.5} />
+    </button>
+    <h1 className="text-base font-semibold text-[#003366] leading-none">
+      PEGADAIAN
+    </h1>
+  </div>
+</div>
       <div className="max-w-4xl mx-auto p-4 space-y-6">
         {/* HERO SECTION */}
         <div className="bg-[#0B2B4B] rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden flex items-center justify-between">

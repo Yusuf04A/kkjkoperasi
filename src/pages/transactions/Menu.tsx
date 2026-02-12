@@ -1,16 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { formatRupiah } from '../../lib/utils';
 import {
-    ArrowLeft, Wallet, PiggyBank, Smartphone,
+    ArrowLeft, PiggyBank, Smartphone,
     ArrowUpRight, ArrowRightLeft, History, PlusCircle,
     Zap, Droplets, Globe, Building, Coins, Gamepad2, CreditCard
 } from 'lucide-react';
 
 export const TransactionMenu = () => {
     const navigate = useNavigate();
-    const { user } = useAuthStore();
+    // User data tidak lagi diperlukan untuk display saldo di sini
+    // const { user } = useAuthStore(); 
 
     const menuGroups = [
         {
@@ -44,60 +44,33 @@ export const TransactionMenu = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-10">
+        <div className="min-h-screen bg-gray-50 pb-10 font-sans">
 
-            {/* HEADER STICKY */}
-            <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-                    <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-gray-100 transition">
-                        <ArrowLeft size={20} className="text-gray-700" />
+            {/* HEADER STICKY - RATA KIRI */}
+            <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+                <div className="px-4 py-4 flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
+                    >
+                        <ArrowLeft size={20} strokeWidth={2.5} />
                     </button>
-                    <h1 className="text-base font-bold text-gray-900">Pusat Transaksi</h1>
+                    <h1 className="text-base font-semibold text-[#003366] leading-none">
+                        Pusat Transaksi
+                    </h1>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6 lg:space-y-8">
 
-                {/* INFO SALDO (BANNER WIDE) */}
-                <div className="bg-gradient-to-r from-[#0B2B4B] to-[#1a4d7a] rounded-3xl p-6 lg:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    {/* Dekorasi Background */}
-                    <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-2 opacity-90">
-                            <Wallet size={20} className="text-blue-300" />
-                            <span className="text-sm font-medium tracking-wider uppercase">Saldo Tapro Aktif</span>
-                        </div>
-                        <h2 className="text-3xl lg:text-4xl font-bold font-mono tracking-tight">
-                            {formatRupiah(user?.tapro_balance || 0)}
-                        </h2>
-                        <p className="text-sm text-blue-200 mt-2 opacity-80">
-                            Gunakan saldo ini untuk semua transaksi di Koperasi KKJ.
-                        </p>
-                    </div>
-
-                    <div className="relative z-10 flex gap-3">
-                        <button
-                            onClick={() => navigate('/transaksi/topup')}
-                            className="bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2"
-                        >
-                            <PlusCircle size={18} /> Isi Saldo
-                        </button>
-                        <button
-                            onClick={() => navigate('/transaksi/riwayat')}
-                            className="bg-white text-[#0B2B4B] hover:bg-blue-50 border border-transparent px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm"
-                        >
-                            <History size={18} /> Riwayat
-                        </button>
-                    </div>
-                </div>
+                {/* BANNER SALDO TELAH DIHAPUS SESUAI PERMINTAAN */}
 
                 {/* GRID LAYOUT UNTUK MENU */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
                     {menuGroups.map((group, idx) => (
-                        <div key={idx} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col h-full hover:border-blue-200 transition-colors">
+                        <div key={idx} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 flex flex-col h-full hover:border-blue-200 transition-colors">
                             <h3 className="font-bold text-gray-800 mb-5 text-sm uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-3">
-                                <span className="w-1.5 h-4 bg-kkj-blue rounded-full"></span>
+                                <span className="w-1.5 h-4 bg-[#003366] rounded-full"></span>
                                 {group.title}
                             </h3>
 
@@ -112,7 +85,7 @@ export const TransactionMenu = () => {
                                             <item.icon size={22} />
                                         </div>
                                         <span className="font-bold text-gray-900 text-sm mb-0.5">{item.label}</span>
-                                        <span className="text-[11px] text-gray-400 leading-tight line-clamp-2">{item.desc}</span>
+                                        <span className="text-[10px] text-gray-400 leading-tight line-clamp-2">{item.desc}</span>
                                     </button>
                                 ))}
                             </div>

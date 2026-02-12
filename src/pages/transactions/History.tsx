@@ -9,10 +9,11 @@ import {
   CheckCircle,
   XCircle,
   ArrowRightLeft,
-  Coins // Pastikan import icon Coins
+  Coins,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { formatRupiah } from '../../lib/utils';
+import { formatRupiah, cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
 
@@ -47,69 +48,78 @@ export const TransactionHistory = () => {
     };
 
     fetchHistory();
-  }, []);
+  }, [user, checkSession]);
 
-  const getTransactionStyle = (type: string) => {
+  const getTransactionStyle = (tx: any) => {
+    const type = tx.type;
+    const displayLabel = tx.description || '';
+
     switch (type) {
       case 'topup':
         return {
           icon: <ArrowDownLeft size={20} />,
           bg: 'bg-emerald-50',
           text: 'text-emerald-700',
-          label: 'Isi Saldo'
+          label: displayLabel || 'Isi Saldo'
         };
       case 'withdraw':
         return {
           icon: <ArrowUpRight size={20} />,
           bg: 'bg-rose-50',
           text: 'text-rose-700',
-          label: 'Tarik Tunai'
+          label: displayLabel || 'Tarik Tunai'
         };
       case 'transfer_in':
         return {
           icon: <ArrowDownLeft size={20} />,
           bg: 'bg-emerald-50',
           text: 'text-emerald-700',
-          label: 'Transfer Masuk'
+          label: displayLabel || 'Transfer Masuk'
         };
       case 'transfer_out':
         return {
           icon: <ArrowUpRight size={20} />,
           bg: 'bg-rose-50',
           text: 'text-rose-700',
-          label: 'Transfer Keluar'
+          label: displayLabel || 'Transfer Keluar'
         };
-      // 🔥 TAMBAHAN UNTUK TAMASA
       case 'tamasa_buy':
         return {
           icon: <Coins size={20} />,
           bg: 'bg-yellow-50',
           text: 'text-yellow-700',
-          label: 'Beli Emas TAMASA'
+          label: displayLabel || 'Beli Emas Tamasa'
+        };
+      case 'lhu':
+        return {
+          icon: <TrendingUp size={20} />,
+          bg: 'bg-blue-50',
+          text: 'text-blue-700',
+          label: displayLabel || 'Bagi Hasil LHU'
         };
       default:
         return {
           icon: <ArrowRightLeft size={20} />,
           bg: 'bg-slate-100',
           text: 'text-slate-700',
-          label: type
+          label: displayLabel || type
         };
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+    <div className="min-h-screen bg-[#F0F7FF] pb-24 font-sans text-slate-900">
 
-      {/* HEADER */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
+      {/* HEADER IDENTIK KIRIM SALDO */}
+      <div className="sticky top-0 z-30 bg-white border-b border-blue-100/50 shadow-sm">
         <div className="px-4 py-4 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-slate-100 transition"
+            className="p-2 rounded-full hover:bg-slate-100 transition text-[#003366]"
           >
-            <ArrowLeft size={20} className="text-slate-900" />
+            <ArrowLeft size={20} strokeWidth={2} />
           </button>
-          <h1 className="text-base font-semibold text-slate-900">
+          <h1 className="text-base font-semibold text-[#003366]">
             Riwayat Transaksi
           </h1>
         </div>
@@ -118,44 +128,46 @@ export const TransactionHistory = () => {
       <div className="max-w-xl mx-auto p-4 space-y-4">
 
         {loading ? (
-          <div className="text-center py-24">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-900 border-t-transparent mx-auto mb-3"></div>
+          <div className="text-center py-24 flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#003366] border-t-transparent"></div>
             <p className="text-sm text-slate-500 font-medium">
-              Memuat data transaksi...
+              Memuat data...
             </p>
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-24 flex flex-col items-center text-slate-400">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
               <Clock size={32} />
             </div>
-            <p className="font-medium">Belum ada riwayat transaksi</p>
+            <p className="text-sm font-medium">
+                Belum ada riwayat transaksi
+            </p>
           </div>
         ) : (
           transactions.map((tx) => {
-            const style = getTransactionStyle(tx.type);
-
-            // Logic Uang Masuk/Keluar
-            const isIncome = ['topup', 'transfer_in'].includes(tx.type);
-            // Tamasa Buy dianggap pengeluaran (uang berkurang)
-            const isExpense = ['withdraw', 'transfer_out', 'tamasa_buy'].includes(tx.type);
+            const style = getTransactionStyle(tx);
+            const isIncome = ['topup', 'transfer_in', 'lhu'].includes(tx.type);
 
             return (
               <div
                 key={tx.id}
-                className="bg-white p-4 rounded-2xl border border-slate-200 flex justify-between items-center shadow-sm hover:shadow-md transition"
+                className="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:shadow-md transition group"
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.bg} ${style.text}`}
+                    className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                      style.bg,
+                      style.text
+                    )}
                   >
                     {style.icon}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900 text-sm">
+                    <p className="font-semibold text-slate-900 text-sm leading-tight">
                       {style.label}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-400 mt-1">
                       {format(
                         new Date(tx.created_at),
                         'dd MMM yyyy, HH:mm',
@@ -167,35 +179,29 @@ export const TransactionHistory = () => {
 
                 <div className="text-right">
                   <p
-                    className={`font-mono font-bold text-lg ${isIncome ? 'text-emerald-700' : 'text-rose-700'
-                      }`}
+                    className={cn(
+                      "font-mono font-bold text-base tracking-tighter",
+                      isIncome ? 'text-emerald-600' : 'text-rose-500'
+                    )}
                   >
                     {isIncome ? '+' : '-'} {formatRupiah(tx.amount)}
                   </p>
 
-                  <div className="flex justify-end mt-1.5">
-                    {tx.status === 'pending' && (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full">
-                        <Clock size={12} /> Proses
-                      </span>
-                    )}
-                    {tx.status === 'success' && (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">
-                        <CheckCircle size={12} /> Berhasil
-                      </span>
-                    )}
-                    {tx.status === 'failed' && (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full">
-                        <XCircle size={12} /> Gagal
-                      </span>
-                    )}
+                  <div className="flex justify-end mt-1">
+                    <span className={cn(
+                        "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border",
+                        tx.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                        tx.status === 'success' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                        "bg-rose-50 text-rose-700 border-rose-100"
+                    )}>
+                        {tx.status === 'success' ? 'Berhasil' : tx.status === 'pending' ? 'Proses' : 'Gagal'}
+                    </span>
                   </div>
                 </div>
               </div>
             );
           })
         )}
-
       </div>
     </div>
   );

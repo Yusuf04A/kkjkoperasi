@@ -143,7 +143,6 @@ export const Home = () => {
    const quickActions = [
         { label: 'Top Up', icon: PlusCircle, color: 'text-green-600', bg: 'bg-green-50', link: '/transaksi/topup' },
         { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
-        { label: 'Bagi Hasil', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '/lhu/riwayat' }, // 🔥 Terhubung ke LHU
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
         { label: 'Riwayat', icon: History, color: 'text-purple-600', bg: 'bg-purple-50', link: '/transaksi/riwayat' },
     ];
@@ -250,7 +249,7 @@ export const Home = () => {
                     </div>
                 </div>
 
-                {/* 4. KATALOG BELANJA RAMPING */}
+                {/* 4. KATALOG BELANJA RAMPING DENGAN INDIKATOR STOK */}
                 <div id="shop-section" className="pt-4 pb-12 space-y-6">
                     <div className="flex justify-between items-center px-2">
                         <div className="flex items-center gap-3">
@@ -290,8 +289,19 @@ export const Home = () => {
                         {loadingShop ? [1,2,3,4].map(i => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse border border-slate-50 shadow-sm" />) : filteredProducts.map((product) => (
                             <div key={product.id} className="bg-white rounded-[1.8rem] p-3 border border-slate-100 shadow-sm flex flex-col group hover:shadow-xl transition-all duration-300">
                                 <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-3 border border-slate-50">
-                                    <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    {product.stock === 0 && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><span className="text-[10px] text-white font-black uppercase tracking-widest">Habis</span></div>}
+                                    {product.image_url ? (
+                                        <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-200"><ShoppingBag size={48} /></div>
+                                    )}
+                                    
+                                    {/* 🔥 INDIKATOR STOK (Sama seperti Admin) */}
+                                    <div className={cn(
+                                        "absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm backdrop-blur-md transition-all",
+                                        product.stock > 0 ? "bg-white/90 text-[#003366] border border-blue-100" : "bg-rose-500 text-white"
+                                    )}>
+                                        {product.stock > 0 ? `Stok: ${product.stock}` : 'Habis'}
+                                    </div>
                                 </div>
                                 <div className="flex-1 flex flex-col">
                                     <span className="text-[8px] font-bold text-[#003366] bg-blue-50 px-2 py-0.5 rounded uppercase w-fit mb-1">{product.category}</span>

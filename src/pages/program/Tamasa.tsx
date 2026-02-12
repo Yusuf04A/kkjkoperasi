@@ -35,7 +35,7 @@ export const Tamasa = () => {
       setIsAuthChecking(false);
     };
     initPage();
-  }, []);
+  }, [user, checkSession]);
 
   // --- 2. PROTEKSI HALAMAN ---
   useEffect(() => {
@@ -176,7 +176,7 @@ export const Tamasa = () => {
   if (isAuthChecking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <Loader2 className="w-10 h-10 text-kkj-blue animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-[#003366] animate-spin mb-4" />
         <p className="text-gray-500 font-medium">Memuat data emas...</p>
       </div>
     );
@@ -186,22 +186,22 @@ export const Tamasa = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
 
-      {/* HEADER STICKY */}
-      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-base font-bold text-gray-900">
-            TAMASA (Tabungan Emas)
-          </h1>
-        </div>
-      </div>
+      {/* HEADER STICKY - RATA KIRI */}
+<div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+  <div className="px-4 py-4 flex items-center gap-3">
+    <button
+      onClick={() => navigate(-1)}
+      className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
+    >
+      <ArrowLeft size={20} strokeWidth={2.5} />
+    </button>
+    <h1 className="text-base font-semibold text-[#003366] leading-none">
+      TAMASA (Tabungan Emas)
+    </h1>
+  </div>
+</div>
 
       <div className="max-w-7xl mx-auto p-4 lg:p-8">
 
@@ -244,11 +244,11 @@ export const Tamasa = () => {
             {/* HERO INFO */}
             <div className="hidden lg:block bg-white rounded-3xl p-6 border border-blue-100 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
+                <div className="bg-blue-50 p-3 rounded-2xl text-[#003366]">
                   <ShieldCheck size={32} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg mb-2">Investasi Aman & Syariah</h3>
+                  <h3 className="font-bold text-[#003366] text-lg mb-2">Investasi Aman & Syariah</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">
                     Emas adalah pelindung nilai aset terbaik terhadap inflasi. Program TAMASA dikelola secara transparan oleh Koperasi KKJ.
                   </p>
@@ -258,7 +258,7 @@ export const Tamasa = () => {
 
             {/* GUIDES */}
             <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100">
-              <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-sm lg:text-base">
+              <h4 className="font-bold text-[#003366] mb-3 flex items-center gap-2 text-sm lg:text-base">
                 <Info size={18} /> Cara Menabung
               </h4>
               <ul className="space-y-3 text-xs lg:text-sm text-gray-600 ml-1">
@@ -282,7 +282,7 @@ export const Tamasa = () => {
           {/* --- KOLOM KANAN: FORM PEMBELIAN --- */}
           <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden lg:sticky lg:top-28">
             <div className="bg-gray-50 px-6 lg:px-8 py-6 border-b border-gray-100">
-              <h2 className="font-bold text-gray-900 text-lg lg:text-xl flex items-center gap-2">
+              <h2 className="font-bold text-[#003366] text-lg lg:text-xl flex items-center gap-2">
                 <TrendingUp size={24} className="text-green-600" />
                 Beli Emas
               </h2>
@@ -300,13 +300,13 @@ export const Tamasa = () => {
                   </span>
                 </div>
                 <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400 group-focus-within:text-kkj-blue transition-colors">Rp</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400 group-focus-within:text-[#003366] transition-colors">Rp</span>
                   <input
                     type="text"
                     value={monthlyAmount}
                     onChange={handleAmountChange}
                     placeholder="Min 10.000"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-xl text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-kkj-blue outline-none transition-all placeholder:text-gray-300"
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-xl text-gray-900 focus:ring-2 focus:ring-blue-100 focus:border-[#003366] outline-none transition-all placeholder:text-gray-300"
                   />
                 </div>
               </div>
@@ -365,7 +365,7 @@ export const Tamasa = () => {
               <button
                 onClick={handleInitialSubmit}
                 disabled={isSubmitting}
-                className="w-full bg-kkj-blue text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.98]"
+                className="w-full bg-[#003366] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#002244] transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.98]"
               >
                 {isSubmitting ? (
                   <>
