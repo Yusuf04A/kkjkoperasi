@@ -3,35 +3,78 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase'; // Direct call
 import { Mail, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Login = () => {
     const navigate = useNavigate();
-    const { login, isLoading, user } = useAuthStore(); // Ambil user juga
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({ email: '', password: '' });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const { error } = await login(formData.email, formData.password);
+        setIsLoading(true);
 
-        if (error) {
-            toast.error('Login Gagal: ' + error);
-        } else {
-            toast.success('Selamat Datang Kembali!');
+        try {
+            // 1. CEK EMAIL & PASSWORD KE SUPABASE
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: formData.email,
+                password: formData.password
+            });
 
-            // --- LOGIC REDIRECT BARU ---
-            // Kita ambil state user terbaru dari store setelah login sukses
-            // Catatan: Kadang state butuh waktu update, jadi lebih aman cek role dari response login jika ada,
-            // tapi karena login() di store kita void/error, kita bisa cek user via useAuthStore.getState()
-            const currentUser = useAuthStore.getState().user;
+            if (error) throw error;
 
-            if (currentUser?.role === 'admin') {
-                navigate('/admin/dashboard'); // Admin ke Dashboard Admin
-            } else {
-                navigate('/'); // Member ke Home
+            if (data.user) {
+                // 2. AMBIL DATA PROFILE (Role & Status)
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('role, status, full_name')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (profileError) throw profileError;
+
+                // === LOGIC PENGECEKAN STATUS ===
+
+                // KASUS A: Status Masih Pending
+                if (profile?.status === 'pending') {
+                    // Tampilkan pesan
+                    toast((t) => (
+                        <div className="flex flex-col gap-1">
+                            <span className="font-bold">Login Berhasil, Tapi...</span>
+                            <span className="text-sm">Akun Kak <b>{profile.full_name}</b> masih menunggu verifikasi Admin. Mohon tunggu atau hubungi Admin via WA.</span>
+                            <button onClick={() => toast.dismiss(t.id)} className="bg-gray-200 px-2 py-1 text-xs rounded mt-1">Tutup</button>
+                        </div>
+                    ), { icon: '⏳', duration: 6000 });
+
+                    // PENTING: Langsung Logout lagi biar gak nyangkut
+                    await supabase.auth.signOut();
+                    return;
+                }
+
+                // KASUS B: Status Ditolak (Rejected)
+                if (profile?.status === 'rejected') {
+                    toast.error('Maaf, pendaftaran akun Anda ditolak oleh Admin.');
+                    await supabase.auth.signOut();
+                    return;
+                }
+
+                // KASUS C: Status Active (Boleh Masuk)
+                toast.success(`Selamat Datang, ${profile.full_name}!`);
+
+                if (profile?.role === 'admin') {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/');
+                }
             }
+
+        } catch (err: any) {
+            console.error(err);
+            toast.error('Email atau Password salah.');
+        } finally {
+            setIsLoading(false);
         }
     };
 

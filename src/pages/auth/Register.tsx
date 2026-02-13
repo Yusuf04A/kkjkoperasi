@@ -3,37 +3,59 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { useAuthStore } from '../../store/useAuthStore';
+import { supabase } from '../../lib/supabase'; // Pakai direct supabase biar aman
 import { User, Phone, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const Register = () => {
     const navigate = useNavigate();
-    const { register, isLoading } = useAuthStore();
+    const [isLoading, setIsLoading] = useState(false);
 
     // State Form
     const [formData, setFormData] = useState({
         name: '',
-        email: '', // Tambah Email karena Supabase Auth butuh Email
+        email: '',
         phone: '',
         password: ''
     });
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!formData.name || !formData.email || !formData.phone || !formData.password) {
             toast.error('Mohon lengkapi semua data');
             return;
         }
 
-        // Panggil fungsi register asli
-        const { error } = await register(formData.email, formData.password, formData.name, formData.phone);
+        setIsLoading(true);
 
-        if (error) {
-            toast.error(error);
-        } else {
-            toast.success('Pendaftaran Berhasil! Silakan Login.');
-            navigate('/login');
+        try {
+            // 1. DAFTAR KE SUPABASE AUTH
+            const { data, error } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    // DATA INI AKAN DITANGKAP OLEH SQL TRIGGER
+                    data: {
+                        full_name: formData.name,
+                        phone_number: formData.phone, // Simpan No HP buat WA Fonnte
+                        role: 'member'
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            if (data.user) {
+                toast.success('Pendaftaran Berhasil! Silakan Login.');
+                navigate('/login');
+            }
+
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || 'Gagal mendaftar, coba ganti email.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -76,7 +98,7 @@ export const Register = () => {
                     required
                 />
 
-                <Button type="submit" isLoading={isLoading} className="mt-4">
+                <Button type="submit" isLoading={isLoading} className="mt-4 w-full">
                     DAFTAR SEKARANG
                 </Button>
 
