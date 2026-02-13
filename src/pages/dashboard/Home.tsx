@@ -5,8 +5,8 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
-    Download, Share2, X, Smartphone, PiggyBank, ShoppingBag, 
-    CheckCircle2, Search, ShoppingCart, ChevronRight, Plus, Minus,
+    Download, Share2, X, ShoppingBag, 
+    Search, ShoppingCart, ChevronRight, Plus,
     TrendingUp
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -39,8 +39,6 @@ export const Home = () => {
     const [selectedCategory, setSelectedCategory] = useState('Semua');
     const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
-
-    const categories = ['Semua', 'Sembako', 'Elektronik', 'Atribut', 'Lainnya'];
 
     useEffect(() => {
         if (user?.role === 'admin') {
@@ -295,7 +293,7 @@ export const Home = () => {
                                         <div className="w-full h-full flex items-center justify-center text-slate-200"><ShoppingBag size={48} /></div>
                                     )}
                                     
-                                    {/* 🔥 INDIKATOR STOK (Sama seperti Admin) */}
+                                    {/* INDIKATOR STOK */}
                                     <div className={cn(
                                         "absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm backdrop-blur-md transition-all",
                                         product.stock > 0 ? "bg-white/90 text-[#003366] border border-blue-100" : "bg-rose-500 text-white"
@@ -308,7 +306,14 @@ export const Home = () => {
                                     <h3 className="text-[13px] font-bold text-slate-800 leading-tight line-clamp-2 mb-2">{product.name}</h3>
                                     <div className="mt-auto">
                                         <p className="text-sm font-bold text-[#003366] mb-3">{formatRupiah(product.price)}</p>
-                                        <button onClick={() => addToCart(product)} disabled={product.stock === 0} className="w-full py-2.5 bg-slate-50 hover:bg-[#003366] text-slate-500 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border border-slate-100 flex items-center justify-center gap-1.5"><Plus size={14} strokeWidth={3} /> Keranjang</button>
+                                        {/* 🔥 BUTTON KERANJANG BERWARNA BIRU 🔥 */}
+                                        <button 
+                                            onClick={() => addToCart(product)} 
+                                            disabled={product.stock === 0} 
+                                            className="w-full py-2.5 bg-[#003366] hover:bg-[#002244] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-1.5"
+                                        >
+                                            <Plus size={14} strokeWidth={3} /> Keranjang
+                                        </button>
                                     </div>
                                 </div>
                             </div>
