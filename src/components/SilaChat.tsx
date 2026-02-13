@@ -9,15 +9,15 @@ type Message = { id: number; role: "user" | "model"; text: string; };
 export const SilaChat = () => {
     const { user } = useAuthStore();
 
-    // STATE DATA LENGKAP
+    // STATE DATA
     const [realProfile, setRealProfile] = useState<any>(null);
     const [loans, setLoans] = useState<any[]>([]);
+    const [installments, setInstallments] = useState<any[]>([]);
     const [transactions, setTransactions] = useState<any[]>([]);
-
-    // STATE BARU: TAMASA & INFLIP
     const [tamasaData, setTamasaData] = useState<any>(null);
     const [inflipTotal, setInflipTotal] = useState<number>(0);
 
+    // STATE UI
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -25,87 +25,94 @@ export const SilaChat = () => {
     const displayName = realProfile?.full_name || 'Anggota';
 
     const [messages, setMessages] = useState<Message[]>([
-        { id: 1, role: "model", text: `Halo Kak! 👋\nSaya SILA. Bisa tanya soal **Saldo**, **Tagihan**, **Tamasa**, atau **Inflip** ya!` }
+        { id: 1, role: "model", text: `Halo Kak! 👋\nSaya SILA. Ada yang bisa dibantu cek **Sisa Pinjaman**, **Saldo**, atau lainnya?` }
     ]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // === FUNGSI TARIK SEMUA DATA DARI DB ===
+    // === FETCH DATA ===
     const fetchFreshData = async () => {
         if (!user?.id) return;
 
         try {
-            // 1. AMBIL PROFILE (Tapro, Simwa, Simpok)
-            const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-            if (profileData) {
-                setRealProfile(profileData);
-                if (messages.length === 1) {
-                    setMessages([{ id: 1, role: "model", text: `Halo Kak **${profileData.full_name}**! 👋\nSaldo Tapro Kakak: **${new Intl.NumberFormat('id-ID').format(profileData.tapro_balance)}**. Ada yg bisa dibantu?` }]);
-                }
+            // 1. Profile
+            const { data: pData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (pData) {
+                setRealProfile(pData);
+                setMessages(prev => {
+                    if (prev.length === 1) {
+                        return [{ id: 1, role: "model", text: `Halo Kak **${pData.full_name}**! 👋\nSaya SILA. Mau cek angsuran terdekat atau saldo tabungan hari ini?` }];
+                    }
+                    return prev;
+                });
             }
 
-            // 2. AMBIL TAMASA (Tabel: tamasa_balances)
-            const { data: tData } = await supabase
-                .from('tamasa_balances')
-                .select('total_gram')
-                .eq('user_id', user.id)
-                .single(); // Pakai single() karena 1 user 1 balance
+            // 2. Tamasa & Inflip
+            const { data: tData } = await supabase.from('tamasa_balances').select('total_gram').eq('user_id', user.id).single();
+            if (tData) setTamasaData(tData);
 
-            if (tData) setTamasaData(tData); // Simpan { total_gram: ... }
-
-            // 3. AMBIL INFLIP (Tabel: inflip_investments)
-            // Kita asumsikan ada tabel 'inflip_investments' berisi riwayat investasi user
-            const { data: iData } = await supabase
-                .from('inflip_investments')
-                .select('amount') // Atau 'total_investment' tergantung nama kolommu
-                .eq('user_id', user.id);
-
+            const { data: iData } = await supabase.from('inflip_investments').select('amount').eq('user_id', user.id);
             if (iData) {
-                // Hitung total aset inflip (sum semua investasi)
-                const total = iData.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-                setInflipTotal(total);
+                setInflipTotal(iData.reduce((acc, curr) => acc + (curr.amount || 0), 0));
             }
 
-            // 4. AMBIL TAGIHAN & TRANSAKSI
-            const { data: loanData } = await supabase.from('loans').select('*').eq('user_id', user.id).eq('status', 'active');
-            if (loanData) setLoans(loanData);
+            // 3. PINJAMAN AKTIF (Loans)
+            const { data: lData } = await supabase.from('loans').select('*').eq('user_id', user.id).or('status.eq.approved,status.eq.active');
+            if (lData) setLoans(lData);
 
-            const { data: trxData } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
-            if (trxData) setTransactions(trxData);
+            // 4. SEMUA TAGIHAN BELUM LUNAS (Installments)
+            // PERBAIKAN DISINI: Ganti 'pending' jadi neq 'paid' (tidak sama dengan paid)
+            // Agar status 'unpaid' di database terbaca.
+            const { data: iBillData } = await supabase
+                .from('installments')
+                .select('*')
+                .eq('user_id', user.id)
+                .neq('status', 'paid') // Ambil yg BELUM LUNAS
+                .order('due_date', { ascending: true });
 
-        } catch (error) {
-            console.error("Gagal tarik data AI:", error);
+            if (iBillData) setInstallments(iBillData);
+
+            // 5. Transaksi
+            const { data: txData } = await supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5);
+            if (txData) setTransactions(txData);
+
+        } catch (err) {
+            console.error("Gagal tarik data:", err);
         }
     };
 
     useEffect(() => { fetchFreshData(); }, [user?.id]);
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOpen]);
 
+    // === SEND ===
     const handleSend = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!input.trim() || isLoading) return;
 
-        const userMessage: Message = { id: Date.now(), role: "user", text: input };
-        setMessages((prev) => [...prev, userMessage]);
+        const currentInput = input;
+        const newUserMsg: Message = { id: Date.now(), role: "user", text: currentInput };
+
         setInput("");
+        setMessages((prev) => [...prev, newUserMsg]);
         setIsLoading(true);
 
-        await fetchFreshData(); // Refresh data biar update
+        await fetchFreshData();
 
         try {
-            const historyForGemini = messages.map(msg => ({ role: msg.role, parts: msg.text }));
+            const currentHistory = [...messages, newUserMsg].map(msg => ({ role: msg.role, parts: msg.text }));
 
-            // PAKET DATA LENGKAP UTK AI
             const contextData = {
                 profile: realProfile,
                 loans: loans,
+                installments: installments,
                 transactions: transactions,
-                tamasa: tamasaData,      // Kirim data emas
-                inflipTotal: inflipTotal // Kirim total properti
+                tamasa: tamasaData,
+                inflipTotal: inflipTotal
             };
 
-            const responseText = await askSila(input, historyForGemini, contextData);
+            const responseText = await askSila(currentInput, currentHistory, contextData);
             setMessages((prev) => [...prev, { id: Date.now() + 1, role: "model", text: responseText }]);
+
         } catch (error) {
             setMessages((prev) => [...prev, { id: Date.now() + 2, role: "model", text: "Maaf Kak, koneksi SILA terputus." }]);
         } finally {
@@ -113,7 +120,6 @@ export const SilaChat = () => {
         }
     };
 
-    // Render Teks (Bold)
     const renderMessageText = (text: string) => {
         const parts = text.split(/(\*\*.*?\*\*)/g);
         return parts.map((part, index) => {
@@ -124,7 +130,6 @@ export const SilaChat = () => {
         });
     };
 
-    // STYLE
     const buttonStyle = `fixed z-[999] bottom-20 right-4 md:bottom-6 md:right-6 p-4 rounded-full shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-105 active:scale-95 ${isOpen ? "bg-blue-600 rotate-90" : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 animate-pulse-slow"}`;
     const windowStyle = `fixed z-[998] bottom-36 right-4 md:bottom-24 md:right-6 w-[92%] md:w-[380px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transition-all duration-300 origin-bottom-right flex flex-col ${isOpen ? "scale-100 opacity-100 translate-y-0" : "scale-0 opacity-0 translate-y-10 pointer-events-none"}`;
 
@@ -151,12 +156,12 @@ export const SilaChat = () => {
                             </div>
                         </div>
                     ))}
-                    {isLoading && <div className="flex justify-start gap-2 animate-pulse items-center"><div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100"><Bot size={16} className="text-blue-400" /></div><div className="bg-white px-4 py-2 rounded-full border border-gray-100 flex items-center gap-2 text-gray-500 text-xs"><Loader2 size={14} className="animate-spin text-blue-600" /> Sedang mengecek data...</div></div>}
+                    {isLoading && <div className="flex justify-start gap-2 animate-pulse items-center"><div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100"><Bot size={16} className="text-blue-400" /></div><div className="bg-white px-4 py-2 rounded-full border border-gray-100 flex items-center gap-2 text-gray-500 text-xs"><Loader2 size={14} className="animate-spin text-blue-600" /> Mengetik...</div></div>}
                     <div ref={messagesEndRef} />
                 </div>
 
                 <form onSubmit={handleSend} className="p-3 bg-white border-t border-gray-100 flex gap-2 relative z-10">
-                    <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Tanya saldo Tamasa, Inflip..." className="flex-1 bg-gray-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-full px-4 py-2.5 text-sm transition-all outline-none" disabled={isLoading} />
+                    <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Tanya tagihan, saldo..." className="flex-1 bg-gray-100 focus:bg-white border border-transparent focus:border-blue-500 rounded-full px-4 py-2.5 text-sm transition-all outline-none" disabled={isLoading} />
                     <button type="submit" disabled={!input.trim() || isLoading} className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-full shadow-md flex items-center justify-center shrink-0"><Send size={18} /></button>
                 </form>
             </div>
