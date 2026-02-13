@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Check, X, Loader2, RefreshCw, ArrowLeft, Calendar, FileText, User, Archive, Clock, Activity, CheckCircle } from 'lucide-react';
+import {
+    Check, X, Loader2, RefreshCw, ArrowLeft, Search,
+    ChevronRight, Calendar, User, FileText
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import { id as indonesia } from 'date-fns/locale';
 
 export const AdminFinancing = () => {
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // KITA PISAH JADI 3 TAB BIAR RAPI
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'history'>('pending');
 
     const fetchLoans = async () => {
@@ -18,19 +20,15 @@ export const AdminFinancing = () => {
 
         let query = supabase
             .from('loans')
-            .select(`
-        *,
-        profiles ( full_name, member_id, phone )
-      `)
+            .select(`*, profiles ( full_name, member_id, phone, avatar_url )`)
             .order('created_at', { ascending: false });
 
-        // LOGIKA FILTER TAB
         if (activeTab === 'pending') {
             query = query.eq('status', 'pending');
         } else if (activeTab === 'active') {
-            query = query.eq('status', 'active'); // Khusus yang sedang berjalan (Lihat Cicilan)
+            query = query.eq('status', 'active');
         } else {
-            query = query.in('status', ['paid', 'rejected']); // Murni Riwayat (Lunas/Tolak)
+            query = query.in('status', ['paid', 'rejected']);
         }
 
         const { data, error } = await query;
@@ -47,23 +45,23 @@ export const AdminFinancing = () => {
         fetchLoans();
     }, [activeTab]);
 
-    // LOGIC ACC
-    const handleApprove = async (loan) => {
+    // LOGIC ACC/REJECT
+    const handleApprove = async (loan: any) => {
         const confirm = window.confirm(`Setujui pembiayaan ${loan.type} sebesar ${formatRupiah(loan.amount)}?`);
         if (!confirm) return;
 
-        const toastId = toast.loading('Memproses pencairan dana...');
+        const toastId = toast.loading('Memproses...');
         try {
             const { error } = await supabase.rpc('approve_loan', { loan_id_param: loan.id });
             if (error) throw error;
-            toast.success('Berhasil! Dana dicairkan.', { id: toastId });
+            toast.success('Disetujui & Dicairkan', { id: toastId });
             fetchLoans();
         } catch (err: any) {
             toast.error(`Gagal: ${err.message}`, { id: toastId });
         }
     };
 
-    const handleReject = async (id) => {
+    const handleReject = async (id: string) => {
         const reason = window.prompt("Alasan penolakan:");
         if (!reason) return;
 
@@ -71,168 +69,190 @@ export const AdminFinancing = () => {
         try {
             const { error } = await supabase.from('loans').update({ status: 'rejected', reason: reason }).eq('id', id);
             if (error) throw error;
-            toast.success('Pengajuan ditolak.', { id: toastId });
+            toast.success('Ditolak', { id: toastId });
             fetchLoans();
         } catch (err: any) {
             toast.error(`Gagal: ${err.message}`, { id: toastId });
         }
     };
 
-    const renderDetails = (loan) => {
-        if (!loan.details || Object.keys(loan.details).length === 0) return null;
+    // Helper: Render Detail Kecil
+    const renderDetailBadge = (loan: any) => {
+        if (!loan.details) return null;
+        let text = "";
+        if (loan.type === 'Kredit Barang') text = loan.details.item;
+        else if (loan.type === 'Modal Usaha') text = loan.details.business_name;
+        else if (loan.type === 'Biaya Pelatihan') text = loan.details.training_name;
+        else if (loan.type === 'Biaya Pendidikan') text = loan.details.child_name;
+
+        if (!text) return null;
+
         return (
-            <div className="bg-gray-50 p-3 rounded-lg text-xs text-gray-600 border border-gray-100 mt-2">
-                <p className="font-bold text-gray-400 mb-1 uppercase">Detail:</p>
-                {/* Logic render detail sama seperti sebelumnya */}
-                {loan.type === 'Kredit Barang' && <p>{loan.details.item} - {loan.details.price}</p>}
-                {loan.type === 'Modal Usaha' && <p>{loan.details.business_name} ({loan.details.business_type})</p>}
-                {loan.type === 'Biaya Pelatihan' && <p>{loan.details.training_name}</p>}
-                {loan.type === 'Biaya Pendidikan' && <p>{loan.details.child_name} ({loan.details.school_name})</p>}
-            </div>
+            <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-200 truncate max-w-[150px] inline-block">
+                {text}
+            </span>
         );
     };
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
 
-            {/* Header */}
-            <div className="mb-6">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit">
+            {/* === HEADER (Sesuai Referensi Data Transaksi) === */}
+            <div className="mb-8">
+                {/* Tombol Back Simple */}
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 w-fit text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Kelola Pinjaman</h1>
-                        <p className="text-sm text-gray-500">Approval & Monitoring Cicilan Anggota</p>
+                        <h1 className="text-2xl font-bold text-gray-900">Manajemen Pembiayaan</h1>
+                        <p className="text-gray-500 mt-1 text-sm">Monitoring pengajuan, pinjaman berjalan, dan riwayat arsip.</p>
                     </div>
-                    <button onClick={fetchLoans} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+
+                    {/* Tombol Refresh */}
+                    <button
+                        onClick={fetchLoans}
+                        className="p-2.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+                        title="Refresh Data"
+                    >
                         <RefreshCw size={20} />
                     </button>
                 </div>
+
+                {/* Tab Navigation (Gaya Garis Bawah) */}
+                <div className="flex items-center gap-8 border-b border-gray-200 mt-6 overflow-x-auto">
+                    {[
+                        { id: 'pending', label: 'Menunggu Approval' },
+                        { id: 'active', label: 'Pinjaman Berjalan' },
+                        { id: 'history', label: 'Riwayat Arsip' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`pb-3 text-sm font-medium transition-all relative whitespace-nowrap ${activeTab === tab.id
+                                    ? 'text-blue-600 border-b-2 border-blue-600'
+                                    : 'text-gray-500 hover:text-gray-800 border-b-2 border-transparent'
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* 3 TAB NAVIGATION (NEW) */}
-            <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto">
-                {/* TAB 1: PENDING */}
-                <button
-                    onClick={() => setActiveTab('pending')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'pending' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <Clock size={16} /> Menunggu Approval
-                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
-                </button>
-
-                {/* TAB 2: ACTIVE (MONITORING) */}
-                <button
-                    onClick={() => setActiveTab('active')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'active' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <Activity size={16} /> Pinjaman Berjalan
-                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
-                </button>
-
-                {/* TAB 3: HISTORY (LUNAS/TOLAK) */}
-                <button
-                    onClick={() => setActiveTab('history')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'history' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                    <Archive size={16} /> Arsip Riwayat
-                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
-                </button>
-            </div>
-
-            {/* CONTENT */}
-            <div className="space-y-4">
+            {/* === CONTENT LIST === */}
+            <div className="space-y-3">
                 {loading ? (
-                    <div className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-kkj-blue" /></div>
+                    <div className="py-20 text-center flex flex-col items-center">
+                        <Loader2 className="animate-spin text-blue-500 mb-2" />
+                        <span className="text-gray-400 text-sm">Memuat data...</span>
+                    </div>
                 ) : loans.length === 0 ? (
-                    <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 flex flex-col items-center">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3 text-gray-400">
-                            {activeTab === 'pending' ? <Clock size={32} /> : activeTab === 'active' ? <Activity size={32} /> : <CheckCircle size={32} />}
+                    <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center flex flex-col items-center">
+                        <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-3 text-gray-400">
+                            <Search size={28} />
                         </div>
-                        <p>Tidak ada data di tab {activeTab === 'pending' ? 'pending' : activeTab === 'active' ? 'berjalan' : 'riwayat'}.</p>
+                        <p className="text-gray-500 text-sm font-medium">Tidak ada data ditemukan di tab ini.</p>
                     </div>
                 ) : (
                     loans.map((loan) => (
-                        <div key={loan.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow">
+                        <div key={loan.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 group">
+                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
 
-                            {/* Kolom Info */}
-                            <div className="flex-1 space-y-3">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">{loan.profiles?.full_name || 'Tanpa Nama'}</h3>
-                                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                                            <User size={12} /> {loan.profiles?.member_id}
-                                        </p>
+                                {/* 1. Identitas & Info Dasar */}
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    {/* Avatar */}
+                                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100 shrink-0">
+                                        {loan.profiles?.full_name?.charAt(0) || 'U'}
                                     </div>
-                                    <div className="text-right">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${loan.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                                                loan.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                                    loan.status === 'pending' ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-red-100 text-red-800'
-                                            }`}>
-                                            {loan.status === 'active' ? 'Berjalan' : loan.status === 'paid' ? 'Lunas' : loan.status}
-                                        </span>
-                                        {activeTab !== 'pending' && (
-                                            <p className="text-[10px] text-gray-400 mt-1">
-                                                {format(new Date(loan.created_at), 'dd MMM yyyy')}
-                                            </p>
+
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <h3 className="font-bold text-gray-900 truncate text-sm md:text-base">
+                                                {loan.profiles?.full_name}
+                                            </h3>
+                                            <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 rounded border border-gray-200">
+                                                {loan.profiles?.member_id}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                                            <span className="text-blue-600 font-medium">{loan.type}</span>
+                                            <span className="text-gray-300">•</span>
+                                            <span>{loan.duration} Bulan</span>
+                                            <span className="text-gray-300">•</span>
+                                            <span className="flex items-center gap-1">
+                                                <Calendar size={10} /> {format(new Date(loan.created_at), 'dd MMM yyyy', { locale: indonesia })}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-1">{renderDetailBadge(loan)}</div>
+                                    </div>
+                                </div>
+
+                                {/* 2. Nominal & Status */}
+                                <div className="flex items-center justify-between md:justify-end gap-8 w-full md:w-auto border-t md:border-t-0 border-gray-50 pt-3 md:pt-0">
+                                    <div className="text-left md:text-right">
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">NOMINAL</p>
+                                        <p className="font-bold text-gray-900 text-sm md:text-base">{formatRupiah(loan.amount)}</p>
+                                    </div>
+
+                                    <div>
+                                        {loan.status === 'pending' && (
+                                            <span className="bg-orange-50 text-orange-700 border border-orange-100 px-2.5 py-1 rounded text-xs font-bold">
+                                                Menunggu
+                                            </span>
+                                        )}
+                                        {loan.status === 'active' && (
+                                            <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded text-xs font-bold">
+                                                Berjalan
+                                            </span>
+                                        )}
+                                        {loan.status === 'paid' && (
+                                            <span className="bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded text-xs font-bold">
+                                                Lunas
+                                            </span>
+                                        )}
+                                        {loan.status === 'rejected' && (
+                                            <span className="bg-red-50 text-red-700 border border-red-100 px-2.5 py-1 rounded text-xs font-bold">
+                                                Ditolak
+                                            </span>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4 mt-2">
-                                    <div>
-                                        <p className="text-xs text-gray-400">Total Pinjaman</p>
-                                        <p className="text-xl font-bold text-kkj-blue">{formatRupiah(loan.amount)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-400">Tipe & Tenor</p>
-                                        <p className="font-bold text-gray-700 flex items-center gap-1 text-sm">
-                                            {loan.type} • {loan.duration} Bln
-                                        </p>
-                                    </div>
+                                {/* 3. Action Buttons */}
+                                <div className="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0 md:pl-4 md:border-l border-gray-100">
+                                    {loan.status === 'pending' ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleApprove(loan)}
+                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold shadow-sm transition-colors flex items-center gap-1"
+                                            >
+                                                <Check size={14} /> Setujui
+                                            </button>
+                                            <button
+                                                onClick={() => handleReject(loan.id)}
+                                                className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded text-xs font-bold transition-colors flex items-center gap-1"
+                                            >
+                                                <X size={14} /> Tolak
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <Link
+                                            to={`/admin/pembiayaan/${loan.id}`}
+                                            className={`px-3 py-1.5 rounded text-xs font-bold border flex items-center gap-1 transition-colors ${loan.status === 'active'
+                                                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {loan.status === 'active' ? 'Pantau' : 'Detail'} <ChevronRight size={14} />
+                                        </Link>
+                                    )}
                                 </div>
 
-                                {renderDetails(loan)}
                             </div>
-
-                            {/* Kolom Aksi */}
-                            <div className="flex flex-col justify-center gap-3 md:border-l md:pl-6 border-gray-100 min-w-[200px]">
-                                <div className="text-right mb-2">
-                                    <p className="text-xs text-gray-400">Cicilan / Bulan</p>
-                                    <p className="font-bold text-gray-800">{formatRupiah(loan.monthly_payment)}</p>
-                                </div>
-
-                                {/* AKSI BERDASARKAN TAB */}
-                                {loan.status === 'pending' ? (
-                                    <>
-                                        <button onClick={() => handleApprove(loan)} className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2 shadow-sm">
-                                            <Check size={18} /> Setujui
-                                        </button>
-                                        <button onClick={() => handleReject(loan.id)} className="w-full py-3 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-bold text-sm flex items-center justify-center gap-2">
-                                            <X size={18} /> Tolak
-                                        </button>
-                                    </>
-                                ) : loan.status === 'active' ? (
-                                    // TOMBOL SPESIAL BUAT TAB 'BERJALAN'
-                                    <Link
-                                        to={`/admin/pembiayaan/${loan.id}`}
-                                        className="w-full py-3 bg-blue-50 text-kkj-blue border border-blue-200 rounded-lg hover:bg-blue-100 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                                    >
-                                        <Activity size={18} /> Pantau Cicilan
-                                    </Link>
-                                ) : (
-                                    // TOMBOL BUAT HISTORY (Cuma lihat sekilas)
-                                    <Link
-                                        to={`/admin/pembiayaan/${loan.id}`}
-                                        className="w-full py-3 bg-gray-50 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                                    >
-                                        <FileText size={18} /> Detail Arsip
-                                    </Link>
-                                )}
-                            </div>
-
                         </div>
                     ))
                 )}
