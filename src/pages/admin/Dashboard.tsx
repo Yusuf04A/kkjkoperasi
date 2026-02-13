@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale, 
-    ShoppingBag, TrendingUp, Receipt
+    ShoppingBag, TrendingUp, Receipt, Banknote // Tambah icon Banknote untuk Pinjaman
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -110,8 +110,15 @@ export const AdminDashboard = () => {
                 </div>
 
                 {/* NOTIFIKASI URGENT */}
-                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0) && (
+                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-4">
+                        {stats.pendingLoans > 0 && (
+                            <AlertCard 
+                                to="/admin/pembiayaan"
+                                title={`${stats.pendingLoans} Pengajuan Pinjaman`}
+                                type="danger"
+                            />
+                        )}
                         {stats.pendingRestructures > 0 && (
                             <AlertCard 
                                 to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'}
@@ -137,18 +144,19 @@ export const AdminDashboard = () => {
                         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Layanan Utama</h2>
                     </div>
                     
-                    {/* Grid 4 Kolom: Otomatis 4 diatas, 4 dibawah (Simetris) */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Grid Layout: Menampung 9 Item dengan rapi */}
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                         <DashboardCard to="/admin/verifikasi" icon={<Users size={24} />} title="Anggota" color="indigo" count={stats.pendingUsers} />
                         <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={24} />} title="Finance" color="emerald" count={stats.pendingTx} />
                         <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={24} />} title="Tamasa" color="amber" count={stats.pendingTamasa} />
                         <DashboardCard to="/admin/pegadaian" icon={<Scale size={24} />} title="Gadai" color="blue" count={stats.pendingPawn} />
                         
-                        {/* Baris Kedua */}
+                        {/* 🔥 TAMBAHAN KARTU PINJAMAN 🔥 */}
+                        <DashboardCard to="/admin/pembiayaan" icon={<Banknote size={24} />} title="Pinjaman" color="rose" count={stats.pendingLoans} />
+
                         <DashboardCard to="/admin/toko" icon={<ShoppingBag size={24} />} title="Toko" color="violet" count={stats.pendingOrders} />
                         <DashboardCard to="/admin/lhu" icon={<TrendingUp size={24} />} title="LHU" color="teal" count={stats.pendingLHU} />
-                        <DashboardCard to="/admin/labarugi" icon={<Receipt size={24} />} title="Laba Rugi" color="rose" count={0} />
-                        {/* Kabar KKJ mengisi slot ke-8 agar grid penuh sempurna */}
+                        <DashboardCard to="/admin/labarugi" icon={<Receipt size={24} />} title="Laba Rugi" color="slate" count={0} />
                         <DashboardCard to="/admin/kabar" icon={<Megaphone size={24}/>} title="Kabar KKJ" color="brown" count={0} />
                     </div>
                 </div>
@@ -175,7 +183,7 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
         violet: "bg-violet-50/80 text-violet-600 group-hover:bg-violet-600 group-hover:text-white",
         rose: "bg-rose-50/80 text-rose-600 group-hover:bg-rose-600 group-hover:text-white",
         teal: "bg-teal-50/80 text-teal-600 group-hover:bg-teal-600 group-hover:text-white",
-        // Definisi warna 'brown' (menggunakan tone orange gelap/terracotta)
+        slate: "bg-slate-100 text-slate-600 group-hover:bg-slate-600 group-hover:text-white",
         brown: "bg-orange-50/80 text-orange-800 group-hover:bg-orange-700 group-hover:text-white", 
     };
 
