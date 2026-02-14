@@ -14,7 +14,7 @@ export const Tamasa = () => {
   // --- STATE ---
   const [monthlyAmount, setMonthlyAmount] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
-  const [goldPrice, setGoldPrice] = useState(2947000);
+  const [goldPrice, setGoldPrice] = useState(0); // Dimulai dari 0 untuk fetch
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userBalanceGram, setUserBalanceGram] = useState<number>(0);
@@ -26,18 +26,40 @@ export const Tamasa = () => {
   // State Modal PIN
   const [showPinModal, setShowPinModal] = useState(false);
 
-  // --- 1. PROSES RE-AUTH SAAT REFRESH ---
+  // --- 1. FETCH HARGA EMAS TERBARU DARI DATABASE ---
+  const fetchGoldPrice = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gold_prices')
+        .select('buy_price')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (data) {
+        setGoldPrice(data.buy_price);
+      } else {
+        setGoldPrice(1300000); // Fallback jika tabel gold_prices kosong
+      }
+    } catch (err) {
+      console.error("Error fetching gold price:", err);
+      setGoldPrice(1300000); // Fallback jika terjadi error
+    }
+  };
+
+  // --- 2. INITIAL LOAD & RE-AUTH ---
   useEffect(() => {
     const initPage = async () => {
       if (!user) {
         await checkSession();
       }
+      await fetchGoldPrice(); // Ambil harga emas real-time
       setIsAuthChecking(false);
     };
     initPage();
   }, [user, checkSession]);
 
-  // --- 2. PROTEKSI HALAMAN ---
+  // --- 3. PROTEKSI LOGIN ---
   useEffect(() => {
     if (!isAuthChecking && !user) {
       toast.error("Silakan login terlebih dahulu.");
@@ -45,7 +67,7 @@ export const Tamasa = () => {
     }
   }, [isAuthChecking, user, navigate]);
 
-  // --- 3. FETCH SALDO ---
+  // --- 4. FETCH SALDO EMAS USER ---
   const fetchBalance = useCallback(async () => {
     if (!user) return;
 
@@ -75,47 +97,59 @@ export const Tamasa = () => {
     }
   }, [user, fetchBalance]);
 
-  // --- LOGIC HITUNGAN ---
+  // --- LOGIC PERHITUNGAN ---
   const cleanAmount = monthlyAmount ? parseInt(monthlyAmount.replace(/\D/g, '')) : 0;
   const cleanDuration = duration ? parseInt(duration) : 0;
 
-  // Total simulasi (Hanya visual)
+  // Simulasi Target (Visual Only)
   const simulationTotal = cleanAmount * cleanDuration;
 
-  // Yang dibayar SAAT INI (Hanya 1x setoran)
+  // Perhitungan Gramasi (Nominal / Harga Emas Dinamis)
   const amountToPay = cleanAmount;
-  const gramToGet = amountToPay > 0 ? amountToPay / goldPrice : 0;
+  const gramToGet = amountToPay > 0 && goldPrice > 0 ? amountToPay / goldPrice : 0;
 
-  // --- VALIDASI ---
+  // --- HANDLERS ---
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (raw === '') {
+      setMonthlyAmount('');
+    } else {
+      // Format otomatis dengan titik ribuan
+      setMonthlyAmount(parseInt(raw).toLocaleString('id-ID'));
+    }
+  };
+
   const handleInitialSubmit = () => {
+    if (goldPrice <= 0) {
+      toast.error("Gagal memuat harga emas. Silakan refresh halaman.");
+      return;
+    }
     if (cleanAmount < 10000) {
       toast.error("Minimal pembelian Rp 10.000");
       return;
     }
-    // Cek saldo Rupiah User
     if (amountToPay > (user?.tapro_balance || 0)) {
       toast.error("Saldo Tapro Anda tidak mencukupi!");
       return;
     }
 
-    // Jika valid, buka PIN
+    // Jika semua valid, tampilkan Modal PIN
     setShowPinModal(true);
   };
 
-  // --- EKSEKUSI TRANSAKSI ---
   const executeTransaction = async () => {
     setIsSubmitting(true);
     const toastId = toast.loading("Memproses pembelian...");
 
     try {
-      // 1. Catat Transaksi Emas (Pending)
+      // 1. Catat ke tabel Transaksi Tamasa (Status Pending menunggu Admin)
       const { error: errTamasa } = await supabase
         .from("tamasa_transactions")
         .insert([
           {
             user_id: user?.id,
             setoran: amountToPay,
-            harga_per_gram: goldPrice,
+            harga_per_gram: goldPrice, // Kunci harga saat ini
             estimasi_gram: gramToGet,
             status: "pending"
           }
@@ -123,7 +157,7 @@ export const Tamasa = () => {
 
       if (errTamasa) throw errTamasa;
 
-      // 2. Potong Saldo Rupiah (Tapro)
+      // 2. Potong Saldo Rupiah di Profile User
       const { error: errUpdate } = await supabase
         .from('profiles')
         .update({ tapro_balance: (user?.tapro_balance || 0) - amountToPay })
@@ -131,29 +165,29 @@ export const Tamasa = () => {
 
       if (errUpdate) throw errUpdate;
 
-      // 3. Catat di Riwayat Transaksi Umum (transaction type: tamasa_buy)
+      // 3. Catat di Riwayat Transaksi Umum (Log mutasi)
       const { error: errTrx } = await supabase
         .from('transactions')
         .insert([{
           user_id: user?.id,
           type: 'tamasa_buy',
           amount: amountToPay,
-          status: 'success', // Karena saldo rupiah sudah terpotong
-          description: `Beli Emas ${gramToGet.toFixed(4)} gr`
+          status: 'success', 
+          description: `Beli Emas TAMASA ${gramToGet.toFixed(4)} gr`
         }]);
 
       if (errTrx) throw errTrx;
 
-      // Sukses
       toast.success("Berhasil! Menunggu verifikasi admin.", { id: toastId });
 
-      // Reset Form
+      // Reset form & tutup modal
       setMonthlyAmount('');
       setDuration('');
+      setShowPinModal(false);
 
-      // Refresh Data Saldo & User
-      await checkSession(); // Update saldo rupiah di state
-      fetchBalance(); // Update saldo emas (kalau misal ada)
+      // Refresh data aplikasi
+      await checkSession(); 
+      fetchBalance(); 
 
     } catch (err: any) {
       console.error(err);
@@ -163,16 +197,6 @@ export const Tamasa = () => {
     }
   };
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    if (raw === '') {
-      setMonthlyAmount('');
-    } else {
-      setMonthlyAmount(parseInt(raw).toLocaleString('id-ID'));
-    }
-  };
-
-  // Loading Screen Awal
   if (isAuthChecking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
@@ -182,39 +206,28 @@ export const Tamasa = () => {
     );
   }
 
-  // Safety check
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
-
-      {/* HEADER STICKY - RATA KIRI */}
-<div className="sticky top-0 z-30 bg-white border-b border-gray-200">
-  <div className="px-4 py-4 flex items-center gap-3">
-    <button
-      onClick={() => navigate(-1)}
-      className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors"
-    >
-      <ArrowLeft size={20} strokeWidth={2.5} />
-    </button>
-    <h1 className="text-base font-semibold text-[#003366] leading-none">
-      TAMASA (Tabungan Emas)
-    </h1>
-  </div>
-</div>
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
+      
+      {/* HEADER */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <div className="px-4 py-4 flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 text-[#003366] transition-colors">
+            <ArrowLeft size={20} strokeWidth={2.5} />
+          </button>
+          <h1 className="text-base font-semibold text-[#003366] leading-none">TAMASA (Tabungan Emas)</h1>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto p-4 lg:p-8">
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
 
-          {/* --- KOLOM KIRI: INFO & SALDO --- */}
+          {/* --- KOLOM KIRI: INFO SALDO --- */}
           <div className="space-y-6">
-
-            {/* KOTAK SALDO EMAS */}
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden transform hover:scale-[1.01] transition-transform duration-300">
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
-              <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
-
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2 opacity-90">
                   <div className="p-1.5 bg-white/20 rounded-lg">
@@ -223,7 +236,6 @@ export const Tamasa = () => {
                   <span className="text-xs lg:text-sm font-bold tracking-widest uppercase">Saldo Emas Anda</span>
                 </div>
 
-                {/* Loading State Saldo */}
                 {isDataLoading ? (
                   <div className="h-10 w-40 bg-white/30 rounded animate-pulse mb-2"></div>
                 ) : (
@@ -241,22 +253,6 @@ export const Tamasa = () => {
               </div>
             </div>
 
-            {/* HERO INFO */}
-            <div className="hidden lg:block bg-white rounded-3xl p-6 border border-blue-100 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="bg-blue-50 p-3 rounded-2xl text-[#003366]">
-                  <ShieldCheck size={32} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-[#003366] text-lg mb-2">Investasi Aman & Syariah</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">
-                    Emas adalah pelindung nilai aset terbaik terhadap inflasi. Program TAMASA dikelola secara transparan oleh Koperasi KKJ.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* GUIDES */}
             <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100">
               <h4 className="font-bold text-[#003366] mb-3 flex items-center gap-2 text-sm lg:text-base">
                 <Info size={18} /> Cara Menabung
@@ -264,43 +260,39 @@ export const Tamasa = () => {
               <ul className="space-y-3 text-xs lg:text-sm text-gray-600 ml-1">
                 <li className="flex gap-3">
                   <span className="font-bold text-blue-500 bg-white w-6 h-6 rounded-full flex items-center justify-center border border-blue-100 shadow-sm shrink-0">1</span>
-                  <span>Masukkan nominal uang yang ingin dibelikan emas.</span>
+                  <span>Input nominal uang yang ingin dikonversi ke emas.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-bold text-blue-500 bg-white w-6 h-6 rounded-full flex items-center justify-center border border-blue-100 shadow-sm shrink-0">2</span>
-                  <span>Input Durasi (opsional) untuk melihat simulasi target.</span>
+                  <span>Input Target Durasi untuk melihat simulasi tabungan di masa depan.</span>
                 </li>
                 <li className="flex gap-3">
                   <span className="font-bold text-blue-500 bg-white w-6 h-6 rounded-full flex items-center justify-center border border-blue-100 shadow-sm shrink-0">3</span>
-                  <span>Klik "Beli Emas". Saldo Tapro akan terpotong <b>1x transaksi</b>.</span>
+                  <span>Selesaikan pembayaran. Admin akan memverifikasi dalam 1x24 jam.</span>
                 </li>
               </ul>
             </div>
-
           </div>
 
-          {/* --- KOLOM KANAN: FORM PEMBELIAN --- */}
-          <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden lg:sticky lg:top-28">
+          {/* --- KOLOM KANAN: FORM BELI --- */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden lg:sticky lg:top-28">
             <div className="bg-gray-50 px-6 lg:px-8 py-6 border-b border-gray-100">
               <h2 className="font-bold text-[#003366] text-lg lg:text-xl flex items-center gap-2">
-                <TrendingUp size={24} className="text-green-600" />
-                Beli Emas
+                <TrendingUp size={24} className="text-green-600" /> Beli Emas
               </h2>
-              <p className="text-xs lg:text-sm text-gray-500 mt-1">Pembelian akan memotong Saldo Tapro Anda.</p>
+              <p className="text-xs lg:text-sm text-gray-500 mt-1">Pembelian menggunakan Saldo Tapro Anda.</p>
             </div>
 
             <div className="p-6 lg:p-8 space-y-6">
-
-              {/* Input Rupiah */}
               <div>
                 <div className="flex justify-between mb-2">
                   <label className="text-xs font-bold text-gray-500 uppercase">Nominal Pembelian</label>
-                  <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded">
-                    Saldo Tapro: {formatRupiah(user?.tapro_balance || 0)}
+                  <span className="text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded">
+                    TAPRO: {formatRupiah(user?.tapro_balance || 0)}
                   </span>
                 </div>
                 <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400 group-focus-within:text-[#003366] transition-colors">Rp</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400 group-focus-within:text-[#003366]">Rp</span>
                   <input
                     type="text"
                     value={monthlyAmount}
@@ -312,51 +304,44 @@ export const Tamasa = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-5">
-                {/* Input Durasi (Simulasi) */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1">
-                    Target <span className="text-[10px] bg-gray-200 px-1 rounded text-gray-500">Simulasi</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      placeholder="Contoh: 12"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none placeholder:text-gray-300"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">Bulan</span>
-                  </div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Target (Bulan)</label>
+                  <input
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="Contoh: 12"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
+                  />
                 </div>
-                {/* Harga Emas */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Harga Emas/gr</label>
-                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl font-bold text-gray-500 text-sm flex items-center h-[50px]">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Harga/gr Hari Ini</label>
+                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl font-bold text-[#003366] text-sm flex items-center h-[50px] shadow-inner">
                     {formatRupiah(goldPrice)}
                   </div>
                 </div>
               </div>
 
-              {/* Ringkasan Pembayaran */}
+              {/* RINGKASAN */}
               <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 font-medium">Yang Harus Dibayar</span>
+                  <span className="text-gray-600 font-medium">Total Pembayaran</span>
                   <span className="font-bold text-gray-900 text-lg">{formatRupiah(amountToPay)}</span>
                 </div>
                 <div className="h-px bg-yellow-200/50"></div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 font-medium">Perkiraan Dapat Emas</span>
+                  <span className="text-gray-600 font-medium">Perkiraan Emas</span>
                   <span className="font-bold text-yellow-700 bg-white px-3 py-1 rounded-lg border border-yellow-200 shadow-sm">
                     {gramToGet.toFixed(4)} gr
                   </span>
                 </div>
 
-                {/* Info Simulasi jika Durasi diisi */}
-                {cleanDuration > 1 && (
-                  <div className="bg-white/50 p-2 rounded-lg mt-2 flex items-start gap-2">
+                {/* Simulasi info durasi */}
+                {cleanDuration > 1 && cleanAmount > 0 && (
+                  <div className="bg-white/60 p-2.5 rounded-xl border border-yellow-200 mt-2 flex gap-2">
                     <Calculator size={14} className="text-yellow-600 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-yellow-700 leading-relaxed">
-                      <b>Simulasi:</b> Jika Anda konsisten menabung {formatRupiah(amountToPay)} selama {cleanDuration} bulan, total tabungan Anda mencapai <b>± {formatRupiah(simulationTotal)}</b>.
+                    <p className="text-[10px] text-yellow-800 leading-relaxed font-medium">
+                      Simulasi: Menabung {formatRupiah(cleanAmount)} selama {cleanDuration} bulan = <b>± {formatRupiah(simulationTotal)}</b>.
                     </p>
                   </div>
                 )}
@@ -364,42 +349,30 @@ export const Tamasa = () => {
 
               <button
                 onClick={handleInitialSubmit}
-                disabled={isSubmitting}
-                className="w-full bg-[#003366] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#002244] transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-[0.98]"
+                disabled={isSubmitting || goldPrice === 0}
+                className="w-full bg-[#003366] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#002244] transition-all shadow-lg shadow-blue-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} /> Memproses...
-                  </>
-                ) : (
-                  <>
-                    Beli Emas Sekarang <ChevronRight size={20} />
-                  </>
-                )}
+                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Beli Emas Sekarang <ChevronRight size={20} /></>}
               </button>
 
-              <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-lg">
+              <div className="flex items-start gap-2 bg-gray-50 p-3 rounded-lg border border-dashed border-gray-200">
                 <AlertCircle size={14} className="text-gray-400 mt-0.5 shrink-0" />
-                <p className="text-[10px] text-gray-400 leading-relaxed">
-                  Harga emas dapat berubah sewaktu-waktu. Saldo emas akan bertambah setelah diverifikasi Admin.
+                <p className="text-[10px] text-gray-400 leading-relaxed italic">
+                  Data harga diperbarui oleh Admin secara berkala. Transaksi diproses di hari kerja.
                 </p>
               </div>
-
             </div>
           </div>
-
         </div>
-
       </div>
 
-      {/* MODAL PIN */}
+      {/* MODAL KONFIRMASI PIN */}
       <PinModal
         isOpen={showPinModal}
         onClose={() => setShowPinModal(false)}
         onSuccess={executeTransaction}
         title="Konfirmasi Pembelian Emas"
       />
-
     </div>
   );
 };
