@@ -43,6 +43,7 @@ import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 import { AdminLHU } from './pages/admin/AdminLHU';
 import { AdminLabaRugi } from './pages/admin/AdminLabaRugi';
+import { CreditWarehouse } from './pages/admin/CreditWarehouse';
 
 // PROGRAM & LAINNYA
 import { Tamasa } from './pages/program/Tamasa';
@@ -84,6 +85,7 @@ function App() {
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
           <Route path="/admin/lhu" element={<AdminLHU />} />
           <Route path="/admin/labarugi" element={<AdminLabaRugi />} />
+          <Route path="/admin/gudang-kredit" element={<CreditWarehouse />} />
 
           {/* Admin Kabar */}
           <Route path="/admin/kabar" element={<AdminKabar />} />
