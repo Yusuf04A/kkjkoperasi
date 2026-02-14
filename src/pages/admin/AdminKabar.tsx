@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, EyeOff, Trash2, ArrowLeft, Megaphone, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, EyeOff, Trash2, ArrowLeft, Megaphone, Clock, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 
@@ -12,6 +12,7 @@ interface KabarKKJ {
   color: 'blue' | 'yellow' | 'green' | 'biru_tua' | 'red';
   is_active: boolean;
   created_at: string;
+  image_url?: string | null; // 1. Tambahkan properti ini
 }
 
 export default function AdminKabar() {
@@ -41,10 +42,7 @@ export default function AdminKabar() {
   }, []);
 
   const toggleActive = async (id: string, active: boolean) => {
-    await supabase
-      .from('kabar_kkj')
-      .update({ is_active: !active })
-      .eq('id', id);
+    await supabase.from('kabar_kkj').update({ is_active: !active }).eq('id', id);
     fetchData();
   };
 
@@ -93,25 +91,45 @@ export default function AdminKabar() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {list.map((item) => (
-              <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
-                {/* PREVIEW HEADER */}
-                <div className={cn("h-24 p-4 flex flex-col justify-between relative overflow-hidden", colorMap[item.color] || 'bg-gray-600')}>
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                    <Megaphone size={60} />
+              <div key={item.id} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
+                
+                {/* 2. LOGIKA TAMPILAN HEADER (GAMBAR ATAU WARNA) */}
+                <div className={cn("h-40 relative overflow-hidden", !item.image_url && (colorMap[item.color] || 'bg-gray-600'))}>
+                  
+                  {item.image_url ? (
+                    // JIKA ADA GAMBAR
+                    <>
+                        <img 
+                            src={item.image_url} 
+                            alt={item.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                    </>
+                  ) : (
+                    // JIKA TIDAK ADA GAMBAR (Fallback Warna)
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                        <Megaphone size={100} />
+                    </div>
+                  )}
+
+                  {/* Badge & Tanggal */}
+                  <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/20 tracking-widest uppercase shadow-sm">
+                        {item.type}
+                    </span>
                   </div>
-                  <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-lg w-fit border border-white/20 tracking-widest uppercase">
-                    {item.type}
-                  </span>
-                  <div className="flex items-center gap-1.5 text-white/80 text-[10px]">
+                  
+                  <div className="absolute bottom-3 left-4 z-10 flex items-center gap-1.5 text-white/90 text-[10px] font-medium tracking-wide">
                     <Clock size={12} />
-                    {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
 
                 {/* CONTENT */}
-                <div className="p-5 space-y-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <h3 className="font-bold text-gray-900 leading-tight line-clamp-2 min-h-[2.5rem]">
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <h3 className="font-bold text-gray-900 leading-snug line-clamp-2 min-h-[2.5rem]">
                       {item.title}
                     </h3>
                     {item.is_active ? (
@@ -120,11 +138,12 @@ export default function AdminKabar() {
                       <AlertCircle size={18} className="text-gray-300 shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed">
+                  
+                  <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed mb-4 flex-1">
                     {item.description}
                   </p>
 
-                  <div className="pt-4 flex items-center justify-between border-t border-gray-50">
+                  <div className="pt-4 flex items-center justify-between border-t border-gray-50 mt-auto">
                     <div className="flex items-center gap-1">
                       <span className={cn(
                         "w-2 h-2 rounded-full animate-pulse",
@@ -138,20 +157,20 @@ export default function AdminKabar() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => toggleActive(item.id, item.is_active)}
-                        className="p-2 hover:bg-orange-50 text-orange-600 rounded-lg transition-colors border border-transparent hover:border-orange-100"
+                        className="p-2 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-colors"
                         title={item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                       >
-                        <EyeOff size={16} />
+                        {item.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
                       </button>
                       <Link
                         to={`/admin/kabar/edit/${item.id}`}
-                        className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors border border-transparent hover:border-blue-100"
+                        className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
                       >
                         <Pencil size={16} />
                       </Link>
                       <button
                         onClick={() => deleteKabar(item.id)}
-                        className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                        className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>

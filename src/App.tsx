@@ -51,6 +51,7 @@ import { Pegadaian } from './pages/program/Pegadaian';
 import { UserLHURiwayat } from './pages/lhu/UserLHURiwayat';
 import { CheckoutBelanja } from './pages/katalog/CheckoutBelanja';
 import { PPOB } from './pages/ppob/PPOB';
+import { KabarDetail } from './pages/kabarkkj/KabarDetail';
 
 function App() {
   const { user } = useAuthStore();
@@ -119,6 +120,7 @@ function App() {
             <Route path="/lhu/riwayat" element={<UserLHURiwayat />} />
             <Route path="/ppob" element={<PPOB />} />
             <Route path="/belanja/checkout" element={<CheckoutBelanja />} />
+            <Route path="/kabar/:id" element={<KabarDetail />} />
           </Route>
 
           {/* Fallback Route */}
