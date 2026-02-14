@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { ArrowLeft, Phone, Send, Search, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
-import { PinModal } from '../../components/PinModal'; // Pastikan path import benar
+import { PinModal } from '../../components/PinModal';
 
 export const Transfer = () => {
     const navigate = useNavigate();
@@ -18,11 +18,19 @@ export const Transfer = () => {
     const [recipientName, setRecipientName] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
-
-    // STATE UNTUK MODAL PIN
     const [showPinModal, setShowPinModal] = useState(false);
 
-    // --- CEK PENERIMA ---
+    // --- FUNGSI FORMAT RUPIAH OTOMATIS ---
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/\D/g, ''); // Ambil angka saja
+        if (rawValue) {
+            const formattedValue = parseInt(rawValue).toLocaleString('id-ID');
+            setAmount(formattedValue);
+        } else {
+            setAmount('');
+        }
+    };
+
     const checkRecipient = async () => {
         if (phone.length < 10) return;
         setIsChecking(true);
@@ -43,11 +51,12 @@ export const Transfer = () => {
         setIsChecking(false);
     };
 
-    // --- EXECUTE TRANSFER (Dipanggil setelah PIN Sukses) ---
     const executeTransfer = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Memproses transfer...');
-        const nominal = parseInt(amount.replace(/\D/g, ''));
+        
+        // Bersihkan titik sebelum kirim ke RPC/Database
+        const nominal = parseInt(amount.replace(/\./g, ''));
 
         try {
             const { error } = await supabase.rpc('transfer_balance', {
@@ -64,15 +73,14 @@ export const Transfer = () => {
             toast.error('Gagal: ' + error.message, { id: toastId });
         } finally {
             setIsLoading(false);
+            setShowPinModal(false);
         }
     };
 
-    // --- HANDLE TOMBOL KIRIM (Cek Validasi & Buka Modal) ---
     const handleTransferClick = (e: React.FormEvent) => {
         e.preventDefault();
-        const nominal = parseInt(amount.replace(/\D/g, ''));
+        const nominal = parseInt(amount.replace(/\./g, ''));
 
-        // 1. Validasi Input
         if (!recipientName) {
             toast.error('Pastikan nomor tujuan benar.');
             return;
@@ -86,30 +94,22 @@ export const Transfer = () => {
             return;
         }
 
-        // 2. Buka Modal PIN
         setShowPinModal(true);
     };
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
-
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
                 <div className="px-4 py-4 flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-blue-50 transition"
-                    >
+                    <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-blue-50 transition">
                         <ArrowLeft size={20} className="text-blue-900" />
                     </button>
-                    <h1 className="text-base font-semibold text-blue-900">
-                        Kirim Saldo
-                    </h1>
+                    <h1 className="text-base font-semibold text-blue-900">Kirim Saldo</h1>
                 </div>
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-8">
-
                 {/* INFO SALDO */}
                 <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-6 rounded-2xl text-white shadow-lg">
                     <p className="text-sm opacity-90 mb-1">Saldo Anda</p>
@@ -119,17 +119,10 @@ export const Transfer = () => {
                 </div>
 
                 {/* FORM */}
-                <form
-                    onSubmit={handleTransferClick} // Ganti handler ke handleTransferClick
-                    className="bg-white p-6 rounded-2xl border border-blue-200 space-y-6"
-                >
-
+                <form onSubmit={handleTransferClick} className="bg-white p-6 rounded-2xl border border-blue-200 space-y-6">
                     {/* NOMOR TUJUAN */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                            Nomor WhatsApp Tujuan
-                        </label>
-
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">Nomor WhatsApp Tujuan</label>
                         <div className="flex gap-2">
                             <div className="relative flex-1">
                                 <Phone className="absolute left-4 top-3.5 text-gray-400" size={18} />
@@ -145,54 +138,39 @@ export const Transfer = () => {
                                     required
                                 />
                             </div>
-
                             <button
                                 type="button"
                                 onClick={checkRecipient}
                                 disabled={isChecking || phone.length < 10}
                                 className="bg-blue-50 text-blue-900 p-3 rounded-xl border border-blue-200 hover:bg-blue-100 disabled:opacity-50"
                             >
-                                {isChecking ? (
-                                    <div className="animate-spin w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full" />
-                                ) : (
-                                    <Search size={20} />
-                                )}
+                                {isChecking ? <div className="animate-spin w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full" /> : <Search size={20} />}
                             </button>
                         </div>
-
-                        {/* HASIL CEK */}
                         {recipientName && (
                             <div className="mt-3 bg-blue-50 text-blue-900 p-3 rounded-xl flex items-center gap-2 text-sm font-semibold border border-blue-200">
-                                <UserCheck size={18} />
-                                Penerima: {recipientName}
+                                <UserCheck size={18} /> Penerima: {recipientName}
                             </div>
                         )}
                     </div>
 
-                    {/* NOMINAL */}
+                    {/* NOMINAL DENGAN FORMAT TITIK */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">
-                            Nominal Transfer
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2">Nominal Transfer</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-3.5 text-gray-400 font-bold">
-                                Rp
-                            </span>
+                            <span className="absolute left-4 top-3.5 text-gray-400 font-bold">Rp</span>
                             <Input
-                                type="number"
+                                type="text"
                                 placeholder="0"
                                 className="pl-12 text-lg font-bold focus:ring-2 focus:ring-blue-900"
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                onChange={handleAmountChange}
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Minimal Rp 10.000
-                        </p>
+                        <p className="text-xs text-gray-500 mt-1">Minimal Rp 10.000</p>
                     </div>
 
-                    {/* BUTTON SUBMIT */}
                     <Button
                         type="submit"
                         isLoading={isLoading}
@@ -201,16 +179,14 @@ export const Transfer = () => {
                     >
                         <Send className="mr-2" /> Kirim Sekarang
                     </Button>
-
                 </form>
-
             </div>
 
             {/* MODAL PIN */}
             <PinModal
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}
-                onSuccess={executeTransfer} // JIKA PIN BENAR, JALANKAN TRANSFER
+                onSuccess={executeTransfer}
                 title="Konfirmasi Transfer"
             />
         </div>

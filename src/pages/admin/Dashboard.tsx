@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale,
-    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse // Tambah icon Warehouse untuk Gudang Kredit
+    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet // Tambah Wallet
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -22,11 +22,14 @@ export const AdminDashboard = () => {
         pendingPawn: 0,
         pendingOrders: 0,
         pendingLHU: 0,
+        activeInflip: 0,
+        pendingWithdrawals: 0, // State baru untuk Request Tarik Simpanan
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
 
     const fetchStats = async () => {
+        // 1. Fetch data existing
         const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
         const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
         const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
@@ -35,6 +38,10 @@ export const AdminDashboard = () => {
         const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
         const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
         const { count: pendingLHU } = await supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting');
+        const { count: activeInflip } = await supabase.from('inflip_projects').select('*', { count: 'exact', head: true }).eq('status', 'open');
+
+        // 2. Fetch Request Tarik Simpanan (Tabel Baru)
+        const { count: pendingWithdrawals } = await supabase.from('savings_withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
         setStats({
             pendingUsers: pendingMember || 0,
@@ -45,6 +52,8 @@ export const AdminDashboard = () => {
             pendingPawn: pendingPawn || 0,
             pendingOrders: pendingOrders || 0,
             pendingLHU: pendingLHU || 0,
+            activeInflip: activeInflip || 0,
+            pendingWithdrawals: pendingWithdrawals || 0, // Update state
         });
 
         if (restructureData && restructureData.length > 0) {
@@ -54,6 +63,7 @@ export const AdminDashboard = () => {
 
     useEffect(() => {
         fetchStats();
+        // Subscribe realtime agar notifikasi muncul tanpa refresh
         const channel = supabase
             .channel('dashboard-updates')
             .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchStats())
@@ -63,6 +73,8 @@ export const AdminDashboard = () => {
     }, []);
 
     const handleLogout = async () => {
+        const confirm = window.confirm("Akhiri sesi admin?");
+        if (!confirm) return;
         await logout();
         navigate('/login');
     };
@@ -109,9 +121,19 @@ export const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* NOTIFIKASI URGENT */}
-                {(stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0) && (
+                {/* NOTIFIKASI URGENT (ROW ATAS) */}
+                {(stats.pendingWithdrawals > 0 || stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-4">
+                        {/* 1. Request Tarik Simpanan (PRIORITAS TINGGI) */}
+                        {stats.pendingWithdrawals > 0 && (
+                            <AlertCard
+                                to="/admin/simpanan"
+                                title={`${stats.pendingWithdrawals} Request Tarik Tunai`}
+                                type="danger"
+                            />
+                        )}
+                        
+                        {/* 2. Pengajuan Pinjaman */}
                         {stats.pendingLoans > 0 && (
                             <AlertCard
                                 to="/admin/pembiayaan"
@@ -119,6 +141,8 @@ export const AdminDashboard = () => {
                                 type="danger"
                             />
                         )}
+
+                        {/* 3. Restrukturisasi */}
                         {stats.pendingRestructures > 0 && (
                             <AlertCard
                                 to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'}
@@ -126,42 +150,50 @@ export const AdminDashboard = () => {
                                 type="danger"
                             />
                         )}
+
+                        {/* 4. Verifikasi Anggota */}
                         {stats.pendingUsers > 0 && (
                             <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />
                         )}
+
+                        {/* 5. LHU */}
                         {stats.pendingLHU > 0 && (
                             <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />
                         )}
+
+                        {/* 6. Pesanan Toko */}
                         {stats.pendingOrders > 0 && (
                             <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />
                         )}
                     </div>
                 )}
 
-                {/* LAYANAN UTAMA KOPERASI */}
+                {/* LAYANAN UTAMA KOPERASI (GRID MENU) */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 border-l-4 border-[#003366] pl-4">
                         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Layanan Utama</h2>
                     </div>
 
-                    {/* Grid Layout: Menampung 10 Item dengan rapi (Tambah Gudang Kredit) */}
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                         <DashboardCard to="/admin/verifikasi" icon={<Users size={24} />} title="Anggota" color="indigo" count={stats.pendingUsers} />
                         <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={24} />} title="Finance" color="emerald" count={stats.pendingTx} />
+                        
+                        {/* MENU BARU: TARIK SIMPANAN */}
+                        <DashboardCard 
+                            to="/admin/simpanan" 
+                            icon={<Wallet size={24} />} 
+                            title="Tarik Simpanan" 
+                            color="rose" 
+                            count={stats.pendingWithdrawals} 
+                        />
+
                         <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={24} />} title="Tamasa" color="amber" count={stats.pendingTamasa} />
                         <DashboardCard to="/admin/pegadaian" icon={<Scale size={24} />} title="Gadai" color="blue" count={stats.pendingPawn} />
-
-                        {/* 🔥 PINJAMAN & KATALOG BARU 🔥 */}
+                        
                         <DashboardCard to="/admin/pembiayaan" icon={<Banknote size={24} />} title="Pinjaman" color="rose" count={stats.pendingLoans} />
 
-                        {/* MENU BARU: KATALOG KREDIT */}
-                        <DashboardCard
-                            to="/admin/gudang-kredit" // Route baru nanti kita buat
-                            icon={<Warehouse size={24} />}
-                            title="Gudang Kredit"
-                            color="cyan"
-                            count={0}
-                        />
+                        <DashboardCard to="/admin/inflip" icon={<Building size={24} />} title="Properti (INFLIP)" color="sky" count={stats.activeInflip} />
+                        <DashboardCard to="/admin/gudang-kredit" icon={<Warehouse size={24} />} title="Gudang Kredit" color="cyan" count={0} />
 
                         <DashboardCard to="/admin/toko" icon={<ShoppingBag size={24} />} title="Toko" color="violet" count={stats.pendingOrders} />
                         <DashboardCard to="/admin/lhu" icon={<TrendingUp size={24} />} title="LHU" color="teal" count={stats.pendingLHU} />
@@ -172,7 +204,7 @@ export const AdminDashboard = () => {
 
                 <div className="text-center pt-8 pb-4">
                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.6em]">
-                        Internal Control Panel v3.6 • Build 2026.02
+                        Internal Control Panel v3.8 • Build 2026.02
                     </p>
                 </div>
             </div>
@@ -183,7 +215,6 @@ export const AdminDashboard = () => {
 /* --- SUB-COMPONENTS --- */
 
 const DashboardCard = ({ to, icon, title, color, count }: any) => {
-    // Palette warna yang konsisten dan lembut
     const styles: any = {
         indigo: "bg-indigo-50/80 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white border-indigo-100",
         emerald: "bg-emerald-50/80 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white border-emerald-100",
@@ -194,26 +225,22 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
         teal: "bg-teal-50/80 text-teal-600 group-hover:bg-teal-600 group-hover:text-white border-teal-100",
         slate: "bg-slate-100 text-slate-600 group-hover:bg-slate-600 group-hover:text-white border-slate-200",
         brown: "bg-orange-50/80 text-orange-800 group-hover:bg-orange-700 group-hover:text-white border-orange-100",
-        cyan: "bg-cyan-50/80 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white border-cyan-100", // Style baru untuk Gudang
+        cyan: "bg-cyan-50/80 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white border-cyan-100",
+        sky: "bg-sky-50/80 text-sky-600 group-hover:bg-sky-600 group-hover:text-white border-sky-100",
     };
 
     const activeStyle = styles[color] || styles.slate;
 
     return (
         <Link to={to} className={`group bg-white rounded-[2rem] p-5 border shadow-[0_4px_20px_rgb(0,0,0,0.02)] hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 flex flex-col items-center justify-center text-center gap-3 relative overflow-hidden h-[150px] hover:-translate-y-1 ${activeStyle.split(' ').pop()?.includes('border') ? '' : 'border-slate-100'}`}>
-            {/* Badge Notifikasi */}
             {count > 0 && (
                 <div className="absolute top-4 right-4 w-5 h-5 bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-lg shadow-rose-500/40 animate-pulse z-10 border-2 border-white">
                     {count}
                 </div>
             )}
-
-            {/* Icon Container */}
             <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all duration-500 group-hover:scale-110", activeStyle)}>
                 {icon}
             </div>
-
-            {/* Title */}
             <h3 className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-[#003366] transition-colors mt-1">
                 {title}
             </h3>
@@ -236,4 +263,4 @@ const AlertCard = ({ to, title, type }: any) => (
         </div>
         <ChevronRight size={14} className="opacity-40 group-hover:opacity-100 transition-opacity" />
     </Link>
-);  
+);

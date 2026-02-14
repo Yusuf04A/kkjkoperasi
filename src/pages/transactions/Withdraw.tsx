@@ -4,198 +4,240 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, CreditCard, Banknote, AlertCircle } from 'lucide-react';
+import { 
+    ArrowLeft, CreditCard, Banknote, AlertCircle, 
+    Wallet, PiggyBank, CheckCircle, Loader2, Landmark,
+    Save, School, Gift, Heart, Plane
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { formatRupiah } from '../../lib/utils';
-import { PinModal } from '../../components/PinModal'; // Pastikan path benar
+import { formatRupiah, cn } from '../../lib/utils';
+import { PinModal } from '../../components/PinModal';
 
 export const Withdraw = () => {
     const navigate = useNavigate();
-    const { user } = useAuthStore();
+    const { user, checkSession } = useAuthStore();
 
+    // STATE UTAMA
+    const [sourceType, setSourceType] = useState<'tapro' | 'simpanan'>('tapro');
+    const [selectedSimpanan, setSelectedSimpanan] = useState<any>(null);
     const [amount, setAmount] = useState('');
-    const [bankInfo, setBankInfo] = useState('');
+    const [bankName, setBankName] = useState('');
+    const [accountNumber, setAccountNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [currentBalance, setCurrentBalance] = useState(0);
-
-    // STATE MODAL PIN
     const [showPinModal, setShowPinModal] = useState(false);
 
+    // Daftar Opsi Simpanan (SAMA DENGAN setorsimpanan.tsx)
+    const simpananOptions = [
+        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-green-600', bg: 'bg-green-50' },
+        { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School, color: 'text-orange-600', bg: 'bg-orange-50' },
+        { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
+        { id: 'siqurma', name: 'Qurban', col: 'siqurma_balance', icon: Heart, color: 'text-red-600', bg: 'bg-red-50' },
+        { id: 'siuji', name: 'Haji / Umroh', col: 'siuji_balance', icon: Plane, color: 'text-teal-600', bg: 'bg-teal-50' },
+        { id: 'siwalima', name: 'Walimah', col: 'siwalima_balance', icon: Heart, color: 'text-pink-600', bg: 'bg-pink-50' },
+    ];
+
     useEffect(() => {
-        if (user) {
-            setCurrentBalance(user.tapro_balance || 0);
-        }
+        if (!user) checkSession();
     }, [user]);
 
-    // --- EXECUTE WITHDRAW (Dipanggil setelah PIN Sukses) ---
+    // Fungsi mendapatkan saldo aktif berdasarkan pilihan user
+    const getActiveBalance = () => {
+        if (sourceType === 'tapro') return user?.tapro_balance || 0;
+        if (selectedSimpanan) return user?.[selectedSimpanan.col] || 0;
+        return 0;
+    };
+
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value.replace(/\D/g, '');
+        setAmount(raw ? parseInt(raw).toLocaleString('id-ID') : '');
+    };
+
+    const handleWithdrawClick = (e: React.FormEvent) => {
+        e.preventDefault();
+        const nominal = parseInt(amount.replace(/\D/g, ''));
+
+        if (sourceType === 'simpanan' && !selectedSimpanan) {
+            return toast.error('Pilih jenis simpanan dulu!');
+        }
+        if (!nominal || nominal < 50000) {
+            return toast.error('Minimal penarikan Rp 50.000');
+        }
+        if (nominal > getActiveBalance()) {
+            return toast.error('Saldo tidak mencukupi!');
+        }
+        if (!bankName.trim() || !accountNumber.trim()) {
+            return toast.error('Info rekening wajib diisi!');
+        }
+
+        setShowPinModal(true);
+    };
+
     const executeWithdraw = async () => {
         setIsLoading(true);
-        const toastId = toast.loading('Mengajukan penarikan...');
+        const toastId = toast.loading('Mengirim permintaan penarikan...');
         const nominal = parseInt(amount.replace(/\D/g, ''));
 
         try {
-            const { error } = await supabase.from('transactions').insert({
+            // Masukkan ke tabel penarikan untuk disetujui admin
+            const { error } = await supabase.from('savings_withdrawals').insert({
                 user_id: user?.id,
-                type: 'withdraw',
+                type: sourceType === 'tapro' ? 'tapro' : selectedSimpanan.id,
                 amount: nominal,
-                status: 'pending',
-                description: `Penarikan ke: ${bankInfo}`,
-                proof_url: null
+                bank_name: bankName,
+                account_number: accountNumber,
+                status: 'pending'
             });
 
             if (error) throw error;
 
-            toast.success('Pengajuan berhasil dikirim!', { id: toastId });
+            toast.success('Permintaan dikirim! Admin akan memproses segera.', { id: toastId });
             navigate('/transaksi/riwayat');
         } catch (error: any) {
             toast.error('Gagal: ' + error.message, { id: toastId });
         } finally {
             setIsLoading(false);
+            setShowPinModal(false);
         }
-    };
-
-    // --- HANDLE CLICK (Validasi & Buka Modal) ---
-    const handleWithdrawClick = (e: React.FormEvent) => {
-        e.preventDefault();
-        const nominal = parseInt(amount.replace(/\D/g, ''));
-
-        // 1. Validasi
-        if (!nominal || nominal < 50000) {
-            toast.error('Minimal penarikan Rp 50.000');
-            return;
-        }
-        if (nominal > currentBalance) {
-            toast.error('Saldo tidak mencukupi!');
-            return;
-        }
-        if (!bankInfo.trim()) {
-            toast.error('Info rekening tujuan wajib diisi!');
-            return;
-        }
-
-        // 2. Buka Modal PIN
-        setShowPinModal(true);
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-24">
-
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
             {/* HEADER */}
-            <div className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-blue-200">
+            <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
                 <div className="px-4 py-4 flex items-center gap-3">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 rounded-full hover:bg-blue-100 transition"
-                    >
-                        <ArrowLeft size={20} className="text-blue-900" />
+                    <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition">
+                        <ArrowLeft size={20} className="text-[#003366]" />
                     </button>
-
-                    <h1 className="text-base font-semibold text-blue-900">
-                        Tarik Tunai
-                    </h1>
+                    <h1 className="text-base font-bold text-[#003366]">Tarik Tunai</h1>
                 </div>
             </div>
 
             <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
-
-                {/* SALDO CARD */}
-                <div className="rounded-3xl bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 p-6 text-white shadow-xl shadow-blue-300">
-                    <p className="text-sm opacity-90 mb-1">
-                        Saldo Bisa Ditarik
-                    </p>
-                    <h2 className="text-3xl font-extrabold tracking-tight">
-                        {formatRupiah(currentBalance)}
-                    </h2>
+                
+                {/* 1. KATEGORI SUMBER DANA */}
+                <div className="grid grid-cols-2 gap-3">
+                    <button 
+                        onClick={() => { setSourceType('tapro'); setSelectedSimpanan(null); }}
+                        className={cn(
+                            "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
+                            sourceType === 'tapro' ? "bg-[#003366] border-[#003366] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
+                        )}
+                    >
+                        <Wallet size={24} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Saldo Tapro</span>
+                    </button>
+                    <button 
+                        onClick={() => setSourceType('simpanan')}
+                        className={cn(
+                            "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
+                            sourceType === 'simpanan' ? "bg-[#003366] border-[#003366] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
+                        )}
+                    >
+                        <PiggyBank size={24} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Non-Tapro</span>
+                    </button>
                 </div>
 
-                {/* FORM */}
-                <form
-                    onSubmit={handleWithdrawClick} // Ganti handler
-                    className="bg-white rounded-3xl border border-blue-200 shadow-md p-6 space-y-6"
-                >
-
-                    {/* NOMINAL */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-blue-900">
-                            Nominal Penarikan
-                        </label>
-
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-blue-700">
-                                Rp
-                            </span>
-                            <Input
-                                type="number"
-                                placeholder="0"
-                                className="pl-12 h-14 text-lg font-bold border-blue-300 focus:border-blue-700 focus:ring-blue-700"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <div className="flex justify-between text-xs">
-                            <span className="text-blue-600">
-                                Minimal Rp 50.000
-                            </span>
-                            {parseInt(amount) > currentBalance && (
-                                <span className="text-red-600 font-semibold">
-                                    Saldo tidak mencukupi
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* REKENING */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-semibold text-blue-900">
-                            Rekening Tujuan
-                        </label>
-
-                        <div className="relative">
-                            <CreditCard
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-700"
-                                size={18}
-                            />
-                            <Input
-                                type="text"
-                                placeholder="Contoh: BCA 12345678 a.n Rizki"
-                                className="pl-12 h-14 border-blue-300 focus:border-blue-700 focus:ring-blue-700"
-                                value={bankInfo}
-                                onChange={(e) => setBankInfo(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        <p className="text-xs text-blue-600">
-                            Pastikan nama pemilik rekening sesuai dengan akun
+                {/* 2. SALDO CARD */}
+                <div className="rounded-3xl bg-[#0B2B4B] p-6 text-white shadow-xl relative overflow-hidden">
+                    <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">
+                            {sourceType === 'tapro' ? 'Saldo Dompet Tapro' : selectedSimpanan ? selectedSimpanan.name : 'Pilih Jenis Simpanan'}
                         </p>
+                        <h2 className="text-3xl font-black tracking-tight">
+                            {formatRupiah(getActiveBalance())}
+                        </h2>
+
+                        {/* List Opsi Simpanan jika Non-Tapro dipilih */}
+                        {sourceType === 'simpanan' && (
+                            <div className="mt-4 grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                                {simpananOptions.map((opt) => (
+                                    <button 
+                                        key={opt.id}
+                                        onClick={() => setSelectedSimpanan(opt)}
+                                        className={cn(
+                                            "w-full flex justify-between items-center px-4 py-3 rounded-xl border transition-all text-xs font-bold",
+                                            selectedSimpanan?.id === opt.id 
+                                                ? "bg-white text-[#003366] border-white shadow-lg" 
+                                                : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <opt.icon size={14} />
+                                            <span>{opt.name}</span>
+                                        </div>
+                                        <span className="opacity-80 font-mono">{formatRupiah(user?.[opt.col] || 0)}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. FORM INPUT */}
+                <form onSubmit={handleWithdrawClick} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-6 space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nominal Penarikan</label>
+                        <div className="relative group">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-[#003366] transition-colors">Rp</span>
+                            <input
+                                type="text"
+                                placeholder="0"
+                                className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#003366] outline-none transition-all"
+                                value={amount}
+                                onChange={handleAmountChange}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    {/* SUBMIT */}
-                    <Button
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rekening Tujuan</label>
+                        <div className="relative">
+                            <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Nama Bank (BCA, Mandiri, dll)"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#003366] outline-none"
+                                value={bankName}
+                                onChange={(e) => setBankName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="relative">
+                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Nomor Rekening"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#003366] outline-none"
+                                value={accountNumber}
+                                onChange={(e) => setAccountNumber(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <button
                         type="submit"
-                        isLoading={isLoading}
-                        disabled={isLoading || (parseInt(amount) > currentBalance)}
-                        className="w-full h-14 text-base font-bold rounded-2xl bg-blue-900 hover:bg-blue-800 shadow-lg shadow-blue-300"
+                        disabled={isLoading || (parseInt(amount.replace(/\D/g, '')) > getActiveBalance())}
+                        className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-2xl bg-[#003366] text-white hover:bg-blue-900 shadow-lg active:scale-95 transition-all disabled:opacity-50"
                     >
-                        <Banknote className="mr-2" />
-                        Ajukan Penarikan
-                    </Button>
+                        {isLoading ? <Loader2 className="animate-spin" /> : <><Banknote size={18} className="inline mr-2" /> AJUKAN PENARIKAN</>}
+                    </button>
                 </form>
 
                 {/* INFO */}
-                <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-900">
-                    <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                    <p>
-                        Penarikan akan diproses Admin dalam waktu
-                        <b> 1×24 jam kerja</b>. Pastikan data rekening benar.
+                <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                    <AlertCircle size={20} className="shrink-0 mt-0.5 text-amber-600" />
+                    <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
+                        Permintaan penarikan akan diverifikasi Admin dalam waktu 1x24 jam kerja.
                     </p>
                 </div>
-
             </div>
 
-            {/* MODAL PIN */}
             <PinModal
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}

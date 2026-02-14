@@ -39,11 +39,13 @@ import AdminKabarForm from './pages/admin/AdminKabarForm';
 import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 import { AdminTamasa } from './pages/admin/AdminTamasa';
+import { AdminInflip } from './pages/admin/AdminInflip'; // 🔥 IMPORT BARU
 import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 import { AdminLHU } from './pages/admin/AdminLHU';
 import { AdminLabaRugi } from './pages/admin/AdminLabaRugi';
 import { CreditWarehouse } from './pages/admin/CreditWarehouse';
+import { AdminSimpanan } from './pages/admin/AdminSimpanan';
 
 // PROGRAM & LAINNYA
 import { Tamasa } from './pages/program/Tamasa';
@@ -80,10 +82,16 @@ function App() {
           <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
           <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
           <Route path="/admin/laporan" element={<AdminFinancialReport />} />
+          
+          {/* Program Admin Routes */}
           <Route path="/admin/tamasa" element={<AdminTamasa />} />
+          <Route path="/admin/inflip" element={<AdminInflip />} /> {/* 🔥 ROUTE BARU */}
           <Route path="/admin/toko" element={<AdminTokoKatalog />} />
           <Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
+          <Route path="/admin/simpanan" element={<AdminSimpanan />} />
+          
+          {/* Admin Tools Routes */}
           <Route path="/admin/lhu" element={<AdminLHU />} />
           <Route path="/admin/labarugi" element={<AdminLabaRugi />} />
           <Route path="/admin/gudang-kredit" element={<CreditWarehouse />} />

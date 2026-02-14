@@ -22,6 +22,17 @@ export const TopUp = () => {
         { name: 'MANDIRI', number: '0987654321', holder: 'KOPERASI KKJ PUSAT' },
     ];
 
+    // --- FUNGSI FORMAT RUPIAH (OTOMATIS TITIK) ---
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/\D/g, ''); // Hapus semua selain angka
+        if (rawValue) {
+            const formattedValue = parseInt(rawValue).toLocaleString('id-ID');
+            setAmount(formattedValue);
+        } else {
+            setAmount('');
+        }
+    };
+
     const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
         toast.success('Nomor rekening disalin!');
@@ -38,7 +49,9 @@ export const TopUp = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const nominal = parseInt(amount.replace(/\D/g, ''));
+        // Bersihkan titik sebelum kirim ke database
+        const nominal = parseInt(amount.replace(/\./g, ''));
+        
         if (!nominal || nominal < 10000) {
             toast.error('Minimal Top Up Rp 10.000');
             return;
@@ -140,7 +153,7 @@ export const TopUp = () => {
                     onSubmit={handleSubmit}
                     className="bg-white p-6 rounded-2xl border border-blue-200 space-y-6"
                 >
-                    {/* NOMINAL */}
+                    {/* NOMINAL DENGAN FORMAT TITIK */}
                     <div>
                         <label className="block text-sm font-semibold text-gray-800 mb-2">
                             Nominal Top Up
@@ -150,11 +163,11 @@ export const TopUp = () => {
                                 Rp
                             </span>
                             <Input
-                                type="number"
+                                type="text"
                                 placeholder="0"
                                 className="pl-12 text-lg font-bold focus:ring-2 focus:ring-blue-900"
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                onChange={handleAmountChange}
                                 required
                             />
                         </div>

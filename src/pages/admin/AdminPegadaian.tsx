@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
 import { 
     ArrowLeft, Check, X, RefreshCw, Scale, 
-    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins 
+    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, Save
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -14,9 +14,13 @@ export const AdminPegadaian = () => {
     const navigate = useNavigate();
     const [dataList, setDataList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // Tab: 'pending' vs 'history' konsisten dengan TAMASA
     const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
+
+    // --- STATE UNTUK MODAL APPROVAL ---
+    const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+    const [selectedReq, setSelectedReq] = useState<any>(null);
+    const [taksiranCair, setTaksiranCair] = useState<number>(0);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -46,43 +50,71 @@ export const AdminPegadaian = () => {
         }
     };
 
-    const handleApprove = async (req: any) => {
-        const input = window.prompt(`Masukkan Nilai Taksiran (Cair) untuk ${req.item_weight}gr emas ini (Rupiah):`, "0");
-        if (!input) return;
-        const loanAmount = parseInt(input.replace(/\D/g, ''));
-        if (loanAmount <= 0) return toast.error("Nominal tidak valid!");
+    // 1. BUKA MODAL APPROVE
+    const openApproveModal = (req: any) => {
+        setSelectedReq(req);
+        setTaksiranCair(0); // Reset nilai
+        setIsApproveModalOpen(true);
+    };
 
-        const confirm = window.confirm(`Setujui dan cairkan dana ${formatRupiah(loanAmount)} ke saldo user?`);
+    // 2. HANDLE INPUT FORMAT RUPIAH
+    const handleTaksiranChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/\D/g, ''); // Hapus non-digit
+        setTaksiranCair(Number(rawValue));
+    };
+
+    // 3. SUBMIT APPROVAL
+    const handleSubmitApprove = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedReq) return;
+        if (taksiranCair <= 0) return toast.error("Nominal taksiran harus diisi!");
+
+        const confirm = window.confirm(`Cairkan dana ${formatRupiah(taksiranCair)} ke saldo user?`);
         if (!confirm) return;
 
+        setIsProcessing(true);
         const toastId = toast.loading("Memproses pencairan...");
+
         try {
-            await supabase.from("pawn_transactions").update({ status: "approved", loan_amount: loanAmount }).eq("id", req.id);
-            const currentBalance = req.profiles?.tapro_balance || 0;
-            await supabase.from("profiles").update({ tapro_balance: currentBalance + loanAmount }).eq("id", req.user_id);
+            // Update status transaksi gadai
+            await supabase.from("pawn_transactions")
+                .update({ status: "approved", loan_amount: taksiranCair })
+                .eq("id", selectedReq.id);
+
+            // Update saldo user
+            const currentBalance = selectedReq.profiles?.tapro_balance || 0;
+            await supabase.from("profiles")
+                .update({ tapro_balance: currentBalance + taksiranCair })
+                .eq("id", selectedReq.user_id);
             
+            // Catat riwayat transaksi (Topup Saldo)
             await supabase.from("transactions").insert({
-                user_id: req.user_id,
+                user_id: selectedReq.user_id,
                 type: "topup",
-                amount: loanAmount,
+                amount: taksiranCair,
                 status: "success",
-                description: `Pencairan Gadai: ${req.item_name}`
+                description: `Pencairan Gadai: ${selectedReq.item_name}`
             });
 
+            // Kirim Notifikasi
             await supabase.from("notifications").insert({
-                user_id: req.user_id,
+                user_id: selectedReq.user_id,
                 title: "Gadai Disetujui ✅",
-                message: `Pengajuan gadai ${req.item_name} disetujui senilai ${formatRupiah(loanAmount)}. Dana masuk ke Tapro.`,
+                message: `Pengajuan gadai ${selectedReq.item_name} disetujui senilai ${formatRupiah(taksiranCair)}. Dana masuk ke Tapro.`,
                 type: "success"
             });
 
             toast.success("Berhasil dicairkan!", { id: toastId });
+            setIsApproveModalOpen(false);
             fetchData();
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
+        } finally {
+            setIsProcessing(false);
         }
     };
 
+    // 4. HANDLE REJECT (Masih pakai prompt tidak apa2 karena teks bebas)
     const handleReject = async (req: any) => {
         const reason = window.prompt("Alasan penolakan:", "Foto kurang jelas / Kualitas barang tidak sesuai");
         if (!reason) return;
@@ -112,16 +144,13 @@ export const AdminPegadaian = () => {
                         <h1 className="text-2xl font-bold text-gray-900">Approval Gadai</h1>
                         <p className="text-sm text-gray-500">Verifikasi & Taksiran Gadai Emas Syariah Anggota</p>
                     </div>
-                    <button 
-                        onClick={fetchData} 
-                        className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95"
-                    >
+                    <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-kkj-blue")} />
                     </button>
                 </div>
             </div>
 
-            {/* Tab Navigation Konsisten */}
+            {/* Tab Navigation */}
             <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('pending')}
@@ -156,7 +185,7 @@ export const AdminPegadaian = () => {
                         {dataList.map((req) => (
                             <div key={req.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row gap-6 hover:shadow-md transition-all duration-300">
                                 
-                                {/* Foto Barang - Gaya Konsisten */}
+                                {/* Foto Barang */}
                                 <div className="w-full lg:w-44 h-44 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative group border border-gray-100 shadow-inner">
                                     <img src={req.image_url} alt="Emas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -164,7 +193,7 @@ export const AdminPegadaian = () => {
                                     </div>
                                 </div>
 
-                                {/* Info Detail - Gaya TAMASA */}
+                                {/* Info Detail */}
                                 <div className="flex-1 space-y-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
@@ -194,7 +223,7 @@ export const AdminPegadaian = () => {
                                         </div>
                                     </div>
 
-                                    {/* Grid Spek Barang - Gaya TAMASA */}
+                                    {/* Grid Spek Barang */}
                                     <div className="grid grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center shadow-sm">
                                         <div>
                                             <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Berat</p>
@@ -219,12 +248,12 @@ export const AdminPegadaian = () => {
                                     )}
                                 </div>
 
-                                {/* Kolom Aksi Vertikal - Konsisten TAMASA */}
+                                {/* Kolom Aksi */}
                                 <div className="flex flex-col justify-center gap-3 lg:border-l lg:pl-6 border-gray-100 min-w-[200px]">
                                     {activeTab === 'pending' ? (
                                         <>
                                             <button 
-                                                onClick={() => handleApprove(req)} 
+                                                onClick={() => openApproveModal(req)} // GANTI HANDLE APPROVE KE MODAL
                                                 className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                                             >
                                                 <Check size={18} /> Setujui
@@ -245,12 +274,71 @@ export const AdminPegadaian = () => {
                                         </div>
                                     )}
                                 </div>
-
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* --- MODAL APPROVAL / TAKSIRAN --- */}
+            {isApproveModalOpen && selectedReq && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-gray-900">Setujui Gadai</h2>
+                            <button onClick={() => setIsApproveModalOpen(false)} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 text-gray-500"><X size={20}/></button>
+                        </div>
+
+                        <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                            <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Barang Jaminan</p>
+                            <p className="text-sm text-blue-900 font-medium">
+                                {selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSubmitApprove}>
+                            <div className="mb-6">
+                                <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">
+                                    Masukkan Nilai Taksiran (Cair)
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                                    <input 
+                                        type="text" 
+                                        required 
+                                        placeholder="0" 
+                                        value={taksiranCair ? taksiranCair.toLocaleString('id-ID') : ''} // 🔥 FORMAT OTOMATIS
+                                        onChange={handleTaksiranChange} // 🔥 HANDLE CHANGE
+                                        className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-3.5 font-bold text-lg text-slate-800 outline-none focus:ring-4 focus:ring-blue-100 focus:border-kkj-blue transition-all"
+                                        autoFocus
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2 ml-1">
+                                    *Nominal ini akan langsung ditransfer ke Saldo Tapro anggota.
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button 
+                                    type="submit" 
+                                    disabled={isProcessing}
+                                    className="flex-1 bg-green-600 text-white py-3.5 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    <CheckCircle size={18} /> {isProcessing ? 'Memproses...' : 'CAIRKAN DANA'}
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsApproveModalOpen(false)}
+                                    className="px-6 border border-gray-200 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all text-sm"
+                                >
+                                    Batal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
