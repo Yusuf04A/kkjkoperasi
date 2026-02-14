@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Calendar, Share2, Megaphone, Clock, Tag } from 'lucide-react';
+import { ArrowLeft, Calendar, Share2, Megaphone, Clock, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import toast from 'react-hot-toast';
 
@@ -81,36 +81,39 @@ export const KabarDetail = () => {
         <div className="min-h-screen bg-gray-50 font-sans pb-20">
             
             {/* --- HEADER NAVIGATION --- */}
-            <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="max-w-7xl mx-auto px-6 py-8">
                 <button 
                     onClick={() => navigate(-1)} 
-                    className="flex items-center gap-2 text-slate-500 hover:text-[#003366] transition-colors font-bold text-sm"
+                    className="flex items-center gap-2 text-slate-500 hover:text-[#003366] transition-colors font-bold text-sm group"
                 >
-                    <ArrowLeft size={20} /> Kembali
+                    <div className="p-1.5 rounded-full bg-slate-100 group-hover:bg-blue-50 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                    Kembali ke Dashboard
                 </button>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 md:px-6">
                 
-                {/* --- HERO CARD (INFLIP STYLE) --- */}
-                <div className="bg-[#003366] rounded-[2.5rem] shadow-2xl overflow-hidden relative min-h-[400px] flex flex-col md:flex-row items-center border border-yellow-500/20">
+                {/* --- HERO CARD --- */}
+                <div className="bg-[#003366] rounded-[2.5rem] shadow-xl overflow-hidden relative min-h-[350px] flex flex-col md:flex-row items-center p-8 md:p-12 gap-8 md:gap-12">
                     
                     {/* Background Accents */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3"></div>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 
                     {/* CONTENT LEFT (TEXT) */}
-                    <div className="flex-1 p-8 md:p-12 relative z-10 text-white flex flex-col justify-center h-full order-2 md:order-1">
+                    <div className="flex-1 relative z-10 text-white flex flex-col justify-center h-full w-full order-2 md:order-1">
                         
                         {/* Badges */}
-                        <div className="flex flex-wrap items-center gap-3 mb-6">
+                        <div className="flex flex-wrap items-center gap-3 mb-5">
                             <span className={cn(
                                 "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm",
-                                colorMap[kabar.color] || 'bg-blue-500'
+                                kabar.type === 'INFO' ? 'bg-rose-600' : 
+                                kabar.type === 'PROMO' ? 'bg-emerald-600' : 'bg-blue-500'
                             )}>
                                 {kabar.type}
                             </span>
-                            <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 text-[10px] font-bold tracking-wide">
+                            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-white/10 text-white/90">
                                 <Calendar size={12} className="text-yellow-400" />
                                 {new Date(kabar.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </div>
@@ -121,49 +124,67 @@ export const KabarDetail = () => {
                             {kabar.title}
                         </h1>
 
-                        {/* Excerpt (Optional short desc if needed, or keeping it clean) */}
-                        <div className="w-20 h-1 bg-yellow-400 rounded-full mb-6"></div>
+                        {/* Yellow Underline Decoration */}
+                        <div className="w-16 h-1.5 bg-yellow-400 rounded-full mb-8"></div>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-4 mt-auto">
-                            <button 
-                                onClick={handleShare}
-                                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all active:scale-95"
-                            >
-                                <Share2 size={16} /> Bagikan Kabar
-                            </button>
-                        </div>
+                        {/* Share Button */}
+                        <button 
+                            onClick={handleShare}
+                            className="w-fit flex items-center gap-2 bg-[#163e63] hover:bg-[#1e4e7a] border border-white/10 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-lg"
+                        >
+                            <Share2 size={16} /> Bagikan Kabar
+                        </button>
                     </div>
 
                     {/* CONTENT RIGHT (IMAGE) */}
-                    <div className="w-full md:w-[45%] h-64 md:h-[400px] p-4 md:p-6 order-1 md:order-2 relative z-10">
-                        <div className="w-full h-full rounded-[2rem] overflow-hidden shadow-lg border border-white/10 bg-black/20">
-                            {kabar.image_url ? (
-                                <img 
-                                    src={kabar.image_url} 
-                                    alt={kabar.title} 
-                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/10">
-                                    <Megaphone size={80} className="text-white/20 rotate-12" />
-                                </div>
-                            )}
+                    <div className="w-full md:w-[420px] shrink-0 order-1 md:order-2 relative z-10 flex justify-center md:justify-end">
+                        <div className="w-full aspect-video md:aspect-[4/3] bg-white rounded-3xl overflow-hidden shadow-2xl p-2 rotate-1 hover:rotate-0 transition-transform duration-500">
+                            <div className="w-full h-full rounded-2xl overflow-hidden bg-gray-50 relative">
+                                {kabar.image_url ? (
+                                    <img 
+                                        src={kabar.image_url} 
+                                        alt={kabar.title} 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-300">
+                                        <Megaphone size={64} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* --- BODY CONTENT --- */}
-                <div className="max-w-4xl mx-auto mt-10 px-2">
-                    <div className="prose prose-lg prose-slate max-w-none">
-                        <div className="flex items-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-wider mb-6">
-                            <Clock size={16} />
-                            Diposting pukul {new Date(kabar.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                {/* --- BODY CONTENT (DESCRIPTION CARD) --- */}
+                <div className="max-w-5xl mx-auto mt-8">
+                    {/* Kartu Putih untuk membungkus deskripsi agar tidak polos */}
+                    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 shadow-sm border border-slate-100">
+                        
+                        {/* Header Deskripsi */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6 mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                    <FileText size={20} className="text-[#003366]" />
+                                    Deskripsi Kabar
+                                </h3>
+                                {/* Garis kecil dibawah judul */}
+                                <div className="h-1 w-10 bg-yellow-400 rounded-full mt-2 ml-7"></div>
+                            </div>
+                            
+                            {/* Timestamp */}
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg text-slate-400 text-[10px] font-bold uppercase tracking-wider w-fit">
+                                <Clock size={14} />
+                                Diposting pukul {new Date(kabar.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                            </div>
                         </div>
                         
-                        <div className="whitespace-pre-line text-slate-700 leading-relaxed font-medium text-base md:text-lg">
-                            {kabar.description}
-                        </div>
+                        {/* Isi Teks */}
+                        <article className="prose prose-slate max-w-none">
+                            <p className="text-slate-600 leading-8 text-[15px] md:text-base font-medium whitespace-pre-line">
+                                {kabar.description}
+                            </p>
+                        </article>
                     </div>
                 </div>
 
