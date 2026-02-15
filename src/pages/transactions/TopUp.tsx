@@ -96,18 +96,18 @@ export const TopUp = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans">
 
             {/* HEADER */}
-            <div className="sticky top-0 z-30 bg-white border-b border-blue-200">
+            <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 hover:bg-blue-50 rounded-full transition"
+                        className="p-2 hover:bg-green-50 rounded-full transition"
                     >
-                        <ArrowLeft size={20} className="text-blue-900" />
+                        <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-base font-semibold text-blue-900">
+                    <h1 className="text-lg font-bold text-gray-900">
                         Isi Saldo (Top Up)
                     </h1>
                 </div>
@@ -117,30 +117,30 @@ export const TopUp = () => {
 
                 {/* INFO REKENING */}
                 <div className="space-y-3">
-                    <h2 className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                    <h2 className="text-xs font-bold text-[#136f42] uppercase tracking-wider pl-1">
                         Transfer ke Rekening
                     </h2>
 
                     {bankAccounts.map((bank, idx) => (
                         <div
                             key={idx}
-                            className="bg-white p-5 rounded-2xl border border-blue-200 shadow-sm flex justify-between items-center"
+                            className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex justify-between items-center group hover:border-[#136f42] transition-colors"
                         >
                             <div>
-                                <p className="text-xs font-bold text-blue-900 bg-blue-100 w-fit px-2 py-0.5 rounded mb-1">
+                                <p className="text-[10px] font-black text-[#136f42] bg-green-50 w-fit px-2 py-1 rounded mb-1 uppercase tracking-wide">
                                     {bank.name}
                                 </p>
-                                <p className="font-mono text-lg font-bold text-gray-900">
+                                <p className="font-mono text-lg font-bold text-gray-900 tracking-tight">
                                     {bank.number}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-gray-400 mt-1 font-medium">
                                     a.n {bank.holder}
                                 </p>
                             </div>
 
                             <button
                                 onClick={() => handleCopy(bank.number)}
-                                className="p-2 text-gray-400 hover:text-blue-900 hover:bg-blue-50 rounded-lg"
+                                className="p-2 text-gray-400 hover:text-[#136f42] hover:bg-green-50 rounded-xl transition-all active:scale-95"
                             >
                                 <Copy size={20} />
                             </button>
@@ -151,53 +151,58 @@ export const TopUp = () => {
                 {/* FORM */}
                 <form
                     onSubmit={handleSubmit}
-                    className="bg-white p-6 rounded-2xl border border-blue-200 space-y-6"
+                    className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6"
                 >
                     {/* NOMINAL DENGAN FORMAT TITIK */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
                             Nominal Top Up
                         </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-3.5 text-gray-400 font-bold">
+                            <span className="absolute left-4 top-3.5 text-[#136f42] font-bold">
                                 Rp
                             </span>
                             <Input
                                 type="text"
                                 placeholder="0"
-                                className="pl-12 text-lg font-bold focus:ring-2 focus:ring-blue-900"
+                                className="pl-12 text-lg font-bold focus:ring-2 focus:ring-[#136f42] border-green-200 bg-green-50/30"
                                 value={amount}
                                 onChange={handleAmountChange}
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Minimal Rp 10.000
+                        <p className="text-xs text-gray-400 mt-2 font-medium">
+                            *Minimal transfer Rp 10.000
                         </p>
                     </div>
 
                     {/* UPLOAD */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-800 mb-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
                             Bukti Transfer
                         </label>
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-xl p-6 cursor-pointer
+                            className={`border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all
                             ${previewUrl
-                                ? 'border-blue-900 bg-blue-50'
-                                : 'border-blue-200 hover:bg-blue-50'
+                                ? 'border-[#136f42] bg-green-50'
+                                : 'border-green-200 hover:bg-green-50 hover:border-[#136f42]'
                             }`}
                         >
                             {previewUrl ? (
-                                <img src={previewUrl} className="h-32 mx-auto rounded-lg" />
+                                <div className="relative">
+                                    <img src={previewUrl} className="h-40 mx-auto rounded-lg object-contain shadow-md" />
+                                    <p className="text-center text-xs text-[#136f42] font-bold mt-2">Klik untuk ganti gambar</p>
+                                </div>
                             ) : (
                                 <div className="text-center text-gray-400">
-                                    <UploadCloud size={32} className="mx-auto mb-2" />
-                                    <p className="text-sm font-medium">
+                                    <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <UploadCloud size={24} className="text-[#136f42]" />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-600">
                                         Upload Foto / Screenshot
                                     </p>
-                                    <p className="text-xs">JPG / PNG (Max 2MB)</p>
+                                    <p className="text-xs mt-1">JPG / PNG (Max 2MB)</p>
                                 </div>
                             )}
                             <input
@@ -214,22 +219,22 @@ export const TopUp = () => {
                     <Button
                         type="submit"
                         isLoading={isLoading}
-                        className="w-full bg-blue-900 hover:bg-blue-800 py-6 text-lg rounded-xl"
+                        className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-6 text-lg rounded-xl font-bold shadow-lg shadow-green-900/20 active:scale-95 transition-all"
                     >
-                        <Wallet className="mr-2" /> Konfirmasi Top Up
+                        <Wallet className="mr-2" size={20} /> Konfirmasi Top Up
                     </Button>
                 </form>
 
                 {/* INFO */}
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 text-blue-900 text-sm">
-                    <p className="font-semibold flex items-center gap-2 mb-2">
-                        <CheckCircle size={16} />
-                        Informasi
+                <div className="bg-green-50 p-5 rounded-xl border border-green-200 text-[#136f42] text-sm shadow-sm">
+                    <p className="font-bold flex items-center gap-2 mb-2">
+                        <CheckCircle size={18} />
+                        Informasi Penting
                     </p>
-                    <ul className="list-disc list-inside space-y-1">
-                        <li>Admin memverifikasi maksimal 1x24 jam</li>
-                        <li>Pastikan nominal transfer sesuai</li>
-                        <li>Simpan bukti transfer</li>
+                    <ul className="list-disc list-inside space-y-1.5 text-xs font-medium opacity-90 ml-1">
+                        <li>Admin memverifikasi maksimal 1x24 jam kerja.</li>
+                        <li>Pastikan nominal transfer sesuai hingga 3 digit terakhir.</li>
+                        <li>Simpan bukti transfer jika sewaktu-waktu dibutuhkan.</li>
                     </ul>
                 </div>
 

@@ -26,11 +26,11 @@ export const Withdraw = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showPinModal, setShowPinModal] = useState(false);
 
-    // Daftar Opsi Simpanan (SAMA DENGAN setorsimpanan.tsx)
+    // Daftar Opsi Simpanan
     const simpananOptions = [
-        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
         { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-green-600', bg: 'bg-green-50' },
+        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-emerald-600', bg: 'bg-emerald-50' },
         { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School, color: 'text-orange-600', bg: 'bg-orange-50' },
         { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
         { id: 'siqurma', name: 'Qurban', col: 'siqurma_balance', icon: Heart, color: 'text-red-600', bg: 'bg-red-50' },
@@ -104,13 +104,14 @@ export const Withdraw = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
-            {/* HEADER */}
-            <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
+            
+            {/* HEADER (HIJAU) */}
+            <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition">
-                        <ArrowLeft size={20} className="text-[#003366]" />
+                    <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-green-50 transition">
+                        <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-base font-bold text-[#003366]">Tarik Tunai</h1>
+                    <h1 className="text-lg font-bold text-gray-900">Tarik Tunai</h1>
                 </div>
             </div>
 
@@ -122,7 +123,7 @@ export const Withdraw = () => {
                         onClick={() => { setSourceType('tapro'); setSelectedSimpanan(null); }}
                         className={cn(
                             "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
-                            sourceType === 'tapro' ? "bg-[#003366] border-[#003366] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
+                            sourceType === 'tapro' ? "bg-[#136f42] border-[#136f42] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
                         )}
                     >
                         <Wallet size={24} />
@@ -132,7 +133,7 @@ export const Withdraw = () => {
                         onClick={() => setSourceType('simpanan')}
                         className={cn(
                             "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
-                            sourceType === 'simpanan' ? "bg-[#003366] border-[#003366] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
+                            sourceType === 'simpanan' ? "bg-[#136f42] border-[#136f42] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
                         )}
                     >
                         <PiggyBank size={24} />
@@ -140,11 +141,13 @@ export const Withdraw = () => {
                     </button>
                 </div>
 
-                {/* 2. SALDO CARD */}
-                <div className="rounded-3xl bg-[#0B2B4B] p-6 text-white shadow-xl relative overflow-hidden">
+                {/* 2. SALDO CARD (HIJAU HUTAN) */}
+                <div className="rounded-3xl bg-[#136f42] p-6 text-white shadow-xl relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#136f42] to-[#0f5c35] opacity-90 z-0"></div>
+                    
                     <div className="relative z-10">
-                        <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">
+                        <p className="text-[10px] font-bold text-[#aeea00] uppercase tracking-[0.2em] mb-1">
                             {sourceType === 'tapro' ? 'Saldo Dompet Tapro' : selectedSimpanan ? selectedSimpanan.name : 'Pilih Jenis Simpanan'}
                         </p>
                         <h2 className="text-3xl font-black tracking-tight">
@@ -161,7 +164,7 @@ export const Withdraw = () => {
                                         className={cn(
                                             "w-full flex justify-between items-center px-4 py-3 rounded-xl border transition-all text-xs font-bold",
                                             selectedSimpanan?.id === opt.id 
-                                                ? "bg-white text-[#003366] border-white shadow-lg" 
+                                                ? "bg-white text-[#136f42] border-white shadow-lg" 
                                                 : "bg-white/10 border-white/20 text-white hover:bg-white/20"
                                         )}
                                     >
@@ -182,11 +185,11 @@ export const Withdraw = () => {
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nominal Penarikan</label>
                         <div className="relative group">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-[#003366] transition-colors">Rp</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-[#136f42] transition-colors">Rp</span>
                             <input
                                 type="text"
                                 placeholder="0"
-                                className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#003366] outline-none transition-all"
+                                className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
                                 value={amount}
                                 onChange={handleAmountChange}
                                 required
@@ -201,7 +204,7 @@ export const Withdraw = () => {
                             <input
                                 type="text"
                                 placeholder="Nama Bank (BCA, Mandiri, dll)"
-                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#003366] outline-none"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none"
                                 value={bankName}
                                 onChange={(e) => setBankName(e.target.value)}
                                 required
@@ -212,7 +215,7 @@ export const Withdraw = () => {
                             <input
                                 type="text"
                                 placeholder="Nomor Rekening"
-                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#003366] outline-none"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none"
                                 value={accountNumber}
                                 onChange={(e) => setAccountNumber(e.target.value)}
                                 required
@@ -223,7 +226,7 @@ export const Withdraw = () => {
                     <button
                         type="submit"
                         disabled={isLoading || (parseInt(amount.replace(/\D/g, '')) > getActiveBalance())}
-                        className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-2xl bg-[#003366] text-white hover:bg-blue-900 shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                        className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-2xl bg-[#136f42] text-white hover:bg-[#0f5c35] shadow-lg active:scale-95 transition-all disabled:opacity-50"
                     >
                         {isLoading ? <Loader2 className="animate-spin" /> : <><Banknote size={18} className="inline mr-2" /> AJUKAN PENARIKAN</>}
                     </button>

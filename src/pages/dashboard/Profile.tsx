@@ -172,100 +172,102 @@ export const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
+        <div className="min-h-screen bg-gray-50 font-sans">
             <div className="max-w-7xl mx-auto p-4 lg:p-8 pb-32 lg:pb-12">
 
                 {/* Breadcrumb */}
-                <div className="hidden lg:flex items-center gap-2 mb-6 text-gray-500 hover:text-kkj-blue cursor-pointer w-fit transition-colors" onClick={() => navigate('/')}>
+                <div className="hidden lg:flex items-center gap-2 mb-6 text-gray-500 hover:text-[#136f42] cursor-pointer w-fit transition-colors" onClick={() => navigate('/')}>
                     <ArrowLeft size={18} />
-                    <span className="text-sm font-medium">Kembali ke Dashboard</span>
+                    <span className="text-sm font-bold">Kembali ke Dashboard</span>
                 </div>
 
                 {/* --- HEADER TITLE & TOMBOL EDIT PROFIL --- */}
                 <div className="flex flex-row justify-between items-end mb-6 gap-4">
                     <div>
-                        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Profil Saya</h1>
-                        <p className="text-gray-500 mt-1 text-sm lg:text-base">Kelola informasi akun dan preferensi Anda.</p>
+                        <h1 className="text-2xl lg:text-3xl font-black text-gray-900 tracking-tight">Profil Saya</h1>
+                        <p className="text-gray-500 mt-1 text-sm lg:text-base font-medium">Kelola informasi akun dan preferensi Anda.</p>
                     </div>
                     
-                    {/* 🔥 TOMBOL EDIT PROFIL (UKURAN COMPACT & W-FIT) 🔥 */}
+                    {/* 🔥 TOMBOL EDIT PROFIL 🔥 */}
                     {!isEditing && (
                         <Button 
                             onClick={() => setIsEditing(true)} 
                             variant="outline" 
-                            className="w-fit min-w-0 bg-white border-kkj-blue text-kkj-blue hover:bg-blue-50 font-bold shadow-sm px-4 py-2 h-10 rounded-xl flex items-center gap-2 text-sm"
+                            className="w-fit min-w-0 bg-white border-[#136f42] text-[#136f42] hover:bg-green-50 font-bold shadow-sm px-4 py-2 h-10 rounded-xl flex items-center gap-2 text-sm transition-colors"
                         >
-                            <Pencil size={16} /> Edit Profil
+                            <Pencil size={16} strokeWidth={2.5} /> Edit Profil
                         </Button>
                     )}
                 </div>
 
                 {/* 1. KARTU PROFIL UTAMA */}
-                <div className="bg-white rounded-3xl shadow-lg shadow-gray-100 border border-gray-100 overflow-hidden relative mb-8">
-                    <div className="h-40 bg-gradient-to-r from-kkj-blue to-[#003366] relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+                <div className="bg-white rounded-[2.5rem] shadow-xl shadow-green-900/5 border border-green-50 overflow-hidden relative mb-8">
+                    {/* Background Header Hijau */}
+                    <div className="h-44 bg-gradient-to-br from-[#167d4a] via-[#136f42] to-[#0f5c35] relative">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#aeea00]/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
                     </div>
 
                     <div className="px-6 lg:px-10 pb-10 relative">
                         {/* Avatar */}
-                        <div className="flex justify-between items-end -mt-16 mb-6">
+                        <div className="flex justify-between items-end -mt-16 mb-8">
                             <div className="relative group">
-                                <div className="w-32 h-32 rounded-full bg-white p-1.5 shadow-xl">
-                                    <div className="w-full h-full rounded-full bg-blue-50 flex items-center justify-center text-kkj-blue text-4xl font-bold overflow-hidden border border-gray-100 relative">
+                                <div className="w-32 h-32 rounded-full bg-white p-1.5 shadow-2xl">
+                                    <div className="w-full h-full rounded-full bg-green-50 flex items-center justify-center text-[#136f42] text-4xl font-black overflow-hidden border border-green-100 relative">
                                         {user?.avatar_url ? (
                                             <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                         ) : (
                                             <span>{getInitials(user?.full_name || 'User')}</span>
                                         )}
-                                        {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs">Loading...</div>}
+                                        {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs font-bold">Loading...</div>}
                                     </div>
                                 </div>
                                 {isEditing && (
                                     <div className="absolute -bottom-2 -right-2 flex gap-2">
                                         <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2.5 bg-kkj-blue text-white rounded-full shadow-lg hover:bg-blue-700 border-2 border-white"><Camera size={16} /></button>
-                                        {user?.avatar_url && <button type="button" onClick={handleRemoveImage} className="p-2.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 border-2 border-white"><Trash2 size={16} /></button>}
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-2.5 bg-[#136f42] text-white rounded-full shadow-lg hover:bg-[#0f5c35] border-4 border-white transition-transform active:scale-95"><Camera size={16} /></button>
+                                        {user?.avatar_url && <button type="button" onClick={handleRemoveImage} className="p-2.5 bg-rose-500 text-white rounded-full shadow-lg hover:bg-rose-600 border-4 border-white transition-transform active:scale-95"><Trash2 size={16} /></button>}
                                     </div>
                                 )}
                             </div>
-                            <div className="hidden md:block">
-                                <span className={`px-4 py-2 rounded-xl text-sm font-bold border ${user?.role === 'admin' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                    {user?.role === 'admin' ? 'ADMINISTRATOR' : 'ANGGOTA AKTIF'}
+                            <div className="hidden md:block mb-2">
+                                <span className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border ${user?.role === 'admin' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-[#aeea00] text-[#0f5c35] border-[#aeea00]'}`}>
+                                    {user?.role === 'admin' ? 'Administrator' : 'Anggota Aktif'}
                                 </span>
                             </div>
                         </div>
 
                         {/* Nama & Info */}
                         <div className="mb-8">
-                            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">{user?.full_name}</h2>
-                            <div className="flex flex-wrap items-center gap-3 text-gray-500 mt-1 text-sm font-medium">
+                            <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1">{user?.full_name}</h2>
+                            <div className="flex flex-wrap items-center gap-3 text-slate-500 text-sm font-bold">
                                 <span>{user?.email}</span>
-                                <span className="hidden sm:inline w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                <span className="hidden sm:inline w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                                 <span>{user?.phone}</span>
-                                <span className={`md:hidden ml-2 px-2 py-0.5 rounded text-[10px] font-bold border ${user?.role === 'admin' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
-                                    {user?.role === 'admin' ? 'ADMIN' : 'MEMBER'}
+                                <span className={`md:hidden ml-2 px-2 py-0.5 rounded text-[10px] font-black uppercase border ${user?.role === 'admin' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-green-50 text-green-700 border-green-100'}`}>
+                                    {user?.role === 'admin' ? 'Admin' : 'Member'}
                                 </span>
                             </div>
                         </div>
 
-                        <div className="h-px bg-gray-100 mb-8"></div>
+                        <div className="h-px bg-slate-100 mb-8"></div>
 
                         {/* Form Profil */}
                         <form onSubmit={handleUpdateProfile} className="space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <Input label="Nama Lengkap" icon={<User size={18} />} value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-blue-200 focus:ring-blue-100" : "bg-gray-50 border-transparent"} />
-                                <Input label="Nomor WhatsApp" icon={<Phone size={18} />} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-blue-200 focus:ring-blue-100" : "bg-gray-50 border-transparent"} />
+                                <Input label="Nama Lengkap" icon={<User size={18} />} value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-green-200 focus:ring-green-100" : "bg-slate-50 border-transparent"} />
+                                <Input label="Nomor WhatsApp" icon={<Phone size={18} />} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-green-200 focus:ring-green-100" : "bg-slate-50 border-transparent"} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <Input label="Email Akun" icon={<Mail size={18} />} value={user?.email || ''} disabled={true} className="bg-gray-50/50 text-gray-400 border-gray-100 cursor-not-allowed" />
-                                <Input label="Nomor Induk Anggota (NIAK)" icon={<Shield size={18} />} value={user?.member_id || 'Belum Diterbitkan'} disabled={true} className="bg-gray-50/50 text-gray-400 border-gray-100 cursor-not-allowed font-mono tracking-wider" />
+                                <Input label="Email Akun" icon={<Mail size={18} />} value={user?.email || ''} disabled={true} className="bg-slate-50/50 text-slate-400 border-slate-100 cursor-not-allowed" />
+                                <Input label="Nomor Induk Anggota (NIAK)" icon={<Shield size={18} />} value={user?.member_id || 'Belum Diterbitkan'} disabled={true} className="bg-slate-50/50 text-slate-400 border-slate-100 cursor-not-allowed font-mono tracking-wider font-bold" />
                             </div>
                             
-                            {/* Tombol Simpan / Batal (Hanya muncul saat Edit) */}
+                            {/* Tombol Simpan / Batal */}
                             {isEditing && (
-                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-50 animate-in fade-in">
-                                    <Button type="button" variant="ghost" onClick={() => { setIsEditing(false); setFormData({ full_name: user?.full_name || '', phone: user?.phone || '' }); }} disabled={isLoading} className="text-gray-500 hover:text-red-500 hover:bg-red-50">Batal</Button>
-                                    <Button type="submit" isLoading={isLoading} className="bg-kkj-blue hover:bg-blue-800 px-8 rounded-xl shadow-lg"> <Save size={18} className="mr-2" /> Simpan Perubahan </Button>
+                                <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-50 animate-in fade-in slide-in-from-bottom-2">
+                                    <Button type="button" variant="ghost" onClick={() => { setIsEditing(false); setFormData({ full_name: user?.full_name || '', phone: user?.phone || '' }); }} disabled={isLoading} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold">Batal</Button>
+                                    <Button type="submit" isLoading={isLoading} className="bg-[#136f42] hover:bg-[#0f5c35] px-8 rounded-xl shadow-lg font-bold"> <Save size={18} className="mr-2" /> Simpan Perubahan </Button>
                                 </div>
                             )}
                         </form>
@@ -273,29 +275,29 @@ export const Profile = () => {
                 </div>
 
                 {/* 2. KEAMANAN AKUN (PIN) */}
-                <div className="bg-white rounded-3xl shadow-lg shadow-gray-100 border border-gray-100 overflow-hidden relative p-6 lg:p-10 mb-8">
-                    <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-kkj-blue">
-                            <ShieldCheck size={20} />
+                <div className="bg-white rounded-[2.5rem] shadow-xl shadow-green-900/5 border border-green-50 overflow-hidden relative p-8 lg:p-10 mb-8">
+                    <div className="flex items-center gap-4 mb-8 border-b border-slate-50 pb-6">
+                        <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-[#136f42]">
+                            <ShieldCheck size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">Keamanan Akun</h2>
-                            <p className="text-sm text-gray-500">Atur PIN 6 digit untuk keamanan transaksi.</p>
+                            <h2 className="text-xl font-black text-slate-900 tracking-tight">Keamanan Akun</h2>
+                            <p className="text-sm font-medium text-slate-500">Atur PIN 6 digit untuk keamanan transaksi.</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                         {/* Kolom Kiri: Status PIN */}
                         <div>
-                            <div className={`p-4 rounded-xl border flex items-start gap-3 ${user?.pin ? 'bg-green-50 border-green-200 text-green-800' : 'bg-orange-50 border-orange-200 text-orange-800'}`}>
-                                <div className={`p-2 rounded-full ${user?.pin ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
-                                    {user?.pin ? <ShieldCheck size={20} /> : <Lock size={20} />}
+                            <div className={`p-5 rounded-2xl border flex items-start gap-4 ${user?.pin ? 'bg-[#aeea00]/10 border-[#aeea00] text-[#0f5c35]' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                                <div className={`p-2.5 rounded-xl ${user?.pin ? 'bg-[#aeea00] text-[#0f5c35]' : 'bg-amber-100 text-amber-600'}`}>
+                                    {user?.pin ? <ShieldCheck size={24} /> : <Lock size={24} />}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-sm">{user?.pin ? 'PIN Transaksi Aktif' : 'PIN Belum Diatur'}</h3>
-                                    <p className="text-xs mt-1 opacity-80">
+                                    <h3 className="font-black text-sm uppercase tracking-wide">{user?.pin ? 'PIN Transaksi Aktif' : 'PIN Belum Diatur'}</h3>
+                                    <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">
                                         {user?.pin
-                                            ? "Akun Anda terlindungi. PIN digunakan untuk verifikasi transfer dan penarikan."
+                                            ? "Akun Anda terlindungi. PIN digunakan untuk verifikasi setiap transaksi keluar."
                                             : "Segera atur PIN untuk mengaktifkan fitur transfer dan penarikan saldo."}
                                     </p>
                                 </div>
@@ -304,23 +306,23 @@ export const Profile = () => {
                             {user?.pin && (
                                 <button
                                     onClick={handleForgotPin}
-                                    className="mt-4 text-sm text-blue-600 font-medium hover:underline flex items-center gap-2"
+                                    className="mt-4 text-xs text-[#136f42] font-bold hover:underline flex items-center gap-2 ml-1"
                                 >
-                                    <HelpCircle size={16} /> Lupa PIN Saya?
+                                    <HelpCircle size={14} /> Lupa PIN Saya?
                                 </button>
                             )}
                         </div>
 
                         {/* Kolom Kanan: Form Ganti PIN */}
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             {user?.pin && (
                                 <div>
-                                    <label className="text-sm font-bold text-gray-700 mb-2 block">PIN Lama</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">PIN Lama</label>
                                     <input
                                         type="password"
                                         maxLength={6}
                                         placeholder="******"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-lg font-bold tracking-widest focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
                                         value={oldPin}
                                         onChange={(e) => setOldPin(e.target.value.replace(/[^0-9]/g, ''))}
                                     />
@@ -328,14 +330,14 @@ export const Profile = () => {
                             )}
 
                             <div>
-                                <label className="text-sm font-bold text-gray-700 mb-2 block">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">
                                     {user?.pin ? 'PIN Baru' : 'Buat PIN Baru (6 Angka)'}
                                 </label>
                                 <input
                                     type="password"
                                     maxLength={6}
                                     placeholder="******"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-lg font-bold tracking-widest focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
                                     value={pin}
                                     onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
                                 />
@@ -345,7 +347,7 @@ export const Profile = () => {
                                 onClick={handleSavePin}
                                 isLoading={pinLoading}
                                 disabled={pin.length < 6 || (!!user?.pin && oldPin.length < 6)}
-                                className="w-full bg-kkj-blue hover:bg-blue-800 text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-50"
+                                className="w-full bg-[#136f42] hover:bg-[#0f5c35] text-white py-4 rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 active:scale-95 transition-all"
                             >
                                 <KeyRound size={18} className="mr-2" />
                                 {user?.pin ? "Ganti PIN" : "Simpan PIN"}
@@ -354,16 +356,16 @@ export const Profile = () => {
                     </div>
                 </div>
 
-                {/* 3. LOGOUT BUTTON (TETAP DI BAWAH) */}
+                {/* 3. LOGOUT BUTTON */}
                 <div className="flex flex-col items-center gap-4 mb-20">
                     <button 
                         onClick={handleLogout}
                         className="w-full md:w-auto md:min-w-[300px] bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
                     >
-                        <LogOut size={20} />
+                        <LogOut size={20} strokeWidth={2.5} />
                         Keluar Aplikasi
                     </button>
-                    <p className="text-center text-gray-400 text-xs font-medium uppercase tracking-widest">
+                    <p className="text-center text-slate-300 text-[10px] font-black uppercase tracking-[0.3em]">
                         Koperasi KKJ App v1.0.2
                     </p>
                 </div>

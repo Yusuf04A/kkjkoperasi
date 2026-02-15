@@ -8,7 +8,7 @@ import { ArrowLeft, Calculator, ShoppingBag, Briefcase, BookOpen, GraduationCap,
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
 
-export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka ini ada!
+export const SubmissionForm = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
@@ -82,18 +82,12 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
         // 1. Tentukan Pokok Pinjaman & Pajak
         if (type === 'Kredit Barang') {
             if (selectedProduct) {
-                // Logic Baru: Pokok = (Harga - DP) 
                 pokok = (selectedProduct.price - selectedProduct.dp);
                 pajak = selectedProduct.tax || 0;
 
-                // Pastikan tenor mengikuti pilihan produk jika belum diset
-                // Note: selectedProduct.tenors diambil dari JSONB database
                 if (selectedProduct.tenors && Array.isArray(selectedProduct.tenors)) {
                     if (!selectedProduct.tenors.includes(tenor)) {
-                        // Jika tenor saat ini tidak ada di opsi produk, set ke opsi pertama
                         tenor = selectedProduct.tenors[0];
-                        // Kita update state tenor nanti via effect atau biarkan user memilih ulang
-                        // Disini kita paksa perhitungan pakai tenor valid pertama dulu
                     }
                 }
             }
@@ -107,19 +101,15 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
 
         // 2. Tentukan Rumus Bunga
         if (type === 'Kredit Barang' || type === 'Modal Usaha') {
-            // Faedah 10% Per TAHUN
             ratePerBulan = (0.10 / 12);
         } else {
-            // Faedah 0.6% Per BULAN
             ratePerBulan = 0.006;
         }
 
         // 3. Hitung Angsuran
         if (pokok > 0 && tenor > 0) {
-            // Pokok Pinjaman (Yang dihutangkan)
             const totalPokok = pokok + pajak;
-
-            const totalJasa = pokok * ratePerBulan * tenor; // Bunga dihitung dari pokok murni
+            const totalJasa = pokok * ratePerBulan * tenor; 
             const totalBayar = totalPokok + totalJasa;
             const angsuranPerBulan = totalBayar / tenor;
 
@@ -140,13 +130,11 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Handler Khusus Ganti Produk Katalog
     const handleProductChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const productId = parseInt(e.target.value);
         const product = catalogItems.find(item => item.id === productId);
         setSelectedProduct(product || null);
 
-        // Reset tenor ke default produk tsb jika ada
         if (product && product.tenors && product.tenors.length > 0) {
             setFormData(prev => ({ ...prev, tenor: product.tenors[0].toString() }));
         }
@@ -164,7 +152,6 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
         const toastId = toast.loading('Mengirim pengajuan...');
 
         try {
-            // Siapkan data detail
             let detailData = {};
             if (type === 'Kredit Barang') {
                 if (!selectedProduct) throw new Error("Pilih barang terlebih dahulu");
@@ -196,7 +183,7 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
 
             const { error } = await supabase.from('loans').insert({
                 user_id: user?.id,
-                amount: simulation.pokok + simulation.pajak, // Total hutang
+                amount: simulation.pokok + simulation.pajak, 
                 duration: parseInt(formData.tenor),
                 type: type,
                 margin_rate: 10,
@@ -217,13 +204,12 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
         }
     };
 
-    // --- RENDER FORM INPUT ---
     const renderFormInputs = () => {
         switch (type) {
             case 'Kredit Barang':
                 return (
                     <div className="space-y-4 animate-fade-in">
-                        <div className="bg-blue-50 p-3 rounded-lg flex gap-2 text-sm text-blue-800 border border-blue-200">
+                        <div className="bg-green-50 p-3 rounded-lg flex gap-2 text-sm text-green-800 border border-green-200">
                             <Info className="shrink-0 mt-0.5" size={16} />
                             <p>Pilih barang yang tersedia di katalog. DP dan Tenor sudah ditentukan oleh Admin.</p>
                         </div>
@@ -231,7 +217,7 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2">Pilih Barang</label>
                             <select
-                                className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-kkj-blue outline-none"
+                                className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-[#136f42] outline-none"
                                 onChange={handleProductChange}
                                 defaultValue=""
                             >
@@ -261,9 +247,9 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                                     <span className="text-gray-500">Biaya Admin/Pajak</span>
                                     <span className="font-bold text-orange-600">{formatRupiah(selectedProduct.tax || 0)}</span>
                                 </div>
-                                <div className="border-t border-dashed pt-2 flex justify-between text-sm font-bold">
+                                <div className="border-t border-dashed border-gray-300 pt-2 flex justify-between text-sm font-bold">
                                     <span>Sisa Pokok Hutang</span>
-                                    <span className="text-blue-600">{formatRupiah((selectedProduct.price - selectedProduct.dp) + (selectedProduct.tax || 0))}</span>
+                                    <span className="text-[#136f42]">{formatRupiah((selectedProduct.price - selectedProduct.dp) + (selectedProduct.tax || 0))}</span>
                                 </div>
                             </div>
                         )}
@@ -279,7 +265,7 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                             <Input name="omsetHarian" label="Omset Harian" type="number" onChange={handleChange} required />
                             <Input name="keuntunganBersih" label="Profit Bersih/Bulan" type="number" onChange={handleChange} required />
                         </div>
-                        <div className="border-t border-dashed my-2"></div>
+                        <div className="border-t border-dashed border-gray-300 my-2"></div>
                         <Input name="besarModal" label="Mengajukan Modal Sebesar" type="number" placeholder="Rp" onChange={handleChange} required />
                         <Input name="peruntukan" label="Peruntukan Permodalan" placeholder="Beli alat, stok barang..." onChange={handleChange} required />
                     </>
@@ -307,10 +293,10 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
-                    <ArrowLeft size={20} className="text-gray-700" />
+        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+            <div className="bg-white border-b border-green-100 sticky top-0 z-30 px-4 py-4 flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="p-2 hover:bg-green-50 rounded-full transition-colors">
+                    <ArrowLeft size={20} className="text-[#136f42]" />
                 </button>
                 <h1 className="text-lg font-bold text-gray-900">Formulir Pembiayaan</h1>
             </div>
@@ -329,12 +315,12 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                             key={item.id}
                             onClick={() => {
                                 setType(item.id);
-                                setSelectedProduct(null); // Reset product jika ganti tab
+                                setSelectedProduct(null); 
                                 setSimulation({ pokok: 0, margin: 0, angsuran: 0, pajak: 0 });
                             }}
                             className={`p-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-2 transition-all ${type === item.id
-                                ? 'bg-kkj-blue text-white border-kkj-blue shadow-lg scale-105'
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                ? 'bg-[#136f42] text-white border-[#136f42] shadow-lg scale-105'
+                                : 'bg-white text-gray-600 border-gray-200 hover:bg-green-50 hover:border-green-200'
                                 }`}
                         >
                             {item.icon} {item.id}
@@ -346,8 +332,8 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
 
                     {/* FORMULIR INPUT */}
                     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4 h-fit">
-                        <h2 className="font-bold text-gray-800 border-b pb-3 mb-2 flex items-center gap-2">
-                            {type === 'Kredit Barang' && <ShoppingBag size={18} className="text-kkj-blue" />}
+                        <h2 className="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-2 flex items-center gap-2">
+                            {type === 'Kredit Barang' && <ShoppingBag size={18} className="text-[#136f42]" />}
                             {type}
                         </h2>
 
@@ -361,7 +347,6 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                             </label>
 
                             <div className="grid grid-cols-4 gap-2">
-                                {/* JIKA KREDIT BARANG: Ambil tenor dari produk database. JIKA LAIN: Ambil standar */}
                                 {(type === 'Kredit Barang' && selectedProduct && selectedProduct.tenors
                                     ? selectedProduct.tenors
                                     : [3, 6, 12, 24]
@@ -371,8 +356,8 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                                         type="button"
                                         onClick={() => setFormData({ ...formData, tenor: bln.toString() })}
                                         className={`py-2 rounded-lg border text-sm font-bold transition-all ${formData.tenor === bln.toString()
-                                            ? 'bg-orange-500 text-white border-orange-500'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                            ? 'bg-[#aeea00] text-[#0f5c35] border-[#aeea00] shadow-sm'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-green-50'
                                             }`}
                                     >
                                         {bln}
@@ -387,12 +372,13 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
 
                     {/* SIMULASI */}
                     <div className="space-y-4">
-                        <div className="bg-blue-900 text-white p-6 rounded-2xl shadow-lg">
-                            <h3 className="font-bold text-blue-200 flex items-center gap-2 mb-4">
+                        <div className="bg-[#136f42] text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                            <h3 className="font-bold text-[#aeea00] flex items-center gap-2 mb-4 relative z-10">
                                 <Calculator size={18} /> Simulasi Angsuran
                             </h3>
 
-                            <div className="space-y-3 text-sm">
+                            <div className="space-y-3 text-sm relative z-10">
                                 <div className="flex justify-between">
                                     <span className="opacity-70">Pokok (Setelah DP)</span>
                                     <span className="font-bold">{formatRupiah(simulation.pokok)}</span>
@@ -411,7 +397,7 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                                             ? 'Jasa (10% / Tahun)'
                                             : 'Jasa (0.6% / Bulan)'}
                                     </span>
-                                    <span className="font-bold text-green-300">
+                                    <span className="font-bold text-[#aeea00]">
                                         + {formatRupiah(simulation.margin)}
                                     </span>
                                 </div>
@@ -420,17 +406,17 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
 
                                 <div className="flex justify-between items-center text-lg">
                                     <span className="font-bold">Angsuran / Bulan</span>
-                                    <span className="font-bold text-yellow-400">
+                                    <span className="font-bold text-[#aeea00] drop-shadow-sm">
                                         {formatRupiah(simulation.angsuran)}
                                     </span>
                                 </div>
-                                <div className="text-right text-[10px] opacity-60 mt-1">
+                                <div className="text-right text-[10px] opacity-60 mt-1 uppercase tracking-widest font-bold">
                                     x {formData.tenor} Bulan
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-blue-50 p-4 rounded-xl text-xs text-blue-800 flex gap-3 leading-relaxed border border-blue-100">
+                        <div className="bg-amber-50 p-4 rounded-xl text-xs text-amber-800 flex gap-3 leading-relaxed border border-amber-100">
                             <AlertCircle size={16} className="shrink-0 mt-0.5" />
                             <p>
                                 <strong>Catatan Penting:</strong> <br />
@@ -444,7 +430,7 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
                             onClick={handleSubmit}
                             isLoading={isLoading}
                             disabled={simulation.pokok === 0 || (type === 'Kredit Barang' && !selectedProduct)}
-                            className="w-full bg-kkj-blue py-4 text-lg rounded-xl shadow-lg"
+                            className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-4 text-lg rounded-xl shadow-lg shadow-green-900/20 active:scale-95 transition-all font-bold"
                         >
                             Ajukan Sekarang
                         </Button>
@@ -454,4 +440,4 @@ export const SubmissionForm = () => { // <--- Pastikan kurung kurawal pembuka in
             </div>
         </div>
     );
-}; // <--- KURUNG TUTUP FUNGSI UTAMA
+};

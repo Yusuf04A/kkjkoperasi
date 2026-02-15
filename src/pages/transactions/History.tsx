@@ -6,11 +6,10 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Clock,
-  CheckCircle,
-  XCircle,
   ArrowRightLeft,
   Coins,
-  TrendingUp
+  TrendingUp,
+  Filter
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah, cn } from '../../lib/utils';
@@ -93,9 +92,9 @@ export const TransactionHistory = () => {
       case 'lhu':
         return {
           icon: <TrendingUp size={20} />,
-          bg: 'bg-blue-50',
-          text: 'text-blue-700',
-          label: displayLabel || 'Bagi Hasil LHU'
+          bg: 'bg-green-50',
+          text: 'text-green-700',
+          label: displayLabel || 'Bagi Hasil Lhu'
         };
       default:
         return {
@@ -108,20 +107,25 @@ export const TransactionHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F7FF] pb-24 font-sans text-slate-900">
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
 
-      {/* HEADER IDENTIK KIRIM SALDO */}
-      <div className="sticky top-0 z-30 bg-white border-b border-blue-100/50 shadow-sm">
-        <div className="px-4 py-4 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-slate-100 transition text-[#003366]"
-          >
-            <ArrowLeft size={20} strokeWidth={2} />
+      {/* HEADER */}
+      <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full hover:bg-green-50 transition text-[#136f42]"
+            >
+              <ArrowLeft size={20} strokeWidth={2} />
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">
+              Riwayat Transaksi
+            </h1>
+          </div>
+          <button className="p-2 text-slate-400 hover:text-[#136f42] transition">
+            <Filter size={20} />
           </button>
-          <h1 className="text-base font-semibold text-[#003366]">
-            Riwayat Transaksi
-          </h1>
         </div>
       </div>
 
@@ -129,18 +133,18 @@ export const TransactionHistory = () => {
 
         {loading ? (
           <div className="text-center py-24 flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#003366] border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#136f42] border-t-transparent"></div>
             <p className="text-sm text-slate-500 font-medium">
               Memuat data...
             </p>
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-24 flex flex-col items-center text-slate-400">
-            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
-              <Clock size={32} />
+            <div className="w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-4 border border-gray-100">
+              <Clock size={32} className="text-[#136f42]/30" />
             </div>
-            <p className="text-sm font-medium">
-                Belum ada riwayat transaksi
+            <p className="text-sm font-bold uppercase tracking-widest text-gray-400">
+                Belum ada transaksi
             </p>
           </div>
         ) : (
@@ -151,12 +155,12 @@ export const TransactionHistory = () => {
             return (
               <div
                 key={tx.id}
-                className="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center shadow-sm hover:shadow-md transition group"
+                className="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm hover:shadow-md transition group"
               >
                 <div className="flex items-center gap-4">
                   <div
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                      "w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-sm",
                       style.bg,
                       style.text
                     )}
@@ -164,10 +168,10 @@ export const TransactionHistory = () => {
                     {style.icon}
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-900 text-sm leading-tight">
+                    <p className="font-bold text-slate-800 text-sm leading-tight tracking-tight">
                       {style.label}
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-wider">
                       {format(
                         new Date(tx.created_at),
                         'dd MMM yyyy, HH:mm',
@@ -180,7 +184,7 @@ export const TransactionHistory = () => {
                 <div className="text-right">
                   <p
                     className={cn(
-                      "font-mono font-bold text-base tracking-tighter",
+                      "font-mono font-black text-base tracking-tighter",
                       isIncome ? 'text-emerald-600' : 'text-rose-500'
                     )}
                   >
@@ -189,7 +193,7 @@ export const TransactionHistory = () => {
 
                   <div className="flex justify-end mt-1">
                     <span className={cn(
-                        "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border",
+                        "flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-lg border shadow-sm",
                         tx.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
                         tx.status === 'success' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                         "bg-rose-50 text-rose-700 border-rose-100"

@@ -6,13 +6,15 @@ import {
     LayoutDashboard, Wallet, History, Send, ArrowDownLeft, ArrowUpRight,
     FileText, LogOut, User, ArrowRightLeft, Megaphone
 } from 'lucide-react';
+// IMPORT LOGO KKJ DARI ASSETS
+import logoKKJ from '../../assets/Logo-kkj.png';
 
 export const Navbar = () => {
     const { user, logout, unreadCount, fetchUnreadCount } = useAuthStore();
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
 
-    // Cek notifikasi setiap kali pindah halaman (biar update terus)
+    // Cek notifikasi setiap kali pindah halaman
     useEffect(() => {
         if (user) fetchUnreadCount();
     }, [location.pathname, user]);
@@ -35,13 +37,6 @@ export const Navbar = () => {
         { label: 'Pembiayaan', path: '/pembiayaan' },
     ];
 
-    const transactionLinks = [
-        { label: 'Isi Saldo', path: '/transaksi/topup', icon: <ArrowDownLeft size={16} className="text-green-600" /> },
-        { label: 'Tarik Tunai', path: '/transaksi/tarik', icon: <ArrowUpRight size={16} className="text-red-600" /> },
-        { label: 'Kirim Uang', path: '/transaksi/kirim', icon: <Send size={16} className="text-blue-600" /> },
-        { label: 'Riwayat', path: '/transaksi/riwayat', icon: <History size={16} className="text-orange-600" /> },
-    ];
-
     const isActive = (path: string) => location.pathname === path;
 
     return (
@@ -49,13 +44,21 @@ export const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
 
-                    {/* 1. LOGO (KIRI) */}
+                    {/* 1. LOGO & BRANDING (KIRI) */}
                     <div className="flex-shrink-0 flex items-center cursor-pointer">
-                        <Link to={isAdmin ? "/admin/dashboard" : "/"} className="flex items-center gap-2">
-                            <div className="bg-kkj-blue text-white p-1.5 rounded-lg font-bold text-xl">KKJ</div>
+                        <Link to={isAdmin ? "/admin/dashboard" : "/"} className="flex items-center gap-3">
+                            {/* GANTI DIV KKJ DENGAN GAMBAR LOGO */}
+                            <div className="bg-white rounded-lg p-1 border border-gray-100 shadow-sm">
+                                <img 
+                                    src={logoKKJ} 
+                                    alt="Logo KKJ" 
+                                    className="h-8 w-auto object-contain"
+                                />
+                            </div>
+                            
                             <div className="hidden md:block leading-tight">
-                                <span className="block font-bold text-gray-800 text-sm">Koperasi KKJ</span>
-                                <span className="block text-[10px] text-gray-500 tracking-wider">MITRA SEJAHTERA</span>
+                                <span className="block font-extrabold text-[#003366] text-sm uppercase tracking-wide">Koperasi KKJ</span>
+                                <span className="block text-[10px] text-gray-500 font-medium tracking-wider">MITRA SEJAHTERA</span>
                             </div>
                         </Link>
                     </div>
@@ -67,7 +70,7 @@ export const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 className={`text-sm font-medium transition-colors border-b-2 py-5 ${isActive(link.path)
-                                    ? 'border-kkj-blue text-kkj-blue font-bold'
+                                    ? 'border-[#003366] text-[#003366] font-bold'
                                     : 'border-transparent text-gray-500 hover:text-gray-900'
                                     }`}
                             >
@@ -77,17 +80,17 @@ export const Navbar = () => {
 
                         {!isAdmin && (
                             <div className="relative group">
-                                <button className="flex items-center gap-1 text-gray-700 hover:text-kkj-blue font-medium py-2">
+                                <button className="flex items-center gap-1 text-gray-700 hover:text-[#003366] font-medium py-2">
                                     Transaksi <ChevronDown size={16} />
                                 </button>
                                 {/* Dropdown Content */}
-                                <div className="absolute top-full left-0 w-48 bg-white shadow-lg rounded-xl border border-gray-100 p-2 hidden group-hover:block z-50">
-                                    <Link to="/transaksi/topup" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Isi Saldo</Link>
-                                    <Link to="/transaksi/tarik" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Tarik Tunai</Link>
-                                    <Link to="/transaksi/kirim" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Kirim Uang</Link>
-                                    <Link to="/transaksi/riwayat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Riwayat</Link>
+                                <div className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-xl border border-gray-100 p-2 hidden group-hover:block z-50 transform transition-all duration-200 mt-1">
+                                    <Link to="/transaksi/topup" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Isi Saldo</Link>
+                                    <Link to="/transaksi/tarik" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Tarik Tunai</Link>
+                                    <Link to="/transaksi/kirim" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Kirim Uang</Link>
+                                    <Link to="/transaksi/riwayat" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg font-medium">Riwayat</Link>
                                     <div className="h-px bg-gray-100 my-1"></div>
-                                    <Link to="/transaksi" className="block px-4 py-2 text-sm font-bold text-kkj-blue hover:bg-blue-50 rounded-lg">Semua Menu</Link>
+                                    <Link to="/transaksi" className="block px-4 py-2 text-sm font-bold text-[#003366] hover:bg-blue-50 rounded-lg">Semua Menu</Link>
                                 </div>
                             </div>
                         )}
@@ -96,8 +99,8 @@ export const Navbar = () => {
                     {/* 3. PROFIL & NOTIF (KANAN) */}
                     <div className="hidden md:flex items-center gap-4">
 
-                        {/* Lonceng Notifikasi PINTAR */}
-                        <Link to="/notifikasi" className="relative p-2 text-gray-400 hover:text-kkj-blue transition-colors rounded-full hover:bg-gray-100">
+                        {/* Lonceng Notifikasi */}
+                        <Link to="/notifikasi" className="relative p-2 text-gray-400 hover:text-[#003366] transition-colors rounded-full hover:bg-gray-100">
                             <Bell size={20} className={unreadCount > 0 ? 'text-gray-600 animate-pulse' : ''} />
                             {unreadCount > 0 && (
                                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
@@ -109,12 +112,12 @@ export const Navbar = () => {
                         <Link to="/profil" className="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full transition-all border border-transparent hover:border-gray-200">
                             <div className="text-right hidden lg:block">
                                 <p className="text-sm font-bold text-gray-900 leading-none">{user.full_name}</p>
-                                <p className="text-[10px] text-gray-500 uppercase font-bold mt-1">{user.role}</p>
+                                <p className="text-[10px] text-gray-500 uppercase font-bold mt-1 tracking-wide">{user.role}</p>
                             </div>
                             <img
-                                src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=0D8ABC&color=fff`}
+                                src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=003366&color=fff`}
                                 alt="Profile"
-                                className="w-9 h-9 rounded-full object-cover shadow-sm"
+                                className="w-9 h-9 rounded-full object-cover shadow-sm border border-gray-100"
                             />
                         </Link>
                     </div>
@@ -127,7 +130,7 @@ export const Navbar = () => {
                                 <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                             )}
                         </Link>
-                        <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                        <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                             {isOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
@@ -136,18 +139,18 @@ export const Navbar = () => {
 
             {/* MOBILE MENU DRAWER */}
             {isOpen && (
-                <div className="md:hidden bg-white border-t border-gray-100 p-4 shadow-lg absolute w-full left-0 top-16 h-screen overflow-y-auto pb-32 animate-in slide-in-from-top-5">
-                    {/* ... (Konten Mobile Menu Sama Seperti Sebelumnya) ... */}
-                    {/* Saya singkat biar gak kepanjangan, isinya sama persis dengan yang lama */}
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl mb-6 border border-gray-100">
+                <div className="md:hidden bg-white border-t border-gray-100 p-4 shadow-lg absolute w-full left-0 top-16 h-screen overflow-y-auto pb-32 animate-in slide-in-from-top-5 z-40">
+                    
+                    {/* User Profile Card Mobile */}
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl mb-6 border border-gray-100 shadow-sm">
                         <img
-                            src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=0D8ABC&color=fff`}
+                            src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=003366&color=fff`}
                             alt="Profile"
                             className="w-12 h-12 rounded-full object-cover"
                         />
                         <div>
-                            <p className="font-bold text-gray-900 text-lg">{user.full_name}</p>
-                            <Link to="/profil" onClick={() => setIsOpen(false)} className="text-sm text-kkj-blue font-bold hover:underline">Edit Profil</Link>
+                            <p className="font-bold text-gray-900 text-lg leading-tight">{user.full_name}</p>
+                            <Link to="/profil" onClick={() => setIsOpen(false)} className="text-sm text-[#003366] font-bold hover:underline">Edit Profil</Link>
                         </div>
                     </div>
 
@@ -158,7 +161,7 @@ export const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-4 py-3 rounded-xl text-base font-bold transition-all ${isActive(link.path) ? 'bg-blue-50 text-kkj-blue' : 'text-gray-600 bg-white border border-gray-100 hover:bg-gray-50'
+                                className={`block px-4 py-3 rounded-xl text-base font-bold transition-all ${isActive(link.path) ? 'bg-blue-50 text-[#003366] border border-blue-100' : 'text-gray-600 bg-white border border-gray-100 hover:bg-gray-50'
                                     }`}
                             >
                                 {link.label}
@@ -169,7 +172,7 @@ export const Navbar = () => {
                             <Link
                                 to="/transaksi"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-4 py-3 rounded-xl text-base font-bold flex justify-between items-center transition-all ${location.pathname.includes('/transaksi') ? 'bg-blue-50 text-kkj-blue' : 'text-gray-600 bg-white border border-gray-100 hover:bg-gray-50'
+                                className={`block px-4 py-3 rounded-xl text-base font-bold flex justify-between items-center transition-all ${location.pathname.includes('/transaksi') ? 'bg-blue-50 text-[#003366] border border-blue-100' : 'text-gray-600 bg-white border border-gray-100 hover:bg-gray-50'
                                     }`}
                             >
                                 Transaksi <ChevronDown size={16} className="-rotate-90 text-gray-400" />
@@ -177,12 +180,14 @@ export const Navbar = () => {
                         )}
                     </div>
 
-                    <button
-                        onClick={() => { logout(); setIsOpen(false); }}
-                        className="w-full mt-8 flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
-                    >
-                        <LogOut size={18} /> Keluar Aplikasi
-                    </button>
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        <button
+                            onClick={() => { logout(); setIsOpen(false); }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                            <LogOut size={18} /> Keluar Aplikasi
+                        </button>
+                    </div>
                 </div>
             )}
         </nav>

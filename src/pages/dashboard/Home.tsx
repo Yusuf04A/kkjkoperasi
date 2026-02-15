@@ -6,8 +6,7 @@ import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
     Download, Share2, X, ShoppingBag, 
-    Search, ShoppingCart, ChevronRight, Plus,
-    TrendingUp
+    Search, ShoppingCart, ChevronRight, Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
@@ -147,50 +146,53 @@ export const Home = () => {
 
     const featuredPrograms = [
         { name: 'TAMASA', title: 'Tabungan Emas', desc: 'Investasi aman mulai Rp 10rb', icon: Coins, color: 'from-yellow-400 to-yellow-600', text: 'text-yellow-700', bg: 'bg-yellow-50', link: '/program/tamasa' },
-        { name: 'INFLIP', title: 'Investasi Properti', desc: 'Flipping properti profit tinggi', icon: Building, color: 'from-blue-400 to-blue-600', text: 'text-blue-700', bg: 'bg-blue-50', link: '/program/inflip' },
-        { name: 'PEGADAIAN', title: 'Gadai Emas Syariah', desc: 'Solusi dana cepat & berkah', icon: Wallet, color: 'from-[#003366] to-[#0055a5]', text: 'text-blue-900', bg: 'bg-blue-50', link: '/program/pegadaian' }
+        { name: 'INFLIP', title: 'Investasi Properti', desc: 'Flipping properti profit tinggi', icon: Building, color: 'from-green-400 to-green-600', text: 'text-green-800', bg: 'bg-green-50', link: '/program/inflip' },
+        { name: 'PEGADAIAN', title: 'Gadai Emas Syariah', desc: 'Solusi dana cepat & berkah', icon: Wallet, color: 'from-[#136f42] to-[#0f5c35]', text: 'text-green-900', bg: 'bg-green-50', link: '/program/pegadaian' }
     ];
 
     return (
         <div className="min-h-screen bg-gray-50 pb-10 font-sans">
-            {/* 1. HERO SECTION */}
-            <div className="w-full bg-[#003366] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
+            {/* 1. HERO SECTION (HIJAU HUTAN) */}
+            <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
+                
                 <div className="max-w-xl mx-auto px-4 relative z-10">
-                    <div ref={cardRef} className="w-full bg-gradient-to-br from-[#003366] to-[#0055a5] rounded-xl shadow-2xl overflow-hidden border border-yellow-500/40 relative aspect-[1.58/1] flex flex-col justify-between">
+                    {/* KARTU ANGGOTA (HIJAU GRADIENT) */}
+                    <div ref={cardRef} className="w-full bg-gradient-to-br from-[#136f42] to-[#0f5c35] rounded-xl shadow-2xl overflow-hidden border border-yellow-500/40 relative aspect-[1.58/1] flex flex-col justify-between">
                         <div className="flex items-center gap-3 p-4 md:p-6 border-b border-yellow-500/30 bg-black/10 backdrop-blur-sm">
                             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-yellow-500/50 shrink-0">
-                                <ShieldCheck className="text-[#003366]" size={24} />
+                                <ShieldCheck className="text-[#136f42]" size={24} />
                             </div>
                             <div>
-                                <h2 className="text-white font-bold text-sm md:text-lg uppercase">KOPERASI KARYA KITA JAYA</h2>
-                                <p className="text-yellow-400 text-[10px] md:text-xs italic">Berkoperasi Demi Wujud Kesejahteraan Bersama</p>
+                                <h2 className="text-white font-bold text-sm md:text-lg uppercase tracking-wider">KOPERASI KARYA KITA JAYA</h2>
+                                <p className="text-[#aeea00] text-[10px] md:text-xs italic font-medium">Berkoperasi Demi Wujud Kesejahteraan Bersama</p>
                             </div>
                         </div>
                         <div className="px-5 py-2 flex justify-between items-center flex-1 gap-4">
                             <div className="space-y-2 flex-1 min-w-0">
-                                <h1 className="text-white font-bold text-xl md:text-3xl uppercase truncate">{userData.name}</h1>
+                                <h1 className="text-white font-bold text-xl md:text-3xl uppercase truncate tracking-tight">{userData.name}</h1>
                                 <div className="space-y-1 text-xs md:text-sm">
-                                    <p className="text-white"><span className="text-yellow-400 font-semibold w-12 inline-block">NIAK</span> : {userData.memberId}</p>
-                                    <p className="text-white"><span className="text-yellow-400 font-semibold w-12 inline-block">STATUS</span> : <span className="text-green-300 font-bold bg-green-900/60 px-2 rounded border border-green-500/30">AKTIF</span></p>
+                                    <p className="text-white"><span className="text-[#aeea00] font-semibold w-12 inline-block">NIAK</span> : {userData.memberId}</p>
+                                    <p className="text-white"><span className="text-[#aeea00] font-semibold w-12 inline-block">STATUS</span> : <span className="text-white font-bold bg-[#4caf50] px-2 rounded text-[10px] tracking-wider">AKTIF</span></p>
                                 </div>
                                 <div className="pt-2">
-                                    <p className="text-yellow-400/80 text-[10px] font-bold uppercase tracking-widest">Saldo Tapro</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-white font-mono">{showBalance ? formatRupiah(userData.taproBalance) : 'Rp •••••••'}</p>
+                                    <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest">Saldo Tapro</p>
+                                    <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{showBalance ? formatRupiah(userData.taproBalance) : 'Rp •••••••'}</p>
                                 </div>
                             </div>
                             <div className="w-24 h-32 md:w-28 md:h-36 bg-gray-200 rounded-md border-[3px] border-white shadow-lg overflow-hidden shrink-0">
-                                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=003366&color=fff&size=200`} className="w-full h-full object-cover" crossOrigin="anonymous" />
+                                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=200`} className="w-full h-full object-cover" crossOrigin="anonymous" />
                             </div>
                         </div>
-                        <div className="bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600 h-8 md:h-10 flex items-center justify-between px-5 text-[10px] md:text-xs text-blue-900 font-bold uppercase tracking-wider shadow-inner">
+                        <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-8 md:h-10 flex items-center justify-between px-5 text-[10px] md:text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner">
                             <span>Sejak: {userData.joinDate}</span>
                             <span>Valid: {userData.validUntil}</span>
                         </div>
                     </div>
                     <div className="flex justify-end gap-3 mt-3 px-2">
-                        <button onClick={handleDownloadCard} className="flex items-center gap-2 bg-white/10 text-blue-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all"><Download size={14} /> Simpan</button>
-                        <button onClick={handleShare} className="flex items-center gap-2 bg-white/10 text-blue-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all"><Share2 size={14} /> Bagikan</button>
+                        <button onClick={handleDownloadCard} className="flex items-center gap-2 bg-white/10 text-green-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20"><Download size={14} /> Simpan</button>
+                        <button onClick={handleShare} className="flex items-center gap-2 bg-white/10 text-green-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20"><Share2 size={14} /> Bagikan</button>
                     </div>
                 </div>
             </div>
@@ -201,19 +203,19 @@ export const Home = () => {
                     <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-6 cursor-pointer group p-2 rounded-lg">
                         <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2 text-gray-500">
-                                <span className="text-xs font-bold tracking-wider uppercase group-hover:text-blue-900 transition-colors">Total Aset (Non-Tapro)</span>
+                                <span className="text-xs font-bold tracking-wider uppercase group-hover:text-[#136f42] transition-colors">Total Aset (Non-Tapro)</span>
                                 <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>{showBalance ? <Eye size={14} /> : <EyeOff size={14} />}</button>
                             </div>
-                            <div className="bg-blue-50 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">8 JENIS <ArrowRight size={10} /></div>
+                            <div className="bg-green-50 text-[#136f42] text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">8 JENIS <ArrowRight size={10} /></div>
                         </div>
-                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-blue-900 transition-colors">{showBalance ? formatRupiah(totalOtherAssets) : 'Rp ••••••••'}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors">{showBalance ? formatRupiah(totalOtherAssets) : 'Rp ••••••••'}</div>
                     </div>
                     <div className="w-full md:w-7/12">
                         <div className="grid grid-cols-5 gap-3">
                             {quickActions.map((action) => (
                                 <Link key={action.label} to={action.link} className="flex flex-col items-center gap-2 group">
                                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm border border-gray-50", action.bg)}><action.icon className={cn("w-6 h-6", action.color)} /></div>
-                                    <span className="text-[10px] font-medium text-gray-600 group-hover:text-blue-900 text-center leading-tight">{action.label}</span>
+                                    <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#136f42] text-center leading-tight">{action.label}</span>
                                 </Link>
                             ))}
                         </div>
@@ -229,7 +231,7 @@ export const Home = () => {
                 <div>
                     <div className="flex justify-between items-end mb-4">
                         <h3 className="text-lg font-bold text-gray-900">Program Unggulan</h3>
-                        <button className="text-xs font-medium text-blue-900 hover:underline flex items-center gap-1">Lihat Semua <ArrowRight size={14} /></button>
+                        <button className="text-xs font-medium text-[#136f42] hover:underline flex items-center gap-1">Lihat Semua <ArrowRight size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {featuredPrograms.map((program, idx) => (
@@ -237,7 +239,7 @@ export const Home = () => {
                                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${program.color}`}></div>
                                 <div className="flex justify-between items-start mb-3">
                                     <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}><program.icon className={program.text} size={20} /></div>
-                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#003366] group-hover:text-white transition-colors"><ArrowUpRight size={16} /></div>
+                                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#136f42] group-hover:text-white transition-colors"><ArrowUpRight size={16} /></div>
                                 </div>
                                 <h4 className="text-base font-bold text-gray-900 mb-0.5">{program.name}</h4>
                                 <p className="text-xs font-medium text-gray-600 mb-1">{program.title}</p>
@@ -247,11 +249,11 @@ export const Home = () => {
                     </div>
                 </div>
 
-                {/* 4. KATALOG BELANJA RAMPING DENGAN INDIKATOR STOK */}
+                {/* 4. KATALOG BELANJA */}
                 <div id="shop-section" className="pt-4 pb-12 space-y-6">
                     <div className="flex justify-between items-center px-2">
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-[#003366] rounded-2xl text-white shadow-xl shadow-blue-900/20">
+                            <div className="p-3 bg-[#136f42] rounded-2xl text-white shadow-xl shadow-green-900/20">
                                 <ShoppingBag size={24} />
                             </div>
                             <div>
@@ -265,7 +267,7 @@ export const Home = () => {
                         >
                             <ShoppingCart size={24} className="group-hover:rotate-12 transition-transform" />
                             {cart.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-white text-[#003366] text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg animate-bounce border-2 border-amber-500">
+                                <span className="absolute -top-1 -right-1 bg-white text-[#136f42] text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg animate-bounce border-2 border-amber-500">
                                     {cart.length}
                                 </span>
                             )}
@@ -279,7 +281,7 @@ export const Home = () => {
                             placeholder="Cari kebutuhan Anda..." 
                             value={searchTerm} 
                             onChange={(e) => setSearchTerm(e.target.value)} 
-                            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:border-[#003366] transition-all shadow-sm" 
+                            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:border-[#136f42] transition-all shadow-sm" 
                         />
                     </div>
 
@@ -292,25 +294,22 @@ export const Home = () => {
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-slate-200"><ShoppingBag size={48} /></div>
                                     )}
-                                    
-                                    {/* INDIKATOR STOK */}
                                     <div className={cn(
                                         "absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm backdrop-blur-md transition-all",
-                                        product.stock > 0 ? "bg-white/90 text-[#003366] border border-blue-100" : "bg-rose-500 text-white"
+                                        product.stock > 0 ? "bg-white/90 text-[#136f42] border border-green-100" : "bg-rose-500 text-white"
                                     )}>
                                         {product.stock > 0 ? `Stok: ${product.stock}` : 'Habis'}
                                     </div>
                                 </div>
                                 <div className="flex-1 flex flex-col">
-                                    <span className="text-[8px] font-bold text-[#003366] bg-blue-50 px-2 py-0.5 rounded uppercase w-fit mb-1">{product.category}</span>
+                                    <span className="text-[8px] font-bold text-[#136f42] bg-green-50 px-2 py-0.5 rounded uppercase w-fit mb-1">{product.category}</span>
                                     <h3 className="text-[13px] font-bold text-slate-800 leading-tight line-clamp-2 mb-2">{product.name}</h3>
                                     <div className="mt-auto">
-                                        <p className="text-sm font-bold text-[#003366] mb-3">{formatRupiah(product.price)}</p>
-                                        {/* 🔥 BUTTON KERANJANG BERWARNA BIRU 🔥 */}
+                                        <p className="text-sm font-bold text-[#136f42] mb-3">{formatRupiah(product.price)}</p>
                                         <button 
                                             onClick={() => addToCart(product)} 
                                             disabled={product.stock === 0} 
-                                            className="w-full py-2.5 bg-[#003366] hover:bg-[#002244] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-1.5"
+                                            className="w-full py-2.5 bg-[#136f42] hover:bg-[#0f5c35] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-green-900/20 active:scale-95 flex items-center justify-center gap-1.5"
                                         >
                                             <Plus size={14} strokeWidth={3} /> Keranjang
                                         </button>
@@ -327,7 +326,7 @@ export const Home = () => {
                 <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-full duration-500">
                         <div className="flex justify-between items-center mb-8 border-b border-slate-50 pb-4">
-                            <h2 className="text-2xl font-bold text-[#003366] uppercase tracking-tighter leading-none">Keranjang Belanja</h2>
+                            <h2 className="text-2xl font-bold text-[#136f42] uppercase tracking-tighter leading-none">Keranjang Belanja</h2>
                             <button onClick={() => setIsCartOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={24} /></button>
                         </div>
                         {cart.length === 0 ? <div className="py-20 text-center space-y-4"><div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200"><ShoppingBag size={40} /></div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Keranjang Anda Kosong</p></div> : (
@@ -335,13 +334,13 @@ export const Home = () => {
                                 {cart.map(item => (
                                     <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
                                         <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md"><img src={item.product.image_url} className="w-full h-full object-cover" /></div>
-                                        <div className="flex-1"><h4 className="font-bold text-slate-900 text-sm uppercase tracking-tighter leading-tight">{item.product.name}</h4><p className="text-xs font-bold text-[#003366] mt-1">{formatRupiah(item.product.price)} x {item.quantity}</p></div>
+                                        <div className="flex-1"><h4 className="font-bold text-slate-900 text-sm uppercase tracking-tighter leading-tight">{item.product.name}</h4><p className="text-xs font-bold text-[#136f42] mt-1">{formatRupiah(item.product.price)} x {item.quantity}</p></div>
                                         <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
                                     </div>
                                 ))}
                                 <div className="pt-6 border-t border-slate-200 space-y-4">
-                                    <div className="flex justify-between items-center px-2"><span className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Total Estimasi</span><span className="text-2xl font-bold text-[#003366] tracking-tighter">{formatRupiah(totalBayar)}</span></div>
-                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#003366] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">Checkout <ChevronRight size={18} /></button>
+                                    <div className="flex justify-between items-center px-2"><span className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Total Estimasi</span><span className="text-2xl font-bold text-[#136f42] tracking-tighter">{formatRupiah(totalBayar)}</span></div>
+                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#136f42] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">Checkout <ChevronRight size={18} /></button>
                                 </div>
                             </div>
                         )}
@@ -369,9 +368,9 @@ export const Home = () => {
                             </div>
                         </div>
                         <div className="mt-6 pt-4 border-t border-gray-100 shrink-0">
-                            <div className="flex justify-between items-center bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-inner">
-                                <span className="font-bold text-blue-900 uppercase text-xs tracking-wider">Total Aset Lain</span>
-                                <span className="font-bold text-xl text-blue-900">{formatRupiah(totalOtherAssets)}</span>
+                            <div className="flex justify-between items-center bg-green-50 p-4 rounded-2xl border border-green-100 shadow-inner">
+                                <span className="font-bold text-[#136f42] uppercase text-xs tracking-wider">Total Aset Lain</span>
+                                <span className="font-bold text-xl text-[#136f42]">{formatRupiah(totalOtherAssets)}</span>
                             </div>
                         </div>
                     </div>
