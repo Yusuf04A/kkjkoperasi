@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
 import { 
     ArrowLeft, Check, X, RefreshCw, Scale, 
-    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, Save
+    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, Save, CalendarDays
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -114,7 +114,7 @@ export const AdminPegadaian = () => {
         }
     };
 
-    // 4. HANDLE REJECT (Masih pakai prompt tidak apa2 karena teks bebas)
+    // 4. HANDLE REJECT
     const handleReject = async (req: any) => {
         const reason = window.prompt("Alasan penolakan:", "Foto kurang jelas / Kualitas barang tidak sesuai");
         if (!reason) return;
@@ -223,8 +223,8 @@ export const AdminPegadaian = () => {
                                         </div>
                                     </div>
 
-                                    {/* Grid Spek Barang */}
-                                    <div className="grid grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center shadow-sm">
+                                    {/* Grid Spek Barang (DITAMBAH TENOR) */}
+                                    <div className="grid grid-cols-4 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center shadow-sm">
                                         <div>
                                             <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Berat</p>
                                             <p className="text-sm font-bold text-gray-900">{req.item_weight} gr</p>
@@ -234,8 +234,14 @@ export const AdminPegadaian = () => {
                                             <p className="text-sm font-bold text-gray-900">{req.item_karat} K</p>
                                         </div>
                                         <div>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tenor</p>
+                                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-blue-700">
+                                                <CalendarDays size={14} /> {req.tenor_bulan || 4} Bln
+                                            </div>
+                                        </div>
+                                        <div>
                                             <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Kondisi</p>
-                                            <p className="text-sm font-bold text-gray-900 truncate px-1">{req.item_condition}</p>
+                                            <p className="text-sm font-bold text-gray-900 truncate px-1" title={req.item_condition}>{req.item_condition}</p>
                                         </div>
                                     </div>
 
@@ -253,7 +259,7 @@ export const AdminPegadaian = () => {
                                     {activeTab === 'pending' ? (
                                         <>
                                             <button 
-                                                onClick={() => openApproveModal(req)} // GANTI HANDLE APPROVE KE MODAL
+                                                onClick={() => openApproveModal(req)}
                                                 className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                                             >
                                                 <Check size={18} /> Setujui
@@ -290,10 +296,18 @@ export const AdminPegadaian = () => {
                         </div>
 
                         <div className="mb-6 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Barang Jaminan</p>
-                            <p className="text-sm text-blue-900 font-medium">
-                                {selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)
-                            </p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Barang Jaminan</p>
+                                    <p className="text-sm text-blue-900 font-medium">
+                                        {selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Tenor</p>
+                                    <p className="text-sm text-blue-900 font-black">{selectedReq.tenor_bulan || 4} Bulan</p>
+                                </div>
+                            </div>
                         </div>
 
                         <form onSubmit={handleSubmitApprove}>
@@ -307,8 +321,8 @@ export const AdminPegadaian = () => {
                                         type="text" 
                                         required 
                                         placeholder="0" 
-                                        value={taksiranCair ? taksiranCair.toLocaleString('id-ID') : ''} // 🔥 FORMAT OTOMATIS
-                                        onChange={handleTaksiranChange} // 🔥 HANDLE CHANGE
+                                        value={taksiranCair ? taksiranCair.toLocaleString('id-ID') : ''}
+                                        onChange={handleTaksiranChange}
                                         className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-3.5 font-bold text-lg text-slate-800 outline-none focus:ring-4 focus:ring-blue-100 focus:border-kkj-blue transition-all"
                                         autoFocus
                                     />
