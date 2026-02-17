@@ -2,19 +2,19 @@ import React, { useEffect, useState } from 'react';
 import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale,
-    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet
+    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet,
+    Loader2
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
-
-// --- 1. IMPORT LOGO DI SINI ---
 import logoKKJ from '../../assets/Logo-kkj.png'; 
 
 export const AdminDashboard = () => {
     const { logout, user } = useAuthStore();
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
 
     const [stats, setStats] = useState({
         pendingUsers: 0,
@@ -32,66 +32,62 @@ export const AdminDashboard = () => {
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
 
     const fetchStats = async () => {
-        const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { data: restructureData } = await supabase.from('loans').select('id').eq('restructure_status', 'pending');
-        const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
-        const { count: pendingLHU } = await supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting');
-        const { count: activeInflip } = await supabase.from('inflip_projects').select('*', { count: 'exact', head: true }).eq('status', 'open');
-        const { count: pendingWithdrawals } = await supabase.from('savings_withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        try {
+            // Panggil API Laravel: GET /admin/stats
+            // Endpoint ini mengembalikan semua hitungan (count) dalam satu respons JSON
+            const response = await API.get('/admin/stats');
+            const data = response.data;
 
-        setStats({
-            pendingUsers: pendingMember || 0,
-            pendingTx: pendingTrans || 0,
-            pendingLoans: pendingLoan || 0,
-            pendingRestructures: restructureData?.length || 0,
-            pendingTamasa: pendingTamasa || 0,
-            pendingPawn: pendingPawn || 0,
-            pendingOrders: pendingOrders || 0,
-            pendingLHU: pendingLHU || 0,
-            activeInflip: activeInflip || 0,
-            pendingWithdrawals: pendingWithdrawals || 0,
-        });
+            setStats({
+                pendingUsers: data.pending_users_count || 0,
+                pendingTx: data.pending_transactions_count || 0,
+                pendingLoans: data.pending_loans_count || 0,
+                pendingRestructures: data.pending_restructures_count || 0,
+                pendingTamasa: data.pending_tamasa_count || 0,
+                pendingPawn: data.pending_pawn_count || 0,
+                pendingOrders: data.pending_orders_count || 0,
+                pendingLHU: data.pending_lhu_count || 0,
+                activeInflip: data.active_inflip_count || 0,
+                pendingWithdrawals: data.pending_withdrawals_count || 0,
+            });
 
-        if (restructureData && restructureData.length > 0) {
-            setFirstRestructureId(restructureData[0].id);
+            if (data.first_restructure_id) {
+                setFirstRestructureId(data.first_restructure_id);
+            }
+        } catch (error) {
+            console.error("Gagal mengambil statistik:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchStats();
-        const channel = supabase
-            .channel('dashboard-updates')
-            .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchStats())
-            .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        // Menggunakan Polling setiap 30 detik sebagai pengganti Real-time Supabase
+        const interval = setInterval(fetchStats, 30000); 
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleLogout = async () => {
         const confirm = window.confirm("Akhiri sesi admin?");
         if (!confirm) return;
-        await logout();
+        try {
+            await API.post('/logout');
+        } catch (e) {}
+        logout();
         navigate('/login');
     };
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-12 font-sans">
-            {/* TOP BAR - HIJAU KONSISTEN */}
+            {/* TOP BAR */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm">
                 <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-                    
-                    {/* --- 2. LOGO & JUDUL (IMPLEMENTASI LOGO) --- */}
                     <div className="flex items-center gap-3">
                         <div className="bg-white border border-green-50 p-1.5 rounded-xl shadow-sm h-11 w-11 flex items-center justify-center">
-                            <img 
-                                src={logoKKJ} 
-                                alt="Logo KKJ" 
-                                className="w-full h-full object-contain" 
-                            />
+                            <img src={logoKKJ} alt="Logo KKJ" className="w-full h-full object-contain" />
                         </div>
                         <div className="flex flex-col">
                             <h1 className="font-black text-slate-900 tracking-tighter text-lg uppercase leading-none">
@@ -100,7 +96,6 @@ export const AdminDashboard = () => {
                             <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Admin Panel</span>
                         </div>
                     </div>
-                    {/* ------------------------------------------- */}
 
                     <div className="flex items-center gap-4">
                         <div className="hidden md:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
@@ -115,14 +110,13 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="max-w-[1400px] mx-auto px-6 pt-8 space-y-8">
-
-                {/* HERO SECTION - HIJAU HUTAN */}
+                {/* HERO SECTION */}
                 <div className="relative bg-[#136f42] rounded-[2rem] p-8 overflow-hidden shadow-2xl shadow-green-900/20">
                     <div className="absolute right-0 top-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] -mr-40 -mt-40 pointer-events-none" />
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="space-y-2">
                             <h1 className="text-3xl md:text-4xl font-[1000] text-white tracking-tighter uppercase leading-none">
-                                Halo, {user?.full_name?.split(' ')[0] || 'Admin'}
+                                Halo, {user?.name?.split(' ')[0] || 'Admin'}
                             </h1>
                             <p className="text-green-100/70 text-xs font-bold uppercase tracking-[0.3em]">Master Administrator Panel</p>
                         </div>
@@ -133,37 +127,31 @@ export const AdminDashboard = () => {
                 </div>
 
                 {/* NOTIFIKASI URGENT */}
-                {(stats.pendingWithdrawals > 0 || stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-4">
-                        {stats.pendingWithdrawals > 0 && <AlertCard to="/admin/simpanan" title={`${stats.pendingWithdrawals} Request Tarik Tunai`} type="danger" />}
-                        {stats.pendingLoans > 0 && <AlertCard to="/admin/pembiayaan" title={`${stats.pendingLoans} Pengajuan Pinjaman`} type="danger" />}
-                        {stats.pendingRestructures > 0 && <AlertCard to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
-                        {stats.pendingUsers > 0 && <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />}
-                        {stats.pendingLHU > 0 && <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />}
-                        {stats.pendingOrders > 0 && <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />}
-                    </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-4">
+                    {stats.pendingWithdrawals > 0 && <AlertCard to="/admin/simpanan" title={`${stats.pendingWithdrawals} Request Tarik Tunai`} type="danger" />}
+                    {stats.pendingLoans > 0 && <AlertCard to="/admin/pembiayaan" title={`${stats.pendingLoans} Pengajuan Pinjaman`} type="danger" />}
+                    {stats.pendingRestructures > 0 && <AlertCard to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
+                    {stats.pendingUsers > 0 && <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />}
+                    {stats.pendingLHU > 0 && <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />}
+                    {stats.pendingOrders > 0 && <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />}
+                </div>
 
-                {/* LAYANAN UTAMA KOPERASI */}
+                {/* LAYANAN UTAMA */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 border-l-4 border-[#136f42] pl-4">
                         <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Layanan Utama</h2>
+                        {loading && <Loader2 className="animate-spin text-slate-300" size={14} />}
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                         <DashboardCard to="/admin/verifikasi" icon={<Users size={24} />} title="Anggota" color="green" count={stats.pendingUsers} />
                         <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={24} />} title="Finance" color="emerald" count={stats.pendingTx} />
-                        
                         <DashboardCard to="/admin/simpanan" icon={<Wallet size={24} />} title="Tarik Simpanan" color="rose" count={stats.pendingWithdrawals} />
-
                         <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={24} />} title="Tamasa" color="amber" count={stats.pendingTamasa} />
                         <DashboardCard to="/admin/pegadaian" icon={<Scale size={24} />} title="Gadai" color="blue" count={stats.pendingPawn} />
-                        
                         <DashboardCard to="/admin/pembiayaan" icon={<Banknote size={24} />} title="Pinjaman" color="rose" count={stats.pendingLoans} />
-
                         <DashboardCard to="/admin/inflip" icon={<Building size={24} />} title="Properti (INFLIP)" color="sky" count={stats.activeInflip} />
                         <DashboardCard to="/admin/gudang-kredit" icon={<Warehouse size={24} />} title="Gudang Kredit" color="cyan" count={0} />
-
                         <DashboardCard to="/admin/toko" icon={<ShoppingBag size={24} />} title="Toko" color="violet" count={stats.pendingOrders} />
                         <DashboardCard to="/admin/lhu" icon={<TrendingUp size={24} />} title="LHU" color="teal" count={stats.pendingLHU} />
                         <DashboardCard to="/admin/labarugi" icon={<Receipt size={24} />} title="Laba Rugi" color="slate" count={0} />
@@ -222,7 +210,7 @@ const AlertCard = ({ to, title, type }: any) => (
         "px-4 py-3 rounded-2xl flex items-center justify-between group transition-all shadow-sm border border-transparent hover:scale-[1.02]",
         type === 'danger' ? "bg-rose-50 hover:bg-rose-100 text-rose-700" :
             type === 'warning' ? "bg-amber-50 hover:bg-amber-100 text-amber-700" :
-                "bg-green-50 hover:bg-green-100 text-[#136f42]" // Mengganti biru default dengan hijau
+                "bg-green-50 hover:bg-green-100 text-[#136f42]"
     )}>
         <div className="flex items-center gap-3">
             <div className="bg-white/60 p-1.5 rounded-lg shadow-sm">

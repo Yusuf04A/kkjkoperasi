@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, ArrowRight, FileText, Calendar, Wallet } from 'lucide-react';
@@ -14,14 +14,15 @@ export const FinancingMenu = () => {
     useEffect(() => {
         const fetchLoans = async () => {
             if (!user) return;
-            const { data } = await supabase
-                .from('loans')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (data) setLoans(data);
-            setLoading(false);
+            try {
+                // Endpoint Laravel: GET /financing/history
+                const response = await API.get('/financing/history');
+                setLoans(response.data || []);
+            } catch (error) {
+                console.error("Gagal mengambil data:", error);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchLoans();
     }, [user]);

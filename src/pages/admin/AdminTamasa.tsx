@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import API from "../../api/api"; // Menggunakan Axios
 import { useNavigate } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
 import { 
@@ -25,33 +25,16 @@ export const AdminTamasa = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Ambil Harga Emas Terbaru
-            const { data: goldData } = await supabase
-                .from('gold_prices')
-                .select('buy_price')
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
+            // 1. Ambil Harga Emas & List Transaksi dari Laravel
+            // Endpoint Laravel: GET /admin/tamasa/info (untuk harga & trx)
+            const response = await API.get('/admin/tamasa', {
+                params: { status: activeTab }
+            });
             
-            if (goldData) setCurrentGoldPrice(goldData.buy_price);
-
-            // 2. Ambil Transaksi
-            let query = supabase
-                .from("tamasa_transactions")
-                .select(`*, profiles!fk_final_tamasa_trx (full_name, member_id, phone)`)
-                .order("created_at", { ascending: false });
-
-            if (activeTab === 'pending') {
-                query = query.eq('status', 'pending');
-            } else {
-                query = query.neq('status', 'pending');
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            setTransactions(data || []);
+            setCurrentGoldPrice(response.data.current_price || 0);
+            setTransactions(response.data.transactions || []);
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`);
+            toast.error("Gagal memuat data TAMASA");
         } finally {
             setLoading(false);
         }
@@ -76,14 +59,14 @@ export const AdminTamasa = () => {
         const toastId = toast.loading("Mengupdate harga...");
 
         try {
-            const { error } = await supabase.from('gold_prices').insert({ buy_price: priceNum });
-            if (error) throw error;
+            // Endpoint Laravel: POST /admin/tamasa/price
+            await API.post('/admin/tamasa/price', { buy_price: priceNum });
 
             toast.success("Harga Emas Berhasil Diperbarui!", { id: toastId });
             setCurrentGoldPrice(priceNum);
             setNewPriceInput('');
         } catch (err: any) {
-            toast.error("Gagal update: " + err.message, { id: toastId });
+            toast.error("Gagal update harga", { id: toastId });
         } finally {
             setIsUpdatingPrice(false);
         }
@@ -95,56 +78,39 @@ export const AdminTamasa = () => {
         const toastId = toast.loading("Memproses...");
 
         try {
-            const { data: balance } = await supabase.from("tamasa_balances").select("*").eq("user_id", tx.user_id).maybeSingle();
-            if (balance) {
-                await supabase.from("tamasa_balances").update({ total_gram: balance.total_gram + tx.estimasi_gram }).eq("user_id", tx.user_id);
-            } else {
-                await supabase.from("tamasa_balances").insert({ user_id: tx.user_id, total_gram: tx.estimasi_gram });
-            }
+            // Endpoint Laravel: POST /admin/tamasa/transactions/{id}/approve
+            // Backend menangani update tamasa_balances & kirim notifikasi
+            await API.post(`/admin/tamasa/transactions/${tx.id}/approve`);
 
-            await supabase.from("tamasa_transactions").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", tx.id);
-            await supabase.from("notifications").insert({ 
-                user_id: tx.user_id, 
-                title: "TAMASA Disetujui", 
-                message: `Pembelian emas ${tx.estimasi_gram.toFixed(4)} gr sukses.`, 
-                type: "success" 
-            });
-
-            toast.success("Disetujui!", { id: toastId });
+            toast.success("Pembelian emas disetujui!", { id: toastId });
             fetchData();
         } catch (err: any) {
-            toast.error("Gagal: " + err.message, { id: toastId });
+            const msg = err.response?.data?.message || "Gagal menyetujui";
+            toast.error(msg, { id: toastId });
         }
     };
 
     const handleReject = async (tx: any) => {
-        if (!window.confirm("Tolak dan kembalikan saldo user?")) return;
+        const reason = window.prompt("Alasan penolakan (dana akan dikembalikan ke saldo user):");
+        if (reason === null) return; // User cancel prompt
+
         const toastId = toast.loading("Menolak...");
         try {
-            await supabase.from("tamasa_transactions").update({ status: "rejected", approved_at: new Date().toISOString() }).eq("id", tx.id);
-            const { data: userProfile } = await supabase.from('profiles').select('tapro_balance').eq('id', tx.user_id).single();
+            // Endpoint Laravel: POST /admin/tamasa/transactions/{id}/reject
+            // Backend menangani refund saldo Tapro ke profiles
+            await API.post(`/admin/tamasa/transactions/${tx.id}/reject`, { reason });
             
-            if (userProfile) {
-                await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + tx.setoran }).eq('id', tx.user_id);
-                await supabase.from('transactions').insert({
-                    user_id: tx.user_id,
-                    type: 'topup',
-                    amount: tx.setoran,
-                    status: 'success',
-                    description: 'Refund TAMASA Ditolak Admin'
-                });
-            }
             toast.success("Ditolak & Dana Dikembalikan", { id: toastId });
             fetchData();
-        } catch (err) {
-            toast.error("Gagal menolak", { id: toastId });
+        } catch (err: any) {
+            toast.error("Gagal menolak transaksi", { id: toastId });
         }
     };
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans">
             
-            {/* HEADER KONSISTEN (SESUAI GAMBAR) */}
+            {/* HEADER */}
             <div className="mb-6">
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#003366] mb-4 w-fit transition-colors text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
@@ -196,7 +162,7 @@ export const AdminTamasa = () => {
                             disabled={isUpdatingPrice || !newPriceInput}
                             className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
                         >
-                            <Save size={18} /> Update
+                            {isUpdatingPrice ? <Loader2 className="animate-spin" /> : <Save size={18} />} Update
                         </button>
                     </form>
                 </div>
@@ -204,24 +170,11 @@ export const AdminTamasa = () => {
 
             {/* TAB MENU */}
             <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
-                <button
-                    onClick={() => setActiveTab('pending')}
-                    className={cn(
-                        "pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2",
-                        activeTab === 'pending' ? "text-[#003366]" : "text-gray-400 hover:text-gray-600"
-                    )}
-                >
+                <button onClick={() => setActiveTab('pending')} className={cn("pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2", activeTab === 'pending' ? "text-[#003366]" : "text-gray-400 hover:text-gray-600")}>
                     <Clock size={16} /> Menunggu Konfirmasi
                     {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
-
-                <button
-                    onClick={() => setActiveTab('history')}
-                    className={cn(
-                        "pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2",
-                        activeTab === 'history' ? "text-[#003366]" : "text-gray-400 hover:text-gray-600"
-                    )}
-                >
+                <button onClick={() => setActiveTab('history')} className={cn("pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2", activeTab === 'history' ? "text-[#003366]" : "text-gray-400 hover:text-gray-600")}>
                     <Archive size={16} /> Riwayat Transaksi
                     {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
@@ -249,16 +202,15 @@ export const AdminTamasa = () => {
                                                 <Coins size={28} />
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{tx.profiles?.full_name}</h3>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{tx.profiles?.member_id}</p>
+                                                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{tx.user?.name}</h3>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{tx.user?.member_id}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className={cn(
                                                 "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-1",
                                                 tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                                                tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
-                                                'bg-amber-50 text-amber-600'
+                                                tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
                                             )}>
                                                 {tx.status}
                                             </div>
@@ -276,7 +228,7 @@ export const AdminTamasa = () => {
                                         <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
                                             <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Perolehan Emas</p>
                                             <p className="text-2xl font-black text-yellow-600 tracking-tighter">
-                                                {tx.estimasi_gram.toFixed(4)} <span className="text-xs font-bold text-slate-300">gr</span>
+                                                {Number(tx.estimasi_gram).toFixed(4)} <span className="text-xs font-bold text-slate-300">gr</span>
                                             </p>
                                         </div>
                                     </div>
@@ -291,16 +243,10 @@ export const AdminTamasa = () => {
                                 <div className="flex flex-col justify-center gap-3 md:border-l md:pl-8 border-slate-100 min-w-[220px]">
                                     {tx.status === 'pending' ? (
                                         <>
-                                            <button 
-                                                onClick={() => handleApprove(tx)} 
-                                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                            >
+                                            <button onClick={() => handleApprove(tx)} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2">
                                                 <Check size={18} /> Setujui
                                             </button>
-                                            <button 
-                                                onClick={() => handleReject(tx)} 
-                                                className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                            >
+                                            <button onClick={() => handleReject(tx)} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2">
                                                 <X size={18} /> Tolak
                                             </button>
                                         </>

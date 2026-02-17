@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Plus, Package, Edit, Trash2, Search, X, Check, Save } from 'lucide-react';
+import API from '../../api/api'; // Menggunakan Axios
+import { ArrowLeft, Plus, Package, Edit, Trash2, Search, X, Save, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { formatRupiah } from '../../lib/utils';
@@ -20,25 +20,26 @@ export const CreditWarehouse = () => {
 
     // Form State
     const [formData, setFormData] = useState({
-        id: null,
+        id: null as number | null,
         name: '',
-        price: '',
-        dp: '',
-        tax: '',
-        tenors: [] as number[] // Array angka [3, 6, 12]
+        price: '' as string | number,
+        dp: '' as string | number,
+        tax: '' as string | number,
+        tenors: [] as number[] 
     });
 
     // --- 1. FETCH DATA (READ) ---
     const fetchCatalog = async () => {
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from('credit_catalog')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) toast.error("Gagal memuat katalog");
-        else setItems(data || []);
-        setIsLoading(false);
+        try {
+            // Endpoint Laravel: GET /admin/financing/catalog
+            const response = await API.get('/admin/financing/catalog');
+            setItems(response.data || []);
+        } catch (error) {
+            toast.error("Gagal memuat katalog");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => { fetchCatalog(); }, []);
@@ -57,7 +58,7 @@ export const CreditWarehouse = () => {
             price: item.price,
             dp: item.dp,
             tax: item.tax,
-            tenors: item.tenors || []
+            tenors: Array.isArray(item.tenors) ? item.tenors : JSON.parse(item.tenors || '[]')
         });
         setEditMode(true);
         setIsModalOpen(true);
@@ -66,7 +67,10 @@ export const CreditWarehouse = () => {
     // --- 3. HANDLE SIMPAN (CREATE & UPDATE) ---
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (formData.tenors.length === 0) return toast.error("Pilih minimal satu tenor");
+        
         setIsSaving(true);
+        const toastId = toast.loading("Menyimpan data...");
 
         try {
             const payload = {
@@ -78,22 +82,21 @@ export const CreditWarehouse = () => {
             };
 
             if (editMode && formData.id) {
-                // UPDATE
-                const { error } = await supabase.from('credit_catalog').update(payload).eq('id', formData.id);
-                if (error) throw error;
-                toast.success("Barang berhasil diperbarui!");
+                // UPDATE: PUT /admin/financing/catalog/{id}
+                await API.put(`/admin/financing/catalog/${formData.id}`, payload);
+                toast.success("Barang berhasil diperbarui!", { id: toastId });
             } else {
-                // INSERT
-                const { error } = await supabase.from('credit_catalog').insert(payload);
-                if (error) throw error;
-                toast.success("Barang baru ditambahkan!");
+                // INSERT: POST /admin/financing/catalog
+                await API.post('/admin/financing/catalog', payload);
+                toast.success("Barang baru ditambahkan!", { id: toastId });
             }
 
             setIsModalOpen(false);
-            fetchCatalog(); // Refresh tabel
+            fetchCatalog(); 
 
         } catch (error: any) {
-            toast.error("Gagal menyimpan: " + error.message);
+            const msg = error.response?.data?.message || "Gagal menyimpan";
+            toast.error(msg, { id: toastId });
         } finally {
             setIsSaving(false);
         }
@@ -104,17 +107,16 @@ export const CreditWarehouse = () => {
         if (!window.confirm("Yakin ingin menghapus barang ini?")) return;
 
         const toastId = toast.loading("Menghapus...");
-        const { error } = await supabase.from('credit_catalog').delete().eq('id', id);
-
-        if (error) {
-            toast.error("Gagal menghapus", { id: toastId });
-        } else {
+        try {
+            // DELETE: DELETE /admin/financing/catalog/{id}
+            await API.delete(`/admin/financing/catalog/${id}`);
             toast.success("Barang dihapus", { id: toastId });
             setItems(items.filter(i => i.id !== id));
+        } catch (error) {
+            toast.error("Gagal menghapus", { id: toastId });
         }
     };
 
-    // Helper Tenor Checkbox
     const toggleTenor = (val: number) => {
         if (formData.tenors.includes(val)) {
             setFormData({ ...formData, tenors: formData.tenors.filter(t => t !== val) });
@@ -124,7 +126,7 @@ export const CreditWarehouse = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-12">
+        <div className="min-h-screen bg-gray-50 pb-12 font-sans">
             {/* HEADER */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-30 px-6 py-4 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
@@ -133,23 +135,22 @@ export const CreditWarehouse = () => {
                     </button>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">Gudang Kredit</h1>
-                        <p className="text-xs text-gray-500">Manajemen Katalog Barang & Skema Cicilan</p>
+                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">Manajemen Katalog Barang</p>
                     </div>
                 </div>
-                <Button onClick={openModalAdd} className="bg-[#003366] text-white flex items-center gap-2">
-                    <Plus size={18} /> Tambah Barang
+                <Button onClick={openModalAdd} className="bg-[#136f42] hover:bg-[#0f5c35] text-white flex items-center gap-2 shadow-lg shadow-green-900/20">
+                    <Plus size={18} strokeWidth={3} /> Tambah Barang
                 </Button>
             </div>
 
             <div className="max-w-6xl mx-auto px-6 py-8">
-
                 {/* SEARCH */}
-                <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex gap-4 shadow-sm">
+                <div className="bg-white p-4 rounded-2xl border border-gray-200 mb-6 flex gap-4 shadow-sm">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <Input
                             placeholder="Cari nama barang..."
-                            className="pl-10 border-gray-200"
+                            className="pl-10 border-gray-200 focus:border-[#136f42] focus:ring-[#136f42]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -157,82 +158,81 @@ export const CreditWarehouse = () => {
                 </div>
 
                 {/* TABEL */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-bold tracking-wider">
-                            <tr>
-                                <th className="p-4 border-b">Nama Barang</th>
-                                <th className="p-4 border-b">Harga Cash</th>
-                                <th className="p-4 border-b">Wajib DP</th>
-                                <th className="p-4 border-b">Admin/Pajak</th>
-                                <th className="p-4 border-b">Opsi Tenor</th>
-                                <th className="p-4 border-b text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {isLoading ? (
-                                <tr><td colSpan={6} className="p-10 text-center">Memuat data...</td></tr>
-                            ) : items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map((item) => (
-                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                                                <Package size={20} />
-                                            </div>
-                                            <span className="font-bold text-gray-800">{item.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 font-medium text-gray-600">{formatRupiah(item.price)}</td>
-                                    <td className="p-4 font-bold text-green-600">{formatRupiah(item.dp)}</td>
-                                    <td className="p-4 text-orange-600">{formatRupiah(item.tax)}</td>
-                                    <td className="p-4">
-                                        <div className="flex gap-1 flex-wrap">
-                                            {item.tenors?.map((t: any) => (
-                                                <span key={t} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">
-                                                    {t} Bln
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button onClick={() => openModalEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                <Edit size={18} />
-                                            </button>
-                                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </td>
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-50/80 text-gray-500 text-[10px] uppercase font-black tracking-[0.2em]">
+                                <tr>
+                                    <th className="p-4 border-b">Barang</th>
+                                    <th className="p-4 border-b">Harga Cash</th>
+                                    <th className="p-4 border-b text-green-700">Wajib DP</th>
+                                    <th className="p-4 border-b text-orange-700">Pajak/Adm</th>
+                                    <th className="p-4 border-b">Tenor</th>
+                                    <th className="p-4 border-b text-right">Aksi</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {!isLoading && items.length === 0 && (
-                        <div className="p-10 text-center text-gray-400">Belum ada barang di katalog.</div>
-                    )}
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {isLoading ? (
+                                    <tr><td colSpan={6} className="p-10 text-center"><Loader2 className="animate-spin inline text-[#136f42] mr-2" /> Memuat data...</td></tr>
+                                ) : items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map((item) => (
+                                    <tr key={item.id} className="hover:bg-green-50/30 transition-colors group">
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
+                                                    <Package size={20} />
+                                                </div>
+                                                <span className="font-bold text-gray-800 text-sm">{item.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 font-mono font-bold text-gray-600 text-xs">{formatRupiah(item.price)}</td>
+                                        <td className="p-4 font-mono font-black text-green-600 text-xs">{formatRupiah(item.dp)}</td>
+                                        <td className="p-4 font-mono font-bold text-orange-600 text-xs">{formatRupiah(item.tax)}</td>
+                                        <td className="p-4">
+                                            <div className="flex gap-1 flex-wrap">
+                                                {(Array.isArray(item.tenors) ? item.tenors : JSON.parse(item.tenors || '[]')).map((t: any) => (
+                                                    <span key={t} className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded text-[9px] font-black uppercase">
+                                                        {t} bln
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => openModalEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                                    <Edit size={18} />
+                                                </button>
+                                                <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            {/* === MODAL FORM ADD/EDIT === */}
+            {/* MODAL FORM */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-lg text-gray-800">{editMode ? 'Edit Barang' : 'Tambah Barang Baru'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-500">
+                        <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                            <h3 className="font-black text-lg text-gray-900 uppercase tracking-tight">{editMode ? 'Edit Barang' : 'Tambah Katalog'}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="p-2 bg-white rounded-full text-gray-400 hover:text-gray-900 shadow-sm border border-gray-100 transition-all"><X size={20} /></button>
                         </div>
 
-                        <form onSubmit={handleSave} className="p-6 space-y-4">
+                        <form onSubmit={handleSave} className="p-8 space-y-6">
                             <Input
-                                label="Nama Barang"
+                                label="Nama Barang / Jasa"
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Contoh: iPhone 15 Pro"
+                                placeholder="Masukkan nama barang"
                                 required
                             />
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-5">
                                 <Input
                                     label="Harga Cash (Rp)"
                                     type="number"
@@ -257,29 +257,28 @@ export const CreditWarehouse = () => {
                                 placeholder="0"
                             />
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Opsi Tenor (Bulan)</label>
-                                <div className="flex gap-3">
+                            <div className="space-y-3">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Opsi Tenor (Cicilan Bulan)</label>
+                                <div className="flex flex-wrap gap-3">
                                     {[3, 6, 12, 18, 24, 36].map((t) => (
-                                        <label key={t} className={`cursor-pointer px-3 py-2 rounded-lg border text-xs font-bold flex items-center gap-2 transition-all ${formData.tenors.includes(t) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                        <label key={t} className={`cursor-pointer px-4 py-2.5 rounded-xl border text-xs font-black transition-all flex items-center gap-2 ${formData.tenors.includes(t) ? 'bg-[#136f42] text-white border-[#136f42] shadow-lg shadow-green-900/20' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-green-200'}`}>
                                             <input
                                                 type="checkbox"
                                                 className="hidden"
                                                 checked={formData.tenors.includes(t)}
                                                 onChange={() => toggleTenor(t)}
                                             />
-                                            {t} Bln
+                                            {t} BLN
                                         </label>
                                     ))}
                                 </div>
-                                <p className="text-[10px] text-gray-400 mt-1">*Pilih minimal satu tenor</p>
                             </div>
 
-                            <div className="pt-4 flex gap-3">
-                                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>Batal</Button>
-                                <Button type="submit" className="flex-1 bg-[#003366]" isLoading={isSaving}>
-                                    <Save size={18} className="mr-2" /> Simpan Barang
-                                </Button>
+                            <div className="pt-4 flex gap-4">
+                                <button type="button" className="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-widest" onClick={() => setIsModalOpen(false)}>Batal</button>
+                                <button type="submit" disabled={isSaving} className="flex-2 w-full bg-[#136f42] text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-green-900/20 hover:bg-[#0f5c35] active:scale-95 transition-all flex items-center justify-center gap-2">
+                                    {isSaving ? <Loader2 className="animate-spin" size={18} /> : <><Save size={18} /> Simpan Katalog</>}
+                                </button>
                             </div>
                         </form>
                     </div>

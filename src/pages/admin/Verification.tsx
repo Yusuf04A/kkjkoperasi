@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { Check, X, Loader2, RefreshCw, ArrowLeft, User, ShieldCheck, KeyRound, Phone, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -16,28 +16,21 @@ export const AdminVerification = () => {
 
     const fetchUsers = async () => {
         setLoading(true);
-        let query = supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        // Filter berdasarkan Tab
-        if (activeTab === 'pending') {
-            query = query.eq('status', 'pending');
-        } else {
-            query = query.eq('status', 'active');
-        }
-
-        // Jangan tampilkan akun Admin di list
-        query = query.neq('role', 'admin');
-
-        const { data, error } = await query;
-        if (error) {
+        try {
+            // Panggil API Laravel: GET /admin/users
+            // Kirim parameter status sebagai query string
+            const response = await API.get('/admin/users', {
+                params: {
+                    status: activeTab // 'pending' atau 'active'
+                }
+            });
+            setUsers(response.data || []);
+        } catch (error) {
+            console.error(error);
             toast.error("Gagal mengambil data");
-        } else {
-            setUsers(data || []);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
@@ -45,56 +38,56 @@ export const AdminVerification = () => {
     }, [activeTab]);
 
     // --- LOGIC VERIFIKASI ---
-    const handleVerify = async (id: string, name: string) => {
+    const handleVerify = async (id: number, name: string) => {
         const confirm = window.confirm(`Setujui pendaftaran ${name}?`);
         if (!confirm) return;
 
         const toastId = toast.loading('Memproses...');
         try {
-            const { error } = await supabase.from('profiles').update({ status: 'active' }).eq('id', id);
-            if (error) throw error;
-
-            // Buat notifikasi selamat datang (Opsional)
-            await supabase.from('notifications').insert({
-                user_id: id,
-                title: 'Selamat Bergabung!',
-                message: 'Akun Anda telah diverifikasi. Silakan lengkapi profil dan atur PIN transaksi.',
-                type: 'info'
-            });
+            // Endpoint Laravel: POST /admin/users/{id}/verify
+            await API.post(`/admin/users/${id}/verify`);
 
             toast.success('Berhasil diverifikasi!', { id: toastId });
-            fetchUsers();
+            fetchUsers(); // Refresh list
         } catch (err: any) {
-            toast.error('Gagal: ' + err.message, { id: toastId });
+            const msg = err.response?.data?.message || 'Gagal memverifikasi';
+            toast.error('Gagal: ' + msg, { id: toastId });
         }
     };
 
-    const handleReject = async (id: string) => {
+    const handleReject = async (id: number) => {
         if (!window.confirm("Tolak pendaftaran ini?")) return;
         const toastId = toast.loading('Menolak...');
-        await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id);
-        toast.success('Ditolak', { id: toastId });
-        fetchUsers();
+        try {
+            // Endpoint Laravel: POST /admin/users/{id}/reject
+            await API.post(`/admin/users/${id}/reject`);
+            
+            toast.success('Ditolak', { id: toastId });
+            fetchUsers();
+        } catch (err: any) {
+             toast.error('Gagal menolak', { id: toastId });
+        }
     };
 
     // --- LOGIC RESET PIN ---
-    const handleResetPin = async (id: string, name: string) => {
+    const handleResetPin = async (id: number, name: string) => {
         const confirm = window.confirm(`Reset PIN untuk ${name}?\nPIN akan dihapus dan member harus mengaturnya ulang.`);
         if (!confirm) return;
 
         const toastId = toast.loading('Mereset PIN...');
         try {
-            const { error } = await supabase.from('profiles').update({ pin: null }).eq('id', id);
-            if (error) throw error;
+            // Endpoint Laravel: POST /admin/users/{id}/reset-pin
+            await API.post(`/admin/users/${id}/reset-pin`);
+            
             toast.success('PIN Berhasil Direset!', { id: toastId });
         } catch (err: any) {
-            toast.error('Gagal: ' + err.message, { id: toastId });
+            toast.error('Gagal: ' + (err.response?.data?.message || err.message), { id: toastId });
         }
     };
 
-    // Filter pencarian
+    // Filter pencarian (Client-side filtering sementara, idealnya server-side)
     const filteredUsers = users.filter(u =>
-        u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || // name dari Laravel
         u.member_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.phone?.includes(searchTerm)
     );
@@ -103,7 +96,7 @@ export const AdminVerification = () => {
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
 
             <div className="mb-6">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#003366] mb-4 w-fit">
                     <ArrowLeft size={18} /> Kembali ke Dashboard
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -121,18 +114,18 @@ export const AdminVerification = () => {
             <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button
                     onClick={() => { setActiveTab('pending'); setSearchTerm(''); }}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'pending' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'pending' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Verifikasi Baru
                     {activeTab === 'pending' && <span className="ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full text-xs">{users.length}</span>}
-                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
                 <button
                     onClick={() => { setActiveTab('active'); setSearchTerm(''); }}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'active' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'active' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Data Anggota Aktif
-                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
             </div>
 
@@ -143,7 +136,7 @@ export const AdminVerification = () => {
                     <input
                         type="text"
                         placeholder="Cari nama, ID anggota, atau no HP..."
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-kkj-blue focus:ring-1 focus:ring-kkj-blue outline-none"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-[#003366] focus:ring-1 focus:ring-[#003366] outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -165,7 +158,7 @@ export const AdminVerification = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan={5} className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-kkj-blue" /></td></tr>
+                                <tr><td colSpan={5} className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-[#003366]" /></td></tr>
                             ) : filteredUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="p-12 text-center text-gray-500">
@@ -179,10 +172,10 @@ export const AdminVerification = () => {
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase">
-                                                    {user.full_name?.substring(0, 2) || 'US'}
+                                                    {user.name?.substring(0, 2) || 'US'}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900">{user.full_name}</p>
+                                                    <p className="font-bold text-gray-900">{user.name}</p>
                                                     <p className="text-xs text-gray-500 font-mono">{user.member_id || 'Belum ada ID'}</p>
                                                 </div>
                                             </div>
@@ -209,13 +202,13 @@ export const AdminVerification = () => {
                                                     <button onClick={() => handleReject(user.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
                                                         <X size={18} />
                                                     </button>
-                                                    <button onClick={() => handleVerify(user.id, user.full_name)} className="px-4 py-2 bg-kkj-blue text-white rounded-lg hover:bg-blue-800 font-bold text-sm flex items-center gap-2">
+                                                    <button onClick={() => handleVerify(user.id, user.name)} className="px-4 py-2 bg-[#003366] text-white rounded-lg hover:bg-blue-800 font-bold text-sm flex items-center gap-2">
                                                         <Check size={18} /> Verifikasi
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <button
-                                                    onClick={() => handleResetPin(user.id, user.full_name)}
+                                                    onClick={() => handleResetPin(user.id, user.name)}
                                                     className="px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold flex items-center gap-1 ml-auto"
                                                     title="Hapus PIN User agar bisa buat baru"
                                                 >

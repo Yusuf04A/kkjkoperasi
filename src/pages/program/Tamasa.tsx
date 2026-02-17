@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, TrendingUp, ShieldCheck, Wallet, ChevronRight, Info, AlertCircle, Loader2, Calculator } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Wallet, ChevronRight, Info, AlertCircle, Loader2, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
-import { supabase } from "../../lib/supabase";
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import toast from 'react-hot-toast';
 import { PinModal } from '../../components/PinModal';
@@ -11,53 +11,42 @@ export const Tamasa = () => {
   const navigate = useNavigate();
   const { user, checkSession } = useAuthStore();
 
-  // --- STATE ---
   const [monthlyAmount, setMonthlyAmount] = useState<string>('');
   const [duration, setDuration] = useState<string>('');
   const [goldPrice, setGoldPrice] = useState(0); 
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [userBalanceGram, setUserBalanceGram] = useState<number>(0);
 
-  // State Loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(false);
-
-  // State Modal PIN
   const [showPinModal, setShowPinModal] = useState(false);
 
-  // --- 1. FETCH HARGA EMAS TERBARU DARI DATABASE ---
-  const fetchGoldPrice = async () => {
+  // --- 1. FETCH DATA EMAS DARI LARAVEL ---
+  const fetchGoldData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('gold_prices')
-        .select('buy_price')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (data) {
-        setGoldPrice(data.buy_price);
-      } else {
-        setGoldPrice(1300000); 
-      }
+        // Ambil harga emas & saldo emas user sekaligus dari endpoint baru
+        // Endpoint: GET /gold/info
+        const response = await API.get('/gold/info');
+        setGoldPrice(response.data.buy_price || 1300000);
+        setUserBalanceGram(response.data.user_balance || 0);
     } catch (err) {
-      console.error("Error fetching gold price:", err);
-      setGoldPrice(1300000); 
+        console.error("Error fetching gold data:", err);
+        setGoldPrice(1300000); // Fallback price
+    } finally {
+        setIsDataLoading(false);
     }
-  };
+  }, []);
 
-  // --- 2. INITIAL LOAD & RE-AUTH ---
+  // --- 2. INITIAL LOAD ---
   useEffect(() => {
     const initPage = async () => {
-      if (!user) {
-        await checkSession();
-      }
-      await fetchGoldPrice(); 
+      setIsDataLoading(true);
+      if (!user) await checkSession();
+      await fetchGoldData();
       setIsAuthChecking(false);
     };
     initPage();
-  }, [user, checkSession]);
+  }, [user, checkSession, fetchGoldData]);
 
   // --- 3. PROTEKSI LOGIN ---
   useEffect(() => {
@@ -67,36 +56,6 @@ export const Tamasa = () => {
     }
   }, [isAuthChecking, user, navigate]);
 
-  // --- 4. FETCH SALDO EMAS USER ---
-  const fetchBalance = useCallback(async () => {
-    if (!user) return;
-
-    setIsDataLoading(true);
-    try {
-      const { data } = await supabase
-        .from("tamasa_balances")
-        .select("total_gram")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setUserBalanceGram(data.total_gram);
-      } else {
-        setUserBalanceGram(0);
-      }
-    } catch (err) {
-      console.error("Error balance:", err);
-    } finally {
-      setIsDataLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchBalance();
-    }
-  }, [user, fetchBalance]);
-
   // --- LOGIC PERHITUNGAN ---
   const cleanAmount = monthlyAmount ? parseInt(monthlyAmount.replace(/\D/g, '')) : 0;
   const cleanDuration = duration ? parseInt(duration) : 0;
@@ -104,29 +63,15 @@ export const Tamasa = () => {
   const amountToPay = cleanAmount;
   const gramToGet = amountToPay > 0 && goldPrice > 0 ? amountToPay / goldPrice : 0;
 
-  // --- HANDLERS ---
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '');
-    if (raw === '') {
-      setMonthlyAmount('');
-    } else {
-      setMonthlyAmount(parseInt(raw).toLocaleString('id-ID'));
-    }
+    setMonthlyAmount(raw ? parseInt(raw).toLocaleString('id-ID') : '');
   };
 
   const handleInitialSubmit = () => {
-    if (goldPrice <= 0) {
-      toast.error("Gagal memuat harga emas. Silakan refresh halaman.");
-      return;
-    }
-    if (cleanAmount < 10000) {
-      toast.error("Minimal pembelian Rp 10.000");
-      return;
-    }
-    if (amountToPay > (user?.tapro_balance || 0)) {
-      toast.error("Saldo Tapro Anda tidak mencukupi!");
-      return;
-    }
+    if (goldPrice <= 0) return toast.error("Gagal memuat harga emas. Silakan refresh.");
+    if (cleanAmount < 10000) return toast.error("Minimal pembelian Rp 10.000");
+    if (amountToPay > (user?.tapro_balance || 0)) return toast.error("Saldo Tapro Anda tidak mencukupi!");
     setShowPinModal(true);
   };
 
@@ -135,38 +80,12 @@ export const Tamasa = () => {
     const toastId = toast.loading("Memproses pembelian...");
 
     try {
-      const { error: errTamasa } = await supabase
-        .from("tamasa_transactions")
-        .insert([
-          {
-            user_id: user?.id,
-            setoran: amountToPay,
-            harga_per_gram: goldPrice, 
-            estimasi_gram: gramToGet,
-            status: "pending"
-          }
-        ]);
-
-      if (errTamasa) throw errTamasa;
-
-      const { error: errUpdate } = await supabase
-        .from('profiles')
-        .update({ tapro_balance: (user?.tapro_balance || 0) - amountToPay })
-        .eq('id', user?.id);
-
-      if (errUpdate) throw errUpdate;
-
-      const { error: errTrx } = await supabase
-        .from('transactions')
-        .insert([{
-          user_id: user?.id,
-          type: 'tamasa_buy',
-          amount: amountToPay,
-          status: 'success', 
-          description: `Beli Emas TAMASA ${gramToGet.toFixed(4)} gr`
-        }]);
-
-      if (errTrx) throw errTrx;
+      // Panggil API Laravel: POST /gold/buy
+      await API.post('/gold/buy', {
+        amount: amountToPay,
+        gram: gramToGet,
+        price_per_gram: goldPrice
+      });
 
       toast.success("Berhasil! Menunggu verifikasi admin.", { id: toastId });
       setMonthlyAmount('');
@@ -174,11 +93,11 @@ export const Tamasa = () => {
       setShowPinModal(false);
 
       await checkSession(); 
-      fetchBalance(); 
+      fetchGoldData(); 
 
     } catch (err: any) {
-      console.error(err);
-      toast.error("Gagal: " + err.message, { id: toastId });
+      const msg = err.response?.data?.message || err.message || "Transaksi Gagal";
+      toast.error("Gagal: " + msg, { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -197,7 +116,6 @@ export const Tamasa = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
-      
       {/* HEADER */}
       <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
         <div className="px-4 py-4 flex items-center gap-3">
@@ -211,15 +129,13 @@ export const Tamasa = () => {
       <div className="max-w-7xl mx-auto p-4 lg:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
 
-          {/* --- KOLOM KIRI: INFO SALDO --- */}
+          {/* KOLOM KIRI: INFO SALDO */}
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-2 opacity-90">
-                  <div className="p-1.5 bg-white/20 rounded-lg">
-                    <Wallet size={18} />
-                  </div>
+                  <div className="p-1.5 bg-white/20 rounded-lg"><Wallet size={18} /></div>
                   <span className="text-xs lg:text-sm font-bold tracking-widest uppercase">Saldo Emas Anda</span>
                 </div>
 
@@ -241,9 +157,7 @@ export const Tamasa = () => {
             </div>
 
             <div className="bg-green-50/50 rounded-2xl p-5 border border-green-100">
-              <h4 className="font-bold text-[#136f42] mb-3 flex items-center gap-2 text-sm lg:text-base">
-                <Info size={18} /> Cara Menabung
-              </h4>
+              <h4 className="font-bold text-[#136f42] mb-3 flex items-center gap-2 text-sm lg:text-base"><Info size={18} /> Cara Menabung</h4>
               <ul className="space-y-3 text-xs lg:text-sm text-gray-600 ml-1">
                 <li className="flex gap-3">
                   <span className="font-bold text-[#136f42] bg-white w-6 h-6 rounded-full flex items-center justify-center border border-green-100 shadow-sm shrink-0">1</span>
@@ -261,7 +175,7 @@ export const Tamasa = () => {
             </div>
           </div>
 
-          {/* --- KOLOM KANAN: FORM BELI --- */}
+          {/* KOLOM KANAN: FORM BELI */}
           <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden lg:sticky lg:top-28">
             <div className="bg-gray-50 px-6 lg:px-8 py-6 border-b border-gray-100">
               <h2 className="font-bold text-[#136f42] text-lg lg:text-xl flex items-center gap-2">
@@ -280,26 +194,14 @@ export const Tamasa = () => {
                 </div>
                 <div className="relative group">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400 group-focus-within:text-[#136f42]">Rp</span>
-                  <input
-                    type="text"
-                    value={monthlyAmount}
-                    onChange={handleAmountChange}
-                    placeholder="Min 10.000"
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-xl text-gray-900 focus:ring-2 focus:ring-green-100 focus:border-[#136f42] outline-none transition-all placeholder:text-gray-300"
-                  />
+                  <input type="text" value={monthlyAmount} onChange={handleAmountChange} placeholder="Min 10.000" className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-xl text-gray-900 focus:ring-2 focus:ring-green-100 focus:border-[#136f42] outline-none transition-all placeholder:text-gray-300" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Target (Bulan)</label>
-                  <input
-                    type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="Contoh: 12"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:ring-2 focus:ring-green-100 outline-none"
-                  />
+                  <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Contoh: 12" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 focus:ring-2 focus:ring-green-100 outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Harga/gr Hari Ini</label>
@@ -309,7 +211,6 @@ export const Tamasa = () => {
                 </div>
               </div>
 
-              {/* RINGKASAN */}
               <div className="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 space-y-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-600 font-medium">Total Pembayaran</span>
@@ -322,7 +223,6 @@ export const Tamasa = () => {
                     {gramToGet.toFixed(4)} gr
                   </span>
                 </div>
-
                 {cleanDuration > 1 && cleanAmount > 0 && (
                   <div className="bg-white/60 p-2.5 rounded-xl border border-yellow-200 mt-2 flex gap-2">
                     <Calculator size={14} className="text-yellow-600 mt-0.5 shrink-0" />
@@ -333,12 +233,7 @@ export const Tamasa = () => {
                 )}
               </div>
 
-              {/* TOMBOL BERUBAH MENJADI HIJAU HUTAN (#136f42) */}
-              <button
-                onClick={handleInitialSubmit}
-                disabled={isSubmitting || goldPrice === 0}
-                className="w-full bg-[#136f42] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-wider"
-              >
+              <button onClick={handleInitialSubmit} disabled={isSubmitting || goldPrice === 0} className="w-full bg-[#136f42] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-wider">
                 {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <>Beli Emas Sekarang <ChevronRight size={20} /></>}
               </button>
 
@@ -353,12 +248,7 @@ export const Tamasa = () => {
         </div>
       </div>
 
-      <PinModal
-        isOpen={showPinModal}
-        onClose={() => setShowPinModal(false)}
-        onSuccess={executeTransaction}
-        title="Konfirmasi Pembelian Emas"
-      />
+      <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeTransaction} title="Konfirmasi Pembelian Emas" />
     </div>
   );
 };

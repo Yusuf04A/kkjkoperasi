@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { formatRupiah } from '../../lib/utils';
 import {
@@ -38,7 +38,7 @@ export const SetorSimpanan = () => {
             setLoading(false);
         };
         init();
-    }, []);
+    }, [user, checkSession]);
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/\D/g, '');
@@ -59,27 +59,28 @@ export const SetorSimpanan = () => {
         const cleanAmount = parseInt(amount.replace(/\./g, ''));
 
         try {
-            const { error: errTapro } = await supabase.from('profiles').update({ tapro_balance: (user?.tapro_balance || 0) - cleanAmount }).eq('id', user?.id);
-            if (errTapro) throw errTapro;
-
-            const { data: currentProfile } = await supabase.from('profiles').select(selectedSimpanan.col).eq('id', user?.id).single();
-            const currentDestBalance = currentProfile ? currentProfile[selectedSimpanan.col] : 0;
-
-            const { error: errDest } = await supabase.from('profiles').update({ [selectedSimpanan.col]: (Number(currentDestBalance) || 0) + cleanAmount }).eq('id', user?.id);
-            if (errDest) throw errDest;
-
-            await supabase.from('transactions').insert({
-                user_id: user?.id, type: 'transfer_out', amount: cleanAmount, status: 'success', description: `Setor ke ${selectedSimpanan.name}`
+            // Panggil Endpoint Laravel: POST /savings/deposit
+            // Kita kirim ID simpanan (misal: 'simwa') dan nominalnya
+            await API.post('/savings/deposit', {
+                target_type: selectedSimpanan.id, // simwa, simpok, dll
+                amount: cleanAmount,
+                description: `Setor ke ${selectedSimpanan.name}`
             });
 
             toast.success("Saldo berhasil dipindahkan!", { id: toastId });
             setAmount('');
             setSelectedSimpanan(null);
-            await checkSession();
+            
+            // Refresh saldo user di frontend agar sinkron dengan MySQL
+            await checkSession(); 
+            navigate('/transaksi/riwayat');
+
         } catch (err: any) {
-            toast.error("Gagal: " + err.message, { id: toastId });
+            const msg = err.response?.data?.message || err.message || "Gagal memproses transaksi";
+            toast.error("Gagal: " + msg, { id: toastId });
         } finally {
             setIsSubmitting(false);
+            setShowPinModal(false);
         }
     };
 

@@ -1,9 +1,10 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useAuthStore } from './store/useAuthStore';
+import { SilaChat } from './components/SilaChat';
 import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
-import { useAuthStore } from './store/useAuthStore'; // Auth Store
-import { SilaChat } from './components/SilaChat'; // Chat AI
 
 // AUTH PAGES
 import { Login } from './pages/auth/Login';
@@ -30,16 +31,16 @@ import { Transfer } from './pages/transactions/Transfer';
 import { SetorSimpanan } from './pages/transactions/SetorSimpanan';
 
 // ADMIN PAGES
-import { AdminVerification } from './pages/admin/Verification';
 import { AdminDashboard } from './pages/admin/Dashboard';
+import { AdminVerification } from './pages/admin/Verification';
 import { AdminTransactions } from './pages/admin/Transactions';
 import { AdminFinancing } from './pages/admin/Financing';
+import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
+import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import AdminKabar from './pages/admin/AdminKabar';
 import AdminKabarForm from './pages/admin/AdminKabarForm';
-import { AdminFinancialReport } from './pages/admin/FinancialReport';
-import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 import { AdminTamasa } from './pages/admin/AdminTamasa';
-import { AdminInflip } from './pages/admin/AdminInflip'; // 🔥 IMPORT BARU
+import { AdminInflip } from './pages/admin/AdminInflip';
 import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 import { AdminLHU } from './pages/admin/AdminLHU';
@@ -57,15 +58,17 @@ import { PPOB } from './pages/ppob/PPOB';
 import { KabarDetail } from './pages/kabarkkj/KabarDetail';
 
 function App() {
-  const { user } = useAuthStore();
+  const { user, checkSession } = useAuthStore();
+
+  // Cek sesi saat aplikasi pertama kali dimuat
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   return (
     <div className="app-container font-sans text-gray-900 bg-gray-50 min-h-screen">
       <BrowserRouter>
-        {/* Notifikasi Toast Global */}
         <Toaster position="top-center" reverseOrder={false} />
-
-        {/* Chatbot AI (Hanya Muncul Jika User Login) */}
         {user && <SilaChat />}
 
         <Routes>
@@ -75,40 +78,33 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/pending" element={<PendingVerification />} />
 
-          {/* === ADMIN ROUTES === */}
+          {/* === ADMIN ROUTES (Butuh Login & Role Admin) === */}
+          {/* Disarankan membuat komponen ProtectedAdminRoute terpisah nantinya */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/verifikasi" element={<AdminVerification />} />
           <Route path="/admin/transaksi" element={<AdminTransactions />} />
           <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
           <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
           <Route path="/admin/laporan" element={<AdminFinancialReport />} />
-          
-          {/* Program Admin Routes */}
           <Route path="/admin/tamasa" element={<AdminTamasa />} />
-          <Route path="/admin/inflip" element={<AdminInflip />} /> {/* 🔥 ROUTE BARU */}
+          <Route path="/admin/inflip" element={<AdminInflip />} />
           <Route path="/admin/toko" element={<AdminTokoKatalog />} />
-          <Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
           <Route path="/admin/simpanan" element={<AdminSimpanan />} />
-          
-          {/* Admin Tools Routes */}
           <Route path="/admin/lhu" element={<AdminLHU />} />
           <Route path="/admin/labarugi" element={<AdminLabaRugi />} />
           <Route path="/admin/gudang-kredit" element={<CreditWarehouse />} />
-
-          {/* Admin Kabar */}
           <Route path="/admin/kabar" element={<AdminKabar />} />
           <Route path="/admin/kabar/tambah" element={<AdminKabarForm />} />
           <Route path="/admin/kabar/edit/:id" element={<AdminKabarForm />} />
 
-          {/* === PROTECTED MEMBER ROUTES (User Wajib Login) === */}
+          {/* === PROTECTED MEMBER ROUTES === */}
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-            {/* Dashboard & Profile */}
             <Route path="/" element={<Home />} />
             <Route path="/profil" element={<Profile />} />
             <Route path="/notifikasi" element={<Notifications />} />
 
-            {/* Menu Transaksi */}
+            {/* Transaksi */}
             <Route path="/transaksi" element={<TransactionMenu />} />
             <Route path="/transaksi/topup" element={<TopUp />} />
             <Route path="/transaksi/tarik" element={<Withdraw />} />
@@ -116,24 +112,22 @@ function App() {
             <Route path="/transaksi/riwayat" element={<TransactionHistory />} />
             <Route path="/transaksi/setor" element={<SetorSimpanan />} />
 
-            {/* Menu Pembiayaan */}
+            {/* Pembiayaan */}
             <Route path="/pembiayaan" element={<FinancingMenu />} />
             <Route path="/pembiayaan/ajukan" element={<SubmissionForm />} />
             <Route path="/pembiayaan/:id" element={<LoanDetail />} />
 
-            {/* Menu Program */}
+            {/* Program & Lainnya */}
             <Route path="/program/tamasa" element={<Tamasa />} />
             <Route path="/program/inflip" element={<Inflip />} />
             <Route path="/program/pegadaian" element={<Pegadaian />} />
-
-            {/* Lainnya */}
             <Route path="/lhu/riwayat" element={<UserLHURiwayat />} />
             <Route path="/ppob" element={<PPOB />} />
             <Route path="/belanja/checkout" element={<CheckoutBelanja />} />
             <Route path="/kabar/:id" element={<KabarDetail />} />
           </Route>
 
-          {/* Fallback Route */}
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/welcome" replace />} />
         </Routes>
       </BrowserRouter>

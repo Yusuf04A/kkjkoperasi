@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import {
     Check, X, Loader2, RefreshCw, ArrowLeft, Search,
-    ChevronRight, Calendar, User, FileText
+    ChevronRight, Calendar
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
@@ -17,28 +17,19 @@ export const AdminFinancing = () => {
 
     const fetchLoans = async () => {
         setLoading(true);
-
-        let query = supabase
-            .from('loans')
-            .select(`*, profiles ( full_name, member_id, phone, avatar_url )`)
-            .order('created_at', { ascending: false });
-
-        if (activeTab === 'pending') {
-            query = query.eq('status', 'pending');
-        } else if (activeTab === 'active') {
-            query = query.eq('status', 'active');
-        } else {
-            query = query.in('status', ['paid', 'rejected']);
+        try {
+            // Panggil API Laravel: GET /admin/financing
+            // Mengirim parameter tab untuk filter status di backend
+            const response = await API.get('/admin/financing', {
+                params: { tab: activeTab }
+            });
+            setLoans(response.data || []);
+        } catch (error) {
+            console.error("Gagal mengambil data:", error);
+            toast.error("Gagal mengambil data pembiayaan");
+        } finally {
+            setLoading(false);
         }
-
-        const { data, error } = await query;
-
-        if (error) {
-            toast.error("Gagal mengambil data");
-        } else {
-            setLoans(data || []);
-        }
-        setLoading(false);
     };
 
     useEffect(() => {
@@ -52,38 +43,48 @@ export const AdminFinancing = () => {
 
         const toastId = toast.loading('Memproses...');
         try {
-            const { error } = await supabase.rpc('approve_loan', { loan_id_param: loan.id });
-            if (error) throw error;
+            // Endpoint Laravel: POST /admin/financing/{id}/approve
+            // Backend akan menangani pembuatan jadwal angsuran (installments)
+            await API.post(`/admin/financing/${loan.id}/approve`);
+            
             toast.success('Disetujui & Dicairkan', { id: toastId });
             fetchLoans();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            const msg = err.response?.data?.message || err.message;
+            toast.error(`Gagal: ${msg}`, { id: toastId });
         }
     };
 
-    const handleReject = async (id: string) => {
+    const handleReject = async (id: number) => {
         const reason = window.prompt("Alasan penolakan:");
         if (!reason) return;
 
         const toastId = toast.loading('Menolak...');
         try {
-            const { error } = await supabase.from('loans').update({ status: 'rejected', reason: reason }).eq('id', id);
-            if (error) throw error;
+            // Endpoint Laravel: POST /admin/financing/{id}/reject
+            await API.post(`/admin/financing/${id}/reject`, {
+                reason: reason
+            });
+
             toast.success('Ditolak', { id: toastId });
             fetchLoans();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            const msg = err.response?.data?.message || err.message;
+            toast.error(`Gagal: ${msg}`, { id: toastId });
         }
     };
 
     // Helper: Render Detail Kecil
     const renderDetailBadge = (loan: any) => {
         if (!loan.details) return null;
+        // Parsing details jika dikirim sebagai string JSON dari Laravel
+        const details = typeof loan.details === 'string' ? JSON.parse(loan.details) : loan.details;
+        
         let text = "";
-        if (loan.type === 'Kredit Barang') text = loan.details.item;
-        else if (loan.type === 'Modal Usaha') text = loan.details.business_name;
-        else if (loan.type === 'Biaya Pelatihan') text = loan.details.training_name;
-        else if (loan.type === 'Biaya Pendidikan') text = loan.details.child_name;
+        if (loan.type === 'Kredit Barang') text = details.item_name || details.item;
+        else if (loan.type === 'Modal Usaha') text = details.business_name;
+        else if (loan.type === 'Biaya Pelatihan') text = details.training_name;
+        else if (loan.type === 'Biaya Pendidikan') text = details.child_name;
 
         if (!text) return null;
 
@@ -97,9 +98,8 @@ export const AdminFinancing = () => {
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
 
-            {/* === HEADER (Sesuai Referensi Data Transaksi) === */}
+            {/* === HEADER === */}
             <div className="mb-8">
-                {/* Tombol Back Simple */}
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 w-fit text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
@@ -110,17 +110,15 @@ export const AdminFinancing = () => {
                         <p className="text-gray-500 mt-1 text-sm">Monitoring pengajuan, pinjaman berjalan, dan riwayat arsip.</p>
                     </div>
 
-                    {/* Tombol Refresh */}
                     <button
                         onClick={fetchLoans}
                         className="p-2.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-all shadow-sm active:scale-95"
                         title="Refresh Data"
                     >
-                        <RefreshCw size={20} />
+                        <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
                     </button>
                 </div>
 
-                {/* Tab Navigation (Gaya Garis Bawah) */}
                 <div className="flex items-center gap-8 border-b border-gray-200 mt-6 overflow-x-auto">
                     {[
                         { id: 'pending', label: 'Menunggu Approval' },
@@ -145,8 +143,8 @@ export const AdminFinancing = () => {
             <div className="space-y-3">
                 {loading ? (
                     <div className="py-20 text-center flex flex-col items-center">
-                        <Loader2 className="animate-spin text-blue-500 mb-2" />
-                        <span className="text-gray-400 text-sm">Memuat data...</span>
+                        <Loader2 className="animate-spin text-blue-500 mb-2" size={32} />
+                        <span className="text-gray-400 text-sm font-medium">Memuat data...</span>
                     </div>
                 ) : loans.length === 0 ? (
                     <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center flex flex-col items-center">
@@ -162,18 +160,17 @@ export const AdminFinancing = () => {
 
                                 {/* 1. Identitas & Info Dasar */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    {/* Avatar */}
                                     <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100 shrink-0">
-                                        {loan.profiles?.full_name?.charAt(0) || 'U'}
+                                        {loan.user?.name?.charAt(0) || 'U'}
                                     </div>
 
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 mb-0.5">
                                             <h3 className="font-bold text-gray-900 truncate text-sm md:text-base">
-                                                {loan.profiles?.full_name}
+                                                {loan.user?.name}
                                             </h3>
                                             <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 rounded border border-gray-200">
-                                                {loan.profiles?.member_id}
+                                                {loan.user?.member_id}
                                             </span>
                                         </div>
 
@@ -199,26 +196,15 @@ export const AdminFinancing = () => {
                                     </div>
 
                                     <div>
-                                        {loan.status === 'pending' && (
-                                            <span className="bg-orange-50 text-orange-700 border border-orange-100 px-2.5 py-1 rounded text-xs font-bold">
-                                                Menunggu
-                                            </span>
-                                        )}
-                                        {loan.status === 'active' && (
-                                            <span className="bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded text-xs font-bold">
-                                                Berjalan
-                                            </span>
-                                        )}
-                                        {loan.status === 'paid' && (
-                                            <span className="bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded text-xs font-bold">
-                                                Lunas
-                                            </span>
-                                        )}
-                                        {loan.status === 'rejected' && (
-                                            <span className="bg-red-50 text-red-700 border border-red-100 px-2.5 py-1 rounded text-xs font-bold">
-                                                Ditolak
-                                            </span>
-                                        )}
+                                        <span className={cn(
+                                            "px-2.5 py-1 rounded text-xs font-bold border",
+                                            loan.status === 'pending' ? "bg-orange-50 text-orange-700 border-orange-100" :
+                                            loan.status === 'active' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                                            loan.status === 'paid' ? "bg-green-50 text-green-700 border-green-100" :
+                                            "bg-red-50 text-red-700 border-red-100"
+                                        )}>
+                                            {loan.status === 'active' ? 'Berjalan' : loan.status?.toUpperCase()}
+                                        </span>
                                     </div>
                                 </div>
 

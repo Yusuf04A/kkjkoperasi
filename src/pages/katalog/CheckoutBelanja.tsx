@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { formatRupiah } from '../../lib/utils';
 import { ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,7 +11,6 @@ export const CheckoutBelanja = () => {
     const location = useLocation();
     const { user } = useAuthStore();
     
-    // Pastikan data cart dikirim dari halaman Katalog
     const { cart, total } = location.state || { cart: [], total: 0 };
 
     const [pin, setPin] = useState('');
@@ -28,59 +27,24 @@ export const CheckoutBelanja = () => {
 
         setLoading(true);
         try {
-            // 1. Verifikasi PIN
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('pin')
-                .eq('id', user?.id)
-                .single();
-
-            if (profile?.pin !== pin) {
-                setLoading(false);
-                return toast.error("PIN Salah!");
-            }
-
-            // 2. SIMPAN KE SHOP_ORDERS (PENTING: Status harus 'diproses')
-            const pickupCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-            
-            const { data: order, error: orderError } = await supabase
-                .from('shop_orders')
-                .insert({
-                    user_id: user?.id,
-                    total_amount: total,
-                    status: 'diproses', // 🔑 KUNCI: Agar muncul di Antrean Admin
-                    pickup_code: pickupCode,
-                    payment_method: 'tapro'
-                })
-                .select()
-                .single();
-
-            if (orderError) throw orderError;
-
-            // 3. Simpan Rincian Item ke shop_order_items
-            const orderItems = cart.map((item: any) => ({
-                order_id: order.id,
-                product_id: item.product.id,
-                quantity: item.quantity,
-                price_at_purchase: item.product.price
-            }));
-            await supabase.from('shop_order_items').insert(orderItems);
-
-            // 4. BUAT LOG TRANSAKSI PENDING (Tipe diubah agar tidak muncul sebagai withdrawal)
-            // Saldo tidak langsung dipotong di sini, melainkan menunggu Admin Approve
-            await supabase.from('transactions').insert({
-                user_id: user?.id,
-                amount: total,
-                type: 'shop_payment', // 🔑 FIX: Diubah dari 'withdrawal' menjadi 'shop_payment'
-                status: 'pending', 
-                description: `Belanja Toko: ${order.id.slice(0,8)}` // Muncul sebagai "Belanja Toko" di riwayat
+            // 1. Kirim Order ke Laravel
+            // Endpoint: POST /shop/checkout
+            await API.post('/shop/checkout', {
+                cart_items: cart.map((item: any) => ({
+                    product_id: item.product.id,
+                    quantity: item.quantity,
+                    price: item.product.price
+                })),
+                total_amount: total,
+                pin: pin // Verifikasi PIN dilakukan di backend
             });
 
             toast.success("Pesanan Terkirim! Menunggu Konfirmasi Admin.");
-            navigate('/transaksi/riwayat'); // User memantau status di sini
+            navigate('/transaksi/riwayat');
             
         } catch (err: any) {
-            toast.error("Gagal: " + err.message);
+            const msg = err.response?.data?.message || "Gagal memproses pesanan";
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

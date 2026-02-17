@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { ArrowLeft, Calendar, Share2, Megaphone, Clock, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import toast from 'react-hot-toast';
@@ -24,19 +24,16 @@ export const KabarDetail = () => {
     useEffect(() => {
         const fetchKabar = async () => {
             if (!id) return;
-            const { data, error } = await supabase
-                .from('kabar_kkj')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (error) {
+            try {
+                // Endpoint Laravel: GET /kabar/{id}
+                const response = await API.get(`/kabar/${id}`);
+                setKabar(response.data);
+            } catch (error) {
                 toast.error("Kabar tidak ditemukan");
                 navigate('/');
-            } else {
-                setKabar(data);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchKabar();

@@ -1,119 +1,84 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import API from '../api/api'; // Menggunakan jembatan API Laravel Anda
 
 interface UserProfile {
     id: string;
     email?: string;
-    full_name?: string;
+    name?: string; // Laravel default menggunakan 'name' bukan 'full_name'
     member_id?: string;
     role?: string;
     status?: string;
     phone?: string;
-    tapro_balance?: number; // Tambahan biar TypeScipt ga marah soal saldo
+    tapro_balance?: number;
     avatar_url?: string;
+    // Tambahkan kolom saldo lainnya sesuai kebutuhan UI Home Anda
+    simpok_balance?: number;
+    simwa_balance?: number;
 }
 
 interface AuthState {
     user: UserProfile | null;
     isLoading: boolean;
-    unreadCount: number; // 🔥 BARU: Simpan jumlah notif
+    unreadCount: number;
 
-    login: (email: string, password: string) => Promise<{ error?: string }>;
-    register: (email: string, password: string, fullName: string, phone: string) => Promise<{ error?: string }>;
-    logout: () => Promise<void>;
+    setAuth: (user: UserProfile, token: string) => void; // Untuk sinkronisasi dari Login.tsx
+    logout: () => void;
     checkSession: () => Promise<void>;
-    fetchUnreadCount: () => Promise<void>; // 🔥 BARU: Fungsi hitung notif
+    fetchUnreadCount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     isLoading: true,
-    unreadCount: 0, // Default 0
+    unreadCount: 0,
 
-    // Cek session saat aplikasi dibuka
+    // Sinkronisasi data user dan token ke storage
+    setAuth: (user, token) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user, isLoading: false });
+        get().fetchUnreadCount();
+    },
+
+    // Cek session saat aplikasi dibuka (Ganti GetSession Supabase)
     checkSession: async () => {
         set({ isLoading: true });
-        const { data: { session } } = await supabase.auth.getSession();
+        const token = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
 
-        if (session) {
-            // Ambil detail profil tambahan dari tabel 'profiles'
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-            set({ user: { ...session.user, ...profile }, isLoading: false });
-
-            // 🔥 BARU: Cek notifikasi setelah session ketemu
-            get().fetchUnreadCount();
+        if (token && savedUser) {
+            try {
+                // Opsional: Validasi token ke Laravel atau ambil data user terbaru
+                const response = await API.get('/user-profile'); 
+                const freshUser = response.data;
+                
+                set({ user: freshUser, isLoading: false });
+                get().fetchUnreadCount();
+            } catch (error) {
+                // Jika token expired
+                get().logout();
+            }
         } else {
             set({ user: null, isLoading: false });
         }
     },
 
-    login: async (email, password) => {
-        set({ isLoading: true });
-        // INI YANG BENAR: Pakai signInWithPassword
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            set({ isLoading: false });
-            return { error: error.message };
-        }
-
-        // Fetch profile setelah login sukses
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-
-        set({ user: { ...data.user, ...profile }, isLoading: false });
-
-        // 🔥 BARU: Cek notifikasi setelah login
-        get().fetchUnreadCount();
-
-        return {};
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        set({ user: null, unreadCount: 0, isLoading: false });
     },
 
-    register: async (email, password, fullName, phone) => {
-        set({ isLoading: true });
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    phone: phone,
-                }
-            }
-        });
-
-        set({ isLoading: false });
-        if (error) return { error: error.message };
-        return {};
-    },
-
-    logout: async () => {
-        await supabase.auth.signOut();
-        set({ user: null, unreadCount: 0 }); // Reset notif jadi 0
-    },
-
-    // 🔥 FUNGSI BARU: HITUNG NOTIFIKASI BELUM DIBACA
+    // 🔥 HITUNG NOTIFIKASI DARI MYSQL (Via Laravel)
     fetchUnreadCount: async () => {
         const { user } = get();
         if (!user) return;
 
-        const { count } = await supabase
-            .from('notifications')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .eq('is_read', false); // Hitung yang belum dibaca saja
-
-        set({ unreadCount: count || 0 });
+        try {
+            const response = await API.get('/notifications/unread-count');
+            set({ unreadCount: response.data.count || 0 });
+        } catch (error) {
+            console.error("Gagal mengambil jumlah notifikasi", error);
+        }
     }
 }));

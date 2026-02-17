@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -24,7 +24,7 @@ export const TopUp = () => {
 
     // --- FUNGSI FORMAT RUPIAH (OTOMATIS TITIK) ---
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\D/g, ''); // Hapus semua selain angka
+        const rawValue = e.target.value.replace(/\D/g, ''); 
         if (rawValue) {
             const formattedValue = parseInt(rawValue).toLocaleString('id-ID');
             setAmount(formattedValue);
@@ -49,7 +49,7 @@ export const TopUp = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Bersihkan titik sebelum kirim ke database
+        // Bersihkan titik sebelum kirim ke backend Laravel
         const nominal = parseInt(amount.replace(/\./g, ''));
         
         if (!nominal || nominal < 10000) {
@@ -62,34 +62,31 @@ export const TopUp = () => {
         }
 
         setIsLoading(true);
-        const toastId = toast.loading('Mengirim data transaksi...');
+        const toastId = toast.loading('Mengirim data transaksi ke server...');
 
         try {
-            const fileExt = proofFile.name.split('.').pop();
-            const fileName = `topup-${user?.id}-${Date.now()}.${fileExt}`;
+            /** * Menggunakan FormData karena kita mengirimkan FILE ke Laravel 
+             * Laravel akan menerima ini melalui $request->file('proof')
+             */
+            const formData = new FormData();
+            formData.append('amount', nominal.toString());
+            formData.append('type', 'topup');
+            formData.append('proof', proofFile); // Mengirim file fisik bukti transfer
+            formData.append('description', 'Top Up Saldo Tapro');
 
-            await supabase.storage
-                .from('transaction-proofs')
-                .upload(fileName, proofFile);
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('transaction-proofs')
-                .getPublicUrl(fileName);
-
-            await supabase.from('transactions').insert({
-                user_id: user?.id,
-                type: 'topup',
-                amount: nominal,
-                status: 'pending',
-                description: 'Top Up Saldo Tapro',
-                proof_url: publicUrl
+            // Mengirim ke Route::post('/balance', ...) di Laravel
+            await API.post('/balance', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data', // Wajib untuk upload file
+                },
             });
 
-            toast.success('Top Up Berhasil Diajukan!', { id: toastId });
+            toast.success('Top Up Berhasil Diajukan ke MySQL!', { id: toastId });
             navigate('/transaksi/riwayat');
 
         } catch (error: any) {
-            toast.error('Gagal: ' + error.message, { id: toastId });
+            const errorMsg = error.response?.data?.message || 'Gagal mengirim data';
+            toast.error('Gagal: ' + errorMsg, { id: toastId });
         } finally {
             setIsLoading(false);
         }
@@ -139,6 +136,7 @@ export const TopUp = () => {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={() => handleCopy(bank.number)}
                                 className="p-2 text-gray-400 hover:text-[#136f42] hover:bg-green-50 rounded-xl transition-all active:scale-95"
                             >
@@ -153,7 +151,6 @@ export const TopUp = () => {
                     onSubmit={handleSubmit}
                     className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6"
                 >
-                    {/* NOMINAL DENGAN FORMAT TITIK */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">
                             Nominal Top Up
@@ -191,7 +188,7 @@ export const TopUp = () => {
                         >
                             {previewUrl ? (
                                 <div className="relative">
-                                    <img src={previewUrl} className="h-40 mx-auto rounded-lg object-contain shadow-md" />
+                                    <img src={previewUrl} className="h-40 mx-auto rounded-lg object-contain shadow-md" alt="Preview Bukti" />
                                     <p className="text-center text-xs text-[#136f42] font-bold mt-2">Klik untuk ganti gambar</p>
                                 </div>
                             ) : (
@@ -233,8 +230,8 @@ export const TopUp = () => {
                     </p>
                     <ul className="list-disc list-inside space-y-1.5 text-xs font-medium opacity-90 ml-1">
                         <li>Admin memverifikasi maksimal 1x24 jam kerja.</li>
-                        <li>Pastikan nominal transfer sesuai hingga 3 digit terakhir.</li>
-                        <li>Simpan bukti transfer jika sewaktu-waktu dibutuhkan.</li>
+                        <li>Pastikan nominal transfer sesuai dengan yang diinput.</li>
+                        <li>Simpan bukti transfer hingga saldo masuk ke akun Anda.</li>
                     </ul>
                 </div>
 

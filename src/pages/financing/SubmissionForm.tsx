@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -16,23 +16,20 @@ export const SubmissionForm = () => {
     // Tipe Pembiayaan
     const [type, setType] = useState('Kredit Barang');
 
-    // --- STATE KATALOG (DATA DARI DATABASE) ---
+    // --- STATE KATALOG (DATA DARI LARAVEL) ---
     const [catalogItems, setCatalogItems] = useState<any[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
     // Fetch Data Katalog saat komponen dimuat
     useEffect(() => {
         const fetchCatalog = async () => {
-            const { data, error } = await supabase
-                .from('credit_catalog')
-                .select('*')
-                .order('name', { ascending: true });
-
-            if (error) {
+            try {
+                // Endpoint Laravel: GET /financing/catalog
+                const response = await API.get('/financing/catalog');
+                setCatalogItems(response.data || []);
+            } catch (error) {
                 console.error("Error fetching catalog:", error);
                 toast.error("Gagal memuat katalog barang");
-            } else {
-                setCatalogItems(data || []);
             }
         };
 
@@ -156,7 +153,8 @@ export const SubmissionForm = () => {
             if (type === 'Kredit Barang') {
                 if (!selectedProduct) throw new Error("Pilih barang terlebih dahulu");
                 detailData = {
-                    item: selectedProduct.name,
+                    item_id: selectedProduct.id, // ID MySQL
+                    item_name: selectedProduct.name,
                     price: selectedProduct.price,
                     dp: selectedProduct.dp,
                     tax: selectedProduct.tax,
@@ -181,24 +179,22 @@ export const SubmissionForm = () => {
                 };
             }
 
-            const { error } = await supabase.from('loans').insert({
-                user_id: user?.id,
+            // Endpoint Laravel: POST /financing/apply
+            await API.post('/financing/apply', {
+                type: type,
                 amount: simulation.pokok + simulation.pajak, 
                 duration: parseInt(formData.tenor),
-                type: type,
                 margin_rate: 10,
                 monthly_payment: simulation.angsuran,
-                details: detailData,
-                status: 'pending'
+                details: detailData
             });
-
-            if (error) throw error;
 
             toast.success('Pengajuan berhasil!', { id: toastId });
             navigate('/pembiayaan');
 
         } catch (error: any) {
-            toast.error('Gagal: ' + error.message, { id: toastId });
+            const msg = error.response?.data?.message || error.message || 'Gagal mengajukan';
+            toast.error('Gagal: ' + msg, { id: toastId });
         } finally {
             setIsLoading(false);
         }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { formatRupiah, cn } from '../../lib/utils';
 import { 
@@ -12,34 +12,33 @@ import { id as indonesia } from "date-fns/locale";
 
 export const UserLHURiwayat = () => {
     const navigate = useNavigate();
-    const { user } = useAuthStore();
+    const { user, checkSession } = useAuthStore();
     const [lhuHistory, setLhuHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) fetchUserLHU();
-    }, [user]);
+        const init = async () => {
+            if (!user) await checkSession();
+            fetchUserLHU();
+        };
+        init();
+    }, [user, checkSession]);
 
     const fetchUserLHU = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('lhu_member_details')
-            .select(`
-                *,
-                lhu_distributions (
-                    period_month,
-                    period_year,
-                    status
-                )
-            `)
-            .eq('user_id', user?.id)
-            .order('created_at', { ascending: false });
-
-        if (!error) setLhuHistory(data || []);
-        setLoading(false);
+        try {
+            // Endpoint Laravel: GET /lhu/history
+            // Endpoint ini akan mengembalikan data LHU spesifik user yang login
+            const response = await API.get('/lhu/history');
+            setLhuHistory(response.data || []);
+        } catch (error) {
+            console.error("Gagal mengambil data LHU:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const totalPerolehan = lhuHistory.reduce((acc, curr) => acc + curr.total_received, 0);
+    const totalPerolehan = lhuHistory.reduce((acc, curr) => acc + (parseFloat(curr.total_received) || 0), 0);
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24 font-sans text-slate-900">
@@ -99,7 +98,8 @@ export const UserLHURiwayat = () => {
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-sm text-slate-900 uppercase">
-                                                PERIODE {item.lhu_distributions.period_month} / {item.lhu_distributions.period_year}
+                                                {/* Menggunakan optional chaining untuk antisipasi data null dari API */}
+                                                PERIODE {item.lhu_distribution?.period_month} / {item.lhu_distribution?.period_year}
                                             </h4>
                                             <p className="text-[10px] text-slate-400 font-medium">
                                                 CAIR: {format(new Date(item.created_at), 'dd MMM yyyy', { locale: indonesia }).toUpperCase()}

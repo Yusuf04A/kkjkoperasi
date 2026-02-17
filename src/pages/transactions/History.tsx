@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios menggantikan Supabase
 import { useAuthStore } from '../../store/useAuthStore';
 import {
   ArrowLeft,
@@ -9,7 +9,8 @@ import {
   ArrowRightLeft,
   Coins,
   TrendingUp,
-  Filter
+  Filter,
+  PiggyBank
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah, cn } from '../../lib/utils';
@@ -24,26 +25,22 @@ export const TransactionHistory = () => {
 
   useEffect(() => {
     const fetchHistory = async () => {
-      let currentUser = user;
-      if (!currentUser) {
-        await checkSession();
-        const { data } = await supabase.auth.getUser();
-        currentUser = data.user as any;
-      }
+      setLoading(true);
+      try {
+        // 1. Pastikan session user aktif
+        if (!user) {
+          await checkSession();
+        }
 
-      if (!currentUser) {
+        // 2. Ambil data dari Route::get('/balance') di Laravel
+        // Endpoint ini mengembalikan data dari tabel balance_transactions MySQL
+        const response = await API.get('/balance');
+        setTransactions(response.data || []);
+      } catch (error) {
+        console.error("Gagal mengambil riwayat:", error);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const { data } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-      setTransactions(data || []);
-      setLoading(false);
     };
 
     fetchHistory();
@@ -94,9 +91,18 @@ export const TransactionHistory = () => {
           icon: <TrendingUp size={20} />,
           bg: 'bg-green-50',
           text: 'text-green-700',
-          label: displayLabel || 'Bagi Hasil Lhu'
+          label: displayLabel || 'Bagi Hasil LHU'
         };
       default:
+        // Handle setoran simpanan (misal: deposit_simwa)
+        if (type.startsWith('deposit_')) {
+             return {
+                icon: <PiggyBank size={20} />,
+                bg: 'bg-indigo-50',
+                text: 'text-indigo-700',
+                label: displayLabel || 'Setor Simpanan'
+             };
+        }
         return {
           icon: <ArrowRightLeft size={20} />,
           bg: 'bg-slate-100',
@@ -150,6 +156,10 @@ export const TransactionHistory = () => {
         ) : (
           transactions.map((tx) => {
             const style = getTransactionStyle(tx);
+            // Tentukan apakah ini pemasukan atau pengeluaran
+            // 'deposit_' dianggap pengeluaran dari Tapro (walau masuk ke simpanan lain), 
+            // tapi jika ingin ditampilkan sebagai mutasi simpanan, sesuaikan.
+            // Di sini kita anggap 'deposit_' = pengeluaran dari Tapro
             const isIncome = ['topup', 'transfer_in', 'lhu'].includes(tx.type);
 
             return (

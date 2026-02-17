@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { formatRupiah } from '../../lib/utils';
 import { 
-    ShoppingBag, Search, Filter, ShoppingCart, 
-    ChevronRight, ArrowLeft, Plus, Minus, X, CheckCircle2 
+    ShoppingBag, Search, ShoppingCart, 
+    ChevronRight, ArrowLeft, Plus, X 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { cn } from '../../lib/utils';
 
 interface Product {
     id: string;
@@ -35,14 +36,16 @@ export const KatalogBelanja = () => {
 
     const fetchProducts = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('shop_products')
-            .select('*')
-            .eq('is_active', true)
-            .order('name', { ascending: true });
-
-        if (!error && data) setProducts(data);
-        setLoading(false);
+        try {
+            // Endpoint Laravel: GET /shop/products
+            const response = await API.get('/shop/products');
+            setProducts(response.data || []);
+        } catch (error) {
+            console.error("Gagal memuat produk:", error);
+            toast.error("Gagal memuat katalog");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const addToCart = (product: Product) => {
@@ -102,11 +105,11 @@ export const KatalogBelanja = () => {
                 <div className="max-w-5xl mx-auto mt-6 relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={18} />
                     <input 
-                        type="text"
-                        placeholder="Cari produk keinginan Anda..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-blue-300 focus:outline-none focus:bg-white/20 transition-all"
+                        type="text" 
+                        placeholder="Cari produk keinginan Anda..." 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                        className="w-full bg-white/10 border border-white/20 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-blue-300 focus:outline-none focus:bg-white/20 transition-all" 
                     />
                 </div>
             </div>

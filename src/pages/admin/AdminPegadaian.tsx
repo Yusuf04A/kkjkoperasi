@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
+import API from "../../api/api"; // Menggunakan Axios
 import { useNavigate, Link } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
 import { 
     ArrowLeft, Check, X, RefreshCw, Scale, 
-    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, Save, CalendarDays
+    ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, CalendarDays, Loader2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -29,22 +29,14 @@ export const AdminPegadaian = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            let query = supabase
-                .from("pawn_transactions")
-                .select(`*, profiles:user_id (full_name, member_id, tapro_balance)`)
-                .order("created_at", { ascending: false });
-
-            if (activeTab === 'pending') {
-                query = query.eq("status", "pending");
-            } else {
-                query = query.neq("status", "pending");
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-            setDataList(data || []);
+            // Panggil API Laravel: GET /admin/pawn/transactions
+            // Backend bertugas melakukan JOIN dengan profiles dan filter status
+            const response = await API.get('/admin/pawn/transactions', {
+                params: { status: activeTab }
+            });
+            setDataList(response.data || []);
         } catch (err: any) {
-            toast.error("Gagal memuat data");
+            toast.error("Gagal memuat data gadai");
         } finally {
             setLoading(false);
         }
@@ -59,7 +51,7 @@ export const AdminPegadaian = () => {
 
     // 2. HANDLE INPUT FORMAT RUPIAH
     const handleTaksiranChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\D/g, ''); // Hapus non-digit
+        const rawValue = e.target.value.replace(/\D/g, ''); 
         setTaksiranCair(Number(rawValue));
     };
 
@@ -76,39 +68,18 @@ export const AdminPegadaian = () => {
         const toastId = toast.loading("Memproses pencairan...");
 
         try {
-            // Update status transaksi gadai
-            await supabase.from("pawn_transactions")
-                .update({ status: "approved", loan_amount: taksiranCair })
-                .eq("id", selectedReq.id);
-
-            // Update saldo user
-            const currentBalance = selectedReq.profiles?.tapro_balance || 0;
-            await supabase.from("profiles")
-                .update({ tapro_balance: currentBalance + taksiranCair })
-                .eq("id", selectedReq.user_id);
-            
-            // Catat riwayat transaksi (Topup Saldo)
-            await supabase.from("transactions").insert({
-                user_id: selectedReq.user_id,
-                type: "topup",
-                amount: taksiranCair,
-                status: "success",
-                description: `Pencairan Gadai: ${selectedReq.item_name}`
-            });
-
-            // Kirim Notifikasi
-            await supabase.from("notifications").insert({
-                user_id: selectedReq.user_id,
-                title: "Gadai Disetujui ✅",
-                message: `Pengajuan gadai ${selectedReq.item_name} disetujui senilai ${formatRupiah(taksiranCair)}. Dana masuk ke Tapro.`,
-                type: "success"
+            // Endpoint Laravel: POST /admin/pawn/transactions/{id}/approve
+            // Backend menangani: Update status gadai, Update saldo Tapro user, Catat transaksi log, Kirim notifikasi
+            await API.post(`/admin/pawn/transactions/${selectedReq.id}/approve`, {
+                loan_amount: taksiranCair
             });
 
             toast.success("Berhasil dicairkan!", { id: toastId });
             setIsApproveModalOpen(false);
             fetchData();
         } catch (err: any) {
-            toast.error("Gagal: " + err.message, { id: toastId });
+            const msg = err.response?.data?.message || err.message;
+            toast.error("Gagal: " + msg, { id: toastId });
         } finally {
             setIsProcessing(false);
         }
@@ -120,23 +91,23 @@ export const AdminPegadaian = () => {
         if (!reason) return;
         const toastId = toast.loading("Memproses penolakan...");
         try {
-            await supabase.from("pawn_transactions").update({ status: "rejected", admin_note: reason }).eq("id", req.id);
-            await supabase.from("notifications").insert({
-                user_id: req.user_id,
-                title: "Gadai Ditolak ❌",
-                message: `Pengajuan gadai ${req.item_name} ditolak. Alasan: ${reason}`,
-                type: "error"
+            // Endpoint Laravel: POST /admin/pawn/transactions/{id}/reject
+            await API.post(`/admin/pawn/transactions/${req.id}/reject`, {
+                admin_note: reason
             });
+            
             toast.success("Pengajuan ditolak", { id: toastId });
             fetchData();
-        } catch (err) { toast.error("Gagal memproses penolakan", { id: toastId }); }
+        } catch (err: any) { 
+            toast.error("Gagal memproses penolakan", { id: toastId }); 
+        }
     };
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans">
-            {/* Header Konsisten */}
+            {/* Header */}
             <div className="mb-6">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#003366] mb-4 w-fit transition-colors text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -145,7 +116,7 @@ export const AdminPegadaian = () => {
                         <p className="text-sm text-gray-500">Verifikasi & Taksiran Gadai Emas Syariah Anggota</p>
                     </div>
                     <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
-                        <RefreshCw size={20} className={cn(loading && "animate-spin text-kkj-blue")} />
+                        <RefreshCw size={20} className={cn(loading && "animate-spin text-[#003366]")} />
                     </button>
                 </div>
             </div>
@@ -154,25 +125,27 @@ export const AdminPegadaian = () => {
             <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('pending')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'pending' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'pending' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     <Clock size={16} /> Permintaan Baru
-                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
 
                 <button
                     onClick={() => setActiveTab('history')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'history' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors whitespace-nowrap relative flex items-center gap-2 ${activeTab === 'history' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     <Archive size={16} /> Riwayat (Selesai)
-                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
             </div>
 
-            {/* Content Section */}
             <div className="space-y-4">
                 {loading ? (
-                    <div className="p-12 text-center"><RefreshCw className="animate-spin mx-auto text-kkj-blue" /></div>
+                    <div className="p-12 text-center flex flex-col items-center">
+                        <Loader2 className="animate-spin text-[#003366] mb-2" size={32} />
+                        <span className="text-gray-400 text-sm">Menghubungkan ke server...</span>
+                    </div>
                 ) : dataList.length === 0 ? (
                     <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 flex flex-col items-center">
                         <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3 text-gray-300">
@@ -185,7 +158,6 @@ export const AdminPegadaian = () => {
                         {dataList.map((req) => (
                             <div key={req.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row gap-6 hover:shadow-md transition-all duration-300">
                                 
-                                {/* Foto Barang */}
                                 <div className="w-full lg:w-44 h-44 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative group border border-gray-100 shadow-inner">
                                     <img src={req.image_url} alt="Emas" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -193,19 +165,18 @@ export const AdminPegadaian = () => {
                                     </div>
                                 </div>
 
-                                {/* Info Detail */}
                                 <div className="flex-1 space-y-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-blue-50 text-kkj-blue rounded-full flex items-center justify-center shadow-sm">
+                                            <div className="w-12 h-12 bg-blue-50 text-[#003366] rounded-full flex items-center justify-center shadow-sm">
                                                 <Coins size={24} />
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-bold text-gray-900">{req.item_name}</h3>
                                                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 uppercase tracking-wider">
-                                                    <span className="font-bold text-gray-700">{req.profiles?.full_name}</span>
+                                                    <span className="font-bold text-gray-700">{req.user?.name}</span>
                                                     <span>•</span>
-                                                    <span className="font-mono">{req.profiles?.member_id}</span>
+                                                    <span className="font-mono">{req.user?.member_id}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -215,48 +186,45 @@ export const AdminPegadaian = () => {
                                                 req.status === 'approved' ? 'bg-blue-100 text-blue-700' :
                                                 req.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                             )}>
-                                                {req.status}
+                                                {req.status?.replace('_', ' ')}
                                             </span>
-                                            <p className="text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1">
+                                            <p className="text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1 font-bold">
                                                 <Calendar size={10} /> {format(new Date(req.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Grid Spek Barang (DITAMBAH TENOR) */}
                                     <div className="grid grid-cols-4 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center shadow-sm">
                                         <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Berat</p>
-                                            <p className="text-sm font-bold text-gray-900">{req.item_weight} gr</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-tighter">Berat</p>
+                                            <p className="text-sm font-black text-gray-900">{req.item_weight} gr</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Karat</p>
-                                            <p className="text-sm font-bold text-gray-900">{req.item_karat} K</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-tighter">Karat</p>
+                                            <p className="text-sm font-black text-gray-900">{req.item_karat} K</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tenor</p>
-                                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-blue-700">
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-tighter">Tenor</p>
+                                            <div className="flex items-center justify-center gap-1 text-sm font-black text-blue-700">
                                                 <CalendarDays size={14} /> {req.tenor_bulan || 4} Bln
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Kondisi</p>
-                                            <p className="text-sm font-bold text-gray-900 truncate px-1" title={req.item_condition}>{req.item_condition}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-1 tracking-tighter">Kondisi</p>
+                                            <p className="text-sm font-black text-gray-900 truncate px-1" title={req.item_condition}>{req.item_condition}</p>
                                         </div>
                                     </div>
 
-                                    {/* Hasil Taksiran (Muncul di Riwayat) */}
-                                    {req.loan_amount > 0 && (
+                                    {Number(req.loan_amount) > 0 && (
                                         <div className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-lg border border-blue-100">
-                                            <span className="text-xs font-bold text-blue-800 uppercase tracking-widest">Taksiran Cair:</span>
-                                            <span className="font-bold text-blue-900 text-lg">{formatRupiah(req.loan_amount)}</span>
+                                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-widest">Dana Cair:</span>
+                                            <span className="font-black text-blue-900 text-lg">{formatRupiah(req.loan_amount)}</span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Kolom Aksi */}
                                 <div className="flex flex-col justify-center gap-3 lg:border-l lg:pl-6 border-gray-100 min-w-[200px]">
-                                    {activeTab === 'pending' ? (
+                                    {req.status === 'pending' ? (
                                         <>
                                             <button 
                                                 onClick={() => openApproveModal(req)}
@@ -275,7 +243,7 @@ export const AdminPegadaian = () => {
                                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-center">
                                             <CheckCircle size={24} className={cn(req.status === 'rejected' ? "text-red-400" : "text-green-500", "mb-2")} />
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">
-                                                Transaksi<br/>{req.status === 'rejected' ? 'Ditolak' : 'Selesai'}
+                                                Gadai<br/>{req.status === 'rejected' ? 'Ditolak' : 'Selesai'}
                                             </p>
                                         </div>
                                     )}
@@ -286,7 +254,7 @@ export const AdminPegadaian = () => {
                 )}
             </div>
 
-            {/* --- MODAL APPROVAL / TAKSIRAN --- */}
+            {/* MODAL APPROVAL / TAKSIRAN */}
             {isApproveModalOpen && selectedReq && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
@@ -299,13 +267,13 @@ export const AdminPegadaian = () => {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Barang Jaminan</p>
-                                    <p className="text-sm text-blue-900 font-medium">
+                                    <p className="text-sm text-blue-900 font-bold uppercase">
                                         {selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)
                                     </p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Tenor</p>
-                                    <p className="text-sm text-blue-900 font-black">{selectedReq.tenor_bulan || 4} Bulan</p>
+                                    <p className="text-sm text-blue-900 font-black uppercase">{selectedReq.tenor_bulan || 4} Bulan</p>
                                 </div>
                             </div>
                         </div>
@@ -316,19 +284,19 @@ export const AdminPegadaian = () => {
                                     Masukkan Nilai Taksiran (Cair)
                                 </label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">Rp</span>
                                     <input 
                                         type="text" 
                                         required 
                                         placeholder="0" 
                                         value={taksiranCair ? taksiranCair.toLocaleString('id-ID') : ''}
                                         onChange={handleTaksiranChange}
-                                        className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-3.5 font-bold text-lg text-slate-800 outline-none focus:ring-4 focus:ring-blue-100 focus:border-kkj-blue transition-all"
+                                        className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-3.5 font-bold text-lg text-slate-800 outline-none focus:ring-4 focus:ring-blue-100 focus:border-[#003366] transition-all"
                                         autoFocus
                                     />
                                 </div>
-                                <p className="text-[10px] text-gray-400 mt-2 ml-1">
-                                    *Nominal ini akan langsung ditransfer ke Saldo Tapro anggota.
+                                <p className="text-[10px] text-gray-400 mt-2 ml-1 font-medium">
+                                    *Dana akan langsung dikirim ke Saldo Tapro anggota.
                                 </p>
                             </div>
 
@@ -352,7 +320,6 @@ export const AdminPegadaian = () => {
                     </div>
                 </div>
             )}
-
         </div>
     );
 };

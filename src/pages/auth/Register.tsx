@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase'; // Pakai direct supabase biar aman
 import { User, Phone, Lock, Mail, Loader2, ArrowLeft } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import toast from 'react-hot-toast';
-import logoKKJ from '/src/assets/Logo-kkj.png'; // Import Logo
+import API from '../../api/api'; // Menggunakan jembatan API Laravel Anda
+import logoKKJ from '/src/assets/Logo-kkj.png'; 
 
 export const Register = () => {
     const navigate = useNavigate();
@@ -15,12 +15,14 @@ export const Register = () => {
         name: '',
         email: '',
         phone: '',
-        password: ''
+        password: '',
+        password_confirmation: '' 
     });
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validasi Sederhana
         if (!formData.name || !formData.email || !formData.phone || !formData.password) {
             toast.error('Mohon lengkapi semua data');
             return;
@@ -29,37 +31,42 @@ export const Register = () => {
         setIsLoading(true);
 
         try {
-            // 1. DAFTAR KE SUPABASE AUTH
-            const { data, error } = await supabase.auth.signUp({
+            // 1. DAFTAR KE LARAVEL BACKEND
+            // Data dikirim ke Route::post('/register') di Laravel
+            const response = await API.post('/register', {
+                name: formData.name,
                 email: formData.email,
+                phone: formData.phone, // Pastikan di database MySQL Anda sudah ada kolom phone
                 password: formData.password,
-                options: {
-                    // DATA INI AKAN DITANGKAP OLEH SQL TRIGGER
-                    data: {
-                        full_name: formData.name,
-                        phone_number: formData.phone, 
-                        role: 'member'
-                    }
-                }
+                password_confirmation: formData.password // Menggunakan password yang sama untuk konfirmasi
             });
 
-            if (error) throw error;
-
-            if (data.user) {
-                toast.success('Pendaftaran Berhasil! Silakan Login.');
+            // 201 Created = Sukses Register
+            if (response.status === 201) {
+                toast.success('Pendaftaran Berhasil! Data tersimpan di MySQL.');
+                
+                // Opsional: Langsung login setelah daftar atau arahkan ke login page
+                // navigate('/login'); 
+                
+                // Jika ingin auto-login, simpan token yang dikembalikan register (jika ada)
+                // const { token, user } = response.data;
+                // localStorage.setItem('token', token); ...
+                
                 navigate('/login');
             }
 
         } catch (err: any) {
             console.error(err);
-            toast.error(err.message || 'Gagal mendaftar, coba ganti email.');
+            // Menangkap pesan error spesifik dari Laravel (misal: email sudah terdaftar)
+            // Laravel biasanya mengembalikan error validasi di err.response.data.errors
+            const errorMessage = err.response?.data?.message || 'Gagal mendaftar, silakan coba lagi.';
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        // CONTAINER UTAMA (Split Screen: Kiri Hijau, Kanan Putih)
         <div className="min-h-screen flex w-full font-sans bg-white">
             
             {/* === BAGIAN KIRI (HIJAU - BRANDING) === */}
@@ -67,16 +74,12 @@ export const Register = () => {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                 <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] opacity-95 z-0"></div>
 
-                {/* Konten Kiri */}
                 <div className="relative z-10">
-                    {/* --- HEADER LOGO DIPERBESAR --- */}
                     <div className="flex items-center gap-4 mb-10">
-                        {/* Container Logo diperbesar */}
                         <div className="p-3 bg-white rounded-2xl shadow-lg border-b-4 border-[#4caf50]">
                             <img 
                                 src={logoKKJ} 
                                 alt="Logo KKJ" 
-                                // Ukuran diperbesar jadi w-20 h-20 (sekitar 80px) agar sama dengan Login
                                 className="w-20 h-20 object-contain"
                             />
                         </div>
@@ -94,7 +97,7 @@ export const Register = () => {
                         Bergabung Menjadi Anggota <span className="text-[#aeea00]">Koperasi KKJ</span>
                     </h1>
                     <p className="text-green-100/90 text-lg leading-relaxed max-w-lg font-medium">
-                        Nikmati kemudahan layanan simpanan dan pembiayaan digital yang amanah dan transparan.
+                        Platform digital terpadu untuk layanan simpanan, pembiayaan, dan transaksi yang amanah dan transparan.
                     </p>
                 </div>
 
@@ -107,7 +110,6 @@ export const Register = () => {
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
                 <div className="w-full max-w-md space-y-8">
                     
-                    {/* Header Mobile */}
                     <div className="lg:hidden flex flex-col items-center mb-6">
                         <img src={logoKKJ} alt="Logo" className="w-24 h-24 mb-4 object-contain drop-shadow-lg" />
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight text-center">Daftar Anggota Baru</h2>
@@ -171,7 +173,6 @@ export const Register = () => {
                             />
                         </div>
 
-                        {/* Tombol Daftar Hijau (Konsisten) */}
                         <button
                             type="submit"
                             disabled={isLoading}
@@ -199,7 +200,6 @@ export const Register = () => {
                     </button>
                 </div>
             </div>
-
         </div>
     );
 };

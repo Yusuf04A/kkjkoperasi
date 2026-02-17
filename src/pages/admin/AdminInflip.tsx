@@ -1,25 +1,25 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { formatRupiah, cn } from '../../lib/utils';
 import { 
     Plus, Pencil, ArrowLeft, Building, MapPin, 
     Save, X, Image as ImageIcon, 
-    Trash2, TrendingUp, Package, Loader2
+    Trash2, TrendingUp, Loader2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-// Sesuaikan Interface dengan Kolom Database Anda
 interface InflipProject {
-    id: string;
+    id: string | number;
     title: string;
     description: string;
     location: string;
     target_amount: number;
     collected_amount: number;
+    funding_progress: number; // Menambahkan field dari Accessor Laravel
     min_investment: number;
-    roi_percent: number;      // Sesuai DB
-    duration_months: number;  // Sesuai DB
+    roi_percent: number;
+    duration_months: number;
     image_url: string | null;
     status: string;
 }
@@ -32,7 +32,6 @@ export const AdminInflip = () => {
     const [isSaving, setIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Form State (Default Value)
     const [formData, setFormData] = useState<Partial<InflipProject>>({
         title: '',
         description: '',
@@ -55,22 +54,21 @@ export const AdminInflip = () => {
 
     const fetchProjects = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('inflip_projects')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (!error && data) setProjects(data);
-        setLoading(false);
+        try {
+            const response = await API.get('/admin/inflip');
+            setProjects(response.data || []);
+        } catch (error) {
+            toast.error("Gagal memuat proyek properti");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // --- HANDLERS ---
     const handleOpenModal = (project?: InflipProject) => {
         if (project) {
             setFormData(project);
             setImagePreview(project.image_url);
         } else {
-            // Reset form untuk tambah baru
             setFormData({
                 title: '', description: '', location: '', roi_percent: 0, 
                 target_amount: 0, collected_amount: 0, min_investment: 0, 
@@ -91,13 +89,15 @@ export const AdminInflip = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: string | number) => {
         if (!confirm("Yakin hapus proyek ini? Data investasi user mungkin akan terpengaruh.")) return;
-        const { error } = await supabase.from('inflip_projects').delete().eq('id', id);
-        if (error) toast.error("Gagal menghapus");
-        else {
-            toast.success("Proyek dihapus");
+        const toastId = toast.loading("Menghapus proyek...");
+        try {
+            await API.delete(`/admin/inflip/${id}`);
+            toast.success("Proyek berhasil dihapus", { id: toastId });
             fetchProjects();
+        } catch (error) {
+            toast.error("Gagal menghapus proyek", { id: toastId });
         }
     };
 
@@ -107,129 +107,127 @@ export const AdminInflip = () => {
         const toastId = toast.loading("Menyimpan data...");
 
         try {
-            let finalImageUrl = formData.image_url;
+            const uploadData = new FormData();
+            Object.keys(formData).forEach(key => {
+                const value = (formData as any)[key];
+                if (value !== null && value !== undefined) {
+                    uploadData.append(key, value);
+                }
+            });
 
-            // 1. Upload Gambar jika ada file baru
-            if (imageFile) {
-                const fileName = `inflip/${Date.now()}-${imageFile.name.split('.').pop()}`;
-                // Pastikan bucket 'shop_products' atau buat bucket baru 'inflip' di Supabase Storage
-                const { error: uploadError } = await supabase.storage.from('shop_products').upload(fileName, imageFile); 
-                if (uploadError) throw uploadError;
-                
-                const { data: urlData } = supabase.storage.from('shop_products').getPublicUrl(fileName);
-                finalImageUrl = urlData.publicUrl;
-            }
-
-            const payload = { ...formData, image_url: finalImageUrl };
+            if (imageFile) uploadData.append('image', imageFile);
 
             if (formData.id) {
-                await supabase.from('inflip_projects').update(payload).eq('id', formData.id);
+                uploadData.append('_method', 'PUT');
+                await API.post(`/admin/inflip/${formData.id}`, uploadData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
             } else {
-                await supabase.from('inflip_projects').insert(payload);
+                await API.post('/admin/inflip', uploadData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
             }
 
             toast.success("Proyek berhasil disimpan!", { id: toastId });
             setIsModalOpen(false);
             fetchProjects();
         } catch (error: any) {
-            toast.error("Gagal: " + error.message, { id: toastId });
+            toast.error("Gagal menyimpan", { id: toastId });
         } finally {
             setIsSaving(false);
         }
     };
 
-    // 🔥 HELPER FORMAT RUPIAH DI INPUT (100000 -> 100.000)
     const handleNumberChange = (field: keyof InflipProject, value: string) => {
-        // Hapus karakter non-digit
         const rawValue = value.replace(/\D/g, '');
         setFormData({ ...formData, [field]: Number(rawValue) });
     };
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans text-slate-900">
-            
             {/* Header */}
             <div className="mb-8">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#136f42] mb-4 w-fit transition-colors text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
                 <div className="flex justify-between items-end">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900">Manajemen Properti (INFLIP)</h1>
-                        <p className="text-sm text-gray-500">Kelola portofolio investasi properti</p>
+                        <p className="text-sm text-gray-500 font-medium">Kontrol portofolio investasi properti syariah</p>
                     </div>
                     <button 
                         onClick={() => handleOpenModal()} 
-                        className="bg-[#003366] text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 hover:bg-blue-900 transition-all active:scale-95"
+                        className="bg-[#003366] text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-900/20 hover:bg-blue-900 transition-all active:scale-95 flex items-center gap-2"
                     >
-                        <Plus size={18} /> Tambah Proyek
+                        <Plus size={18} strokeWidth={3} /> Tambah Proyek
                     </button>
                 </div>
             </div>
 
             {/* List Projects */}
             {loading ? (
-                <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-kkj-blue" /></div>
+                <div className="p-20 text-center flex flex-col items-center">
+                    <Loader2 className="animate-spin text-[#003366] mb-4" size={40} />
+                    <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Sinkronisasi Data...</p>
+                </div>
             ) : projects.length === 0 ? (
-                <div className="bg-white p-12 rounded-2xl border-2 border-dashed border-gray-200 text-center text-gray-400">
-                    <Building size={48} className="mx-auto mb-3 opacity-50" />
-                    <p>Belum ada proyek investasi.</p>
+                <div className="bg-white p-20 rounded-[2.5rem] border-2 border-dashed border-slate-200 text-center text-slate-300">
+                    <Building size={64} strokeWidth={1} className="mx-auto mb-4 opacity-20" />
+                    <p className="font-bold uppercase text-xs tracking-widest">Belum ada proyek investasi.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {projects.map((item) => (
-                        <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl transition-all duration-300 flex flex-col h-full">
-                            {/* Card Image */}
-                            <div className="h-48 relative bg-gray-200 shrink-0">
+                        <div key={item.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group hover:shadow-2xl hover:shadow-slate-200 transition-all duration-500 flex flex-col h-full">
+                            <div className="h-52 relative bg-slate-100 shrink-0 overflow-hidden">
                                 {item.image_url ? (
-                                    <img src={item.image_url} className="w-full h-full object-cover" alt={item.title} />
+                                    <img src={item.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={item.title} />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400"><ImageIcon size={32}/></div>
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon size={40}/></div>
                                 )}
-                                <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-[#003366] px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1">
-                                    <TrendingUp size={12} /> ROI {item.roi_percent}%
+                                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-[#003366] px-3 py-1.5 rounded-xl text-[10px] font-black shadow-lg flex items-center gap-1 uppercase tracking-tighter">
+                                    <TrendingUp size={12} strokeWidth={3} /> ROI {item.roi_percent}%
                                 </div>
-                                <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleOpenModal(item)} className="p-1.5 bg-white text-blue-600 rounded-lg shadow hover:bg-blue-50"><Pencil size={14}/></button>
-                                    <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-white text-red-600 rounded-lg shadow hover:bg-red-50"><Trash2 size={14}/></button>
+                                <div className="absolute top-4 left-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                                    <button onClick={() => handleOpenModal(item)} className="p-2 bg-white text-blue-600 rounded-xl shadow-xl hover:bg-blue-600 hover:text-white transition-colors"><Pencil size={16}/></button>
+                                    <button onClick={() => handleDelete(item.id)} className="p-2 bg-white text-rose-600 rounded-xl shadow-xl hover:bg-rose-600 hover:text-white transition-colors"><Trash2 size={16}/></button>
                                 </div>
                             </div>
 
-                            {/* Card Content */}
-                            <div className="p-5 flex flex-col flex-1">
-                                <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1 line-clamp-2">{item.title}</h3>
-                                <div className="flex items-center gap-1 text-gray-500 text-xs mb-4">
-                                    <MapPin size={12} /> {item.location}
+                            <div className="p-6 flex flex-col flex-1">
+                                <h3 className="text-xl font-black text-slate-900 leading-tight mb-2 line-clamp-2 tracking-tight">{item.title}</h3>
+                                <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6">
+                                    <MapPin size={12} className="text-[#136f42]" /> {item.location}
                                 </div>
 
-                                {/* Progress Bar */}
-                                <div className="space-y-1.5 mb-4">
-                                    <div className="flex justify-between text-xs font-medium">
-                                        <span className="text-gray-500">Terkumpul</span>
+                                {/* PROGRESS BAR MENGGUNAKAN ACCESSOR LARAVEL */}
+                                <div className="space-y-2 mb-6">
+                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                        <span className="text-slate-400">Progres Pendanaan</span>
                                         <span className="text-[#003366]">
-                                            {item.target_amount > 0 ? Math.min(100, Math.round((item.collected_amount / item.target_amount) * 100)) : 0}%
+                                            {item.funding_progress}%
                                         </span>
                                     </div>
-                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100 p-0.5">
                                         <div 
-                                            className="h-full bg-[#003366] rounded-full transition-all duration-1000" 
-                                            style={{ width: `${item.target_amount > 0 ? Math.min(100, (item.collected_amount / item.target_amount) * 100) : 0}%` }}
+                                            className="h-full bg-gradient-to-r from-[#003366] to-blue-500 rounded-full transition-all duration-1000 shadow-sm" 
+                                            style={{ width: `${item.funding_progress}%` }}
                                         />
                                     </div>
-                                    <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                                        <span className="font-bold text-slate-700">{formatRupiah(item.collected_amount)}</span>
-                                        <span>Target: {formatRupiah(item.target_amount)}</span>
+                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-tighter mt-1">
+                                        <span className="text-[#136f42]">{formatRupiah(item.collected_amount)}</span>
+                                        <span className="text-slate-400">Target: {formatRupiah(item.target_amount)}</span>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 border-t border-gray-50 pt-3 mt-auto">
-                                    <div className="bg-gray-50 p-2 rounded-lg text-center">
-                                        <p className="text-[9px] text-gray-400 uppercase font-bold">Min. Invest</p>
-                                        <p className="text-xs font-bold text-slate-800">{formatRupiah(item.min_investment)}</p>
+                                <div className="grid grid-cols-2 gap-3 border-t border-slate-50 pt-4 mt-auto">
+                                    <div className="bg-slate-50/50 p-3 rounded-2xl text-center border border-slate-100">
+                                        <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest mb-1">Min. Invest</p>
+                                        <p className="text-[11px] font-black text-slate-800">{formatRupiah(item.min_investment)}</p>
                                     </div>
-                                    <div className="bg-gray-50 p-2 rounded-lg text-center">
-                                        <p className="text-[9px] text-gray-400 uppercase font-bold">Tenor</p>
-                                        <p className="text-xs font-bold text-slate-800">{item.duration_months} Bulan</p>
+                                    <div className="bg-slate-50/50 p-3 rounded-2xl text-center border border-slate-100">
+                                        <p className="text-[8px] text-slate-400 uppercase font-black tracking-widest mb-1">Tenor</p>
+                                        <p className="text-[11px] font-black text-slate-800 uppercase">{item.duration_months} Bulan</p>
                                     </div>
                                 </div>
                             </div>
@@ -238,133 +236,121 @@ export const AdminInflip = () => {
                 </div>
             )}
 
-            {/* --- MODAL FORM --- */}
+            {/* MODAL FORM TETAP SAMA SEPERTI SEBELUMNYA */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 border border-gray-200 max-h-[90vh] overflow-y-auto">
-                        
-                        <div className="flex justify-between items-center border-b pb-4 mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">{formData.id ? 'Edit Proyek' : 'Tambah Proyek Baru'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"><X size={20}/></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl animate-in slide-in-from-bottom-10 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex justify-between items-center border-b border-slate-50 pb-6 mb-8">
+                            <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{formData.id ? 'Edit Proyek' : 'Proyek Inflip Baru'}</h2>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-600 transition-all hover:bg-rose-50"><X size={20}/></button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            {/* KIRI: Gambar & Status */}
-                            <div className="space-y-4">
-                                <label className="block w-full h-48 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors group relative overflow-hidden">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <label className="block w-full h-56 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-[#003366] transition-all group relative overflow-hidden shadow-inner">
                                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                                     {imagePreview ? (
                                         <>
                                             <img src={imagePreview} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs font-bold">Ganti Foto</div>
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black uppercase tracking-widest">Ganti Foto Proyek</div>
                                         </>
                                     ) : (
-                                        <div className="text-center group-hover:scale-105 transition-transform">
-                                            <ImageIcon className="mx-auto text-gray-300 mb-2" size={32}/>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Foto Proyek</p>
+                                        <div className="text-center group-hover:scale-110 transition-transform">
+                                            <ImageIcon className="mx-auto text-slate-200 mb-3" size={48}/>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Upload Foto Proyek</p>
                                         </div>
                                     )}
                                 </label>
 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Status Proyek</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Status Proyek</label>
                                     <select 
                                         value={formData.status} 
                                         onChange={(e) => setFormData({...formData, status: e.target.value})}
-                                        className="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-kkj-blue/20"
+                                        className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-xs uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-50 focus:border-[#003366] transition-all text-[#003366]"
                                     >
-                                        <option value="open">Open (Sedang Berlangsung)</option>
-                                        <option value="closed">Closed (Didanai)</option>
-                                        <option value="completed">Completed (Selesai/Bagi Hasil)</option>
+                                        <option value="open">Open (Berlangsung)</option>
+                                        <option value="closed">Closed (Full Kuota)</option>
+                                        <option value="completed">Completed (Selesai)</option>
                                     </select>
                                 </div>
                             </div>
 
-                            {/* KANAN: Input Data */}
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Nama Proyek</label>
-                                    <input type="text" required placeholder="Contoh: Renovasi Ruko BSD" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue transition-all" />
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Nama Proyek</label>
+                                    <input type="text" required placeholder="Contoh: Renovasi Ruko BSD" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-sm text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 focus:border-[#003366] transition-all" />
                                 </div>
                                 
                                 <div>
-                                    <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Lokasi</label>
-                                    <input type="text" required placeholder="Contoh: Tangerang Selatan" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full border border-gray-200 p-3 rounded-xl font-medium text-slate-800 outline-none focus:border-kkj-blue transition-all" />
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Lokasi Aset</label>
+                                    <input type="text" required placeholder="Contoh: Tangerang Selatan" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-sm text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 focus:border-[#003366] transition-all" />
                                 </div>
 
-                                {/* Target Dana & Terkumpul */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Target Dana (Rp)</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Target Dana</label>
                                         <input 
-                                            type="text" 
-                                            required 
+                                            type="text" required 
                                             value={formData.target_amount ? formData.target_amount.toLocaleString('id-ID') : ''} 
                                             onChange={(e) => handleNumberChange('target_amount', e.target.value)} 
-                                            className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue" 
-                                            placeholder="0" 
+                                            className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-sm text-slate-800 outline-none" 
+                                            placeholder="Rp" 
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Terkumpul (Rp)</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Terkumpul</label>
                                         <input 
-                                            type="text" 
-                                            required 
+                                            type="text" required 
                                             value={formData.collected_amount ? formData.collected_amount.toLocaleString('id-ID') : ''} 
                                             onChange={(e) => handleNumberChange('collected_amount', e.target.value)} 
-                                            className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue" 
-                                            placeholder="0" 
+                                            className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-sm text-slate-800 outline-none" 
+                                            placeholder="Rp" 
                                         />
                                     </div>
                                 </div>
 
-                                {/* Detail Angka Lain */}
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">ROI (%)</label>
-                                        <input type="number" step="0.1" required value={formData.roi_percent} onChange={(e) => setFormData({...formData, roi_percent: Number(e.target.value)})} className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue" placeholder="%" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">ROI (%)</label>
+                                        <input type="number" step="0.1" required value={formData.roi_percent} onChange={(e) => setFormData({...formData, roi_percent: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-sm text-slate-800 outline-none" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Tenor (Bln)</label>
-                                        <input type="number" required value={formData.duration_months} onChange={(e) => setFormData({...formData, duration_months: Number(e.target.value)})} className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue" placeholder="Bulan" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tenor (Bln)</label>
+                                        <input type="number" required value={formData.duration_months} onChange={(e) => setFormData({...formData, duration_months: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-sm text-slate-800 outline-none" />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Min. Invest</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Min. Invest</label>
                                         <input 
-                                            type="text" 
-                                            required 
+                                            type="text" required 
                                             value={formData.min_investment ? formData.min_investment.toLocaleString('id-ID') : ''} 
                                             onChange={(e) => handleNumberChange('min_investment', e.target.value)} 
-                                            className="w-full border border-gray-200 p-3 rounded-xl font-bold text-slate-800 outline-none focus:border-kkj-blue" 
-                                            placeholder="Rp" 
+                                            className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-black text-[10px] text-slate-800 outline-none" 
                                         />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Deskripsi */}
-                        <div className="mt-4">
-                            <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1.5 block">Deskripsi Proyek</label>
+                        <div className="mt-8">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Deskripsi & Prospek</label>
                             <textarea 
-                                rows={3}
+                                rows={4}
                                 value={formData.description || ''}
                                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                className="w-full border border-gray-200 p-3 rounded-xl font-medium text-slate-800 outline-none focus:border-kkj-blue resize-none"
+                                className="w-full bg-slate-50 border border-slate-100 p-4 rounded-3xl font-medium text-sm text-slate-800 outline-none focus:ring-4 focus:ring-blue-50 focus:border-[#003366] transition-all resize-none"
                                 placeholder="Jelaskan detail proyek..."
                             />
                         </div>
 
-                        <div className="flex gap-3 pt-6 mt-2">
-                            <button type="submit" disabled={isSaving} className="flex-1 bg-[#003366] text-white py-4 rounded-xl font-bold uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                                <Save size={18} /> {isSaving ? 'Menyimpan...' : 'Simpan Proyek'}
+                        <div className="flex gap-4 pt-8">
+                            <button type="submit" disabled={isSaving} className="flex-1 bg-[#003366] text-white py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-blue-900/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                                {isSaving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Simpan Proyek</>}
                             </button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-gray-200 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition-all text-xs uppercase">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 border border-slate-200 text-slate-400 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all">
                                 Batal
                             </button>
                         </div>
-
                     </form>
                 </div>
             )}

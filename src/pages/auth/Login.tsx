@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '../../components/ui/Input';
+import { useAuthStore } from '../../store/useAuthStore';
 import logoKKJ from '/src/assets/Logo-kkj.png'; 
 
 export const Login = () => {
     const navigate = useNavigate();
+    const { setAuth } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -17,52 +19,51 @@ export const Login = () => {
         setIsLoading(true);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            // 1. KIRIM PERMINTAAN LOGIN KE LARAVEL
+            // Endpoint: Route::post('/login')
+            const response = await API.post('/login', {
                 email: formData.email,
                 password: formData.password
             });
 
-            if (error) throw error;
+            const { token, user } = response.data;
 
-            if (data.user) {
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role, status, full_name')
-                    .eq('id', data.user.id)
-                    .single();
+            // 2. CEK STATUS USER
+            if (user.status === 'pending') {
+                toast((t) => (
+                    <div className="flex flex-col gap-1">
+                        <span className="font-bold text-green-800">Login Berhasil, Tapi...</span>
+                        <span className="text-sm text-green-700">Akun Kak <b>{user.name}</b> masih menunggu verifikasi Admin.</span>
+                        <button onClick={() => toast.dismiss(t.id)} className="bg-green-100 text-green-800 border border-green-200 font-bold px-2 py-1 text-xs rounded mt-1">Tutup</button>
+                    </div>
+                ), { icon: '⏳', duration: 6000 });
+                // Jangan simpan token jika pending (opsional, tergantung kebijakan)
+                return;
+            }
 
-                if (profileError) throw profileError;
+            if (user.status === 'rejected') {
+                toast.error('Maaf, pendaftaran akun ditolak.');
+                return;
+            }
 
-                if (profile?.status === 'pending') {
-                    toast((t) => (
-                        <div className="flex flex-col gap-1">
-                            <span className="font-bold text-green-800">Login Berhasil, Tapi...</span>
-                            <span className="text-sm text-green-700">Akun Kak <b>{profile.full_name}</b> masih menunggu verifikasi Admin.</span>
-                            <button onClick={() => toast.dismiss(t.id)} className="bg-green-100 text-green-800 border border-green-200 font-bold px-2 py-1 text-xs rounded mt-1">Tutup</button>
-                        </div>
-                    ), { icon: '⏳', duration: 6000 });
-                    await supabase.auth.signOut();
-                    return;
-                }
+            // 3. SIMPAN SESI (Token & Data User)
+            // Fungsi setAuth dari useAuthStore akan menyimpan ke localStorage
+            setAuth(user, token);
 
-                if (profile?.status === 'rejected') {
-                    toast.error('Maaf, pendaftaran akun ditolak.');
-                    await supabase.auth.signOut();
-                    return;
-                }
+            toast.success(`Selamat Datang, ${user.name}!`);
 
-                toast.success(`Selamat Datang, ${profile.full_name}!`);
-
-                if (profile?.role === 'admin') {
-                    navigate('/admin/dashboard');
-                } else {
-                    navigate('/');
-                }
+            // 4. REDIRECT SESUAI ROLE
+            if (user.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/');
             }
 
         } catch (err: any) {
             console.error(err);
-            toast.error('Email atau Password salah.');
+            // Menangkap pesan error dari Laravel (misal: "Unauthorized")
+            const errorMessage = err.response?.data?.message || 'Email atau Password salah.';
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -79,7 +80,6 @@ export const Login = () => {
                 <div className="relative z-10">
                     {/* --- HEADER LOGO --- */}
                     <div className="flex items-center gap-4 mb-10">
-                        {/* Container Logo (Border dihapus/transparan) */}
                         <div className="p-3 bg-white rounded-2xl shadow-lg">
                             <img 
                                 src={logoKKJ} 

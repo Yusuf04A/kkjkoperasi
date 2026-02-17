@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { 
     Check, X, Loader2, RefreshCw, ArrowLeft, Eye, Clock, 
     CheckCircle, XCircle, ArrowDownLeft, ArrowUpRight, 
-    Wallet, Banknote, Download // Tambah Icon Download
+    Wallet, Banknote, Download 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { formatRupiah } from '../../lib/utils';
 import { id as indonesia } from 'date-fns/locale';
-import * as XLSX from 'xlsx'; // Import Library XLSX
+import * as XLSX from 'xlsx'; 
 
 export const AdminTransactions = () => {
     const [transactions, setTransactions] = useState<any[]>([]);
@@ -20,29 +20,21 @@ export const AdminTransactions = () => {
 
     const fetchTransactions = async () => {
         setLoading(true);
-
-        let query = supabase
-            .from('transactions')
-            .select(`
-                *,
-                profiles ( full_name, member_id )
-            `)
-            .order('created_at', { ascending: false });
-
-        if (activeTab === 'pending') {
-            query = query.eq('status', 'pending');
-        } else {
-            query = query.neq('status', 'pending');
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
+        try {
+            // Panggil API Laravel: GET /admin/transactions
+            // Kirim parameter status ('pending' atau 'history')
+            const response = await API.get('/admin/transactions', {
+                params: {
+                    status: activeTab
+                }
+            });
+            setTransactions(response.data || []);
+        } catch (error) {
+            console.error("Gagal ambil data:", error);
             toast.error("Gagal ambil data");
-        } else {
-            setTransactions(data || []);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
@@ -61,8 +53,8 @@ export const AdminTransactions = () => {
         // Format data agar cantik di Excel
         const excelData = transactions.map((tx) => ({
             'Tanggal': format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm'),
-            'ID Anggota': tx.profiles?.member_id || '-',
-            'Nama Anggota': tx.profiles?.full_name || 'System',
+            'ID Anggota': tx.user?.member_id || '-', // Sesuaikan relasi user di Laravel
+            'Nama Anggota': tx.user?.name || 'System',
             'Tipe': getTypeConfig(tx.type).label,
             'Nominal': tx.amount,
             'Status': tx.status.toUpperCase(),
@@ -85,42 +77,38 @@ export const AdminTransactions = () => {
         const isTopup = tx.type === 'topup';
         const actionText = isTopup ? 'Top Up' : 'Penarikan';
 
-        const confirm = window.confirm(`Setujui ${actionText} Rp ${formatRupiah(tx.amount)} untuk ${tx.profiles?.full_name}?`);
+        const confirm = window.confirm(`Setujui ${actionText} Rp ${formatRupiah(tx.amount)} untuk ${tx.user?.name}?`);
         if (!confirm) return;
 
         const toastId = toast.loading('Memproses...');
         try {
-            let rpcName = 'approve_topup';
-            if (tx.type === 'withdraw') {
-                rpcName = 'approve_withdraw';
-            }
+            // Endpoint Laravel: POST /admin/transactions/{id}/approve
+            await API.post(`/admin/transactions/${tx.id}/approve`);
 
-            const { error } = await supabase.rpc(rpcName, { transaction_id: tx.id });
-
-            if (error) throw error;
             toast.success('Berhasil disetujui!', { id: toastId });
             fetchTransactions();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            const msg = err.response?.data?.message || err.message;
+            toast.error(`Gagal: ${msg}`, { id: toastId });
         }
     };
 
-    const handleReject = async (id: string) => {
+    const handleReject = async (id: number) => {
         const reason = window.prompt("Alasan penolakan:");
         if (!reason) return;
 
         const toastId = toast.loading('Menolak...');
         try {
-            const { error } = await supabase
-                .from('transactions')
-                .update({ status: 'rejected', description: reason })
-                .eq('id', id);
+            // Endpoint Laravel: POST /admin/transactions/{id}/reject
+            await API.post(`/admin/transactions/${id}/reject`, {
+                reason: reason
+            });
 
-            if (error) throw error;
             toast.success('Transaksi ditolak.', { id: toastId });
             fetchTransactions();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            const msg = err.response?.data?.message || err.message;
+            toast.error(`Gagal: ${msg}`, { id: toastId });
         }
     };
 
@@ -136,6 +124,8 @@ export const AdminTransactions = () => {
                 return { label: 'Kirim Uang', color: 'bg-orange-100 text-orange-700', icon: <Wallet size={16} /> };
             case 'payment':
                 return { label: 'Bayar Cicilan', color: 'bg-indigo-100 text-indigo-700', icon: <Banknote size={16} /> };
+            case 'shop_payment':
+                return { label: 'Belanja Toko', color: 'bg-purple-100 text-purple-700', icon: <Banknote size={16} /> };
             default:
                 return { label: type, color: 'bg-gray-100 text-gray-700', icon: <Clock size={16} /> };
         }
@@ -146,7 +136,7 @@ export const AdminTransactions = () => {
 
             {/* Header */}
             <div className="mb-6">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
+                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#003366] mb-4 w-fit transition-colors text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -155,7 +145,7 @@ export const AdminTransactions = () => {
                         <p className="text-sm text-gray-500">Monitoring Top Up, Penarikan, dan Pembayaran.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* 🔥 TOMBOL EXCEL BARU 🔥 */}
+                        {/* TOMBOL EXCEL */}
                         <button 
                             onClick={exportToExcel}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-all active:scale-95 text-sm font-bold"
@@ -164,7 +154,7 @@ export const AdminTransactions = () => {
                         </button>
                         
                         <button onClick={fetchTransactions} className="p-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 shadow-sm transition-transform active:scale-95">
-                            <RefreshCw size={20} className={loading ? "animate-spin text-kkj-blue" : ""} />
+                            <RefreshCw size={20} className={loading ? "animate-spin text-[#003366]" : ""} />
                         </button>
                     </div>
                 </div>
@@ -174,17 +164,17 @@ export const AdminTransactions = () => {
             <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button
                     onClick={() => setActiveTab('pending')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'pending' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'pending' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Menunggu Approval
-                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'pending' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
                 <button
                     onClick={() => setActiveTab('history')}
-                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'history' ? 'text-kkj-blue' : 'text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 px-4 font-bold text-sm transition-colors relative ${activeTab === 'history' ? 'text-[#003366]' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                     Riwayat Transaksi
-                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-kkj-blue rounded-t-full"></div>}
+                    {activeTab === 'history' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#003366] rounded-t-full"></div>}
                 </button>
             </div>
 
@@ -204,7 +194,7 @@ export const AdminTransactions = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan={6} className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-kkj-blue" /></td></tr>
+                                <tr><td colSpan={6} className="p-12 text-center"><Loader2 className="animate-spin mx-auto text-[#003366]" /></td></tr>
                             ) : transactions.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-12 text-center text-gray-500 py-20">
@@ -221,8 +211,9 @@ export const AdminTransactions = () => {
                                     return (
                                         <tr key={tx.id} className="hover:bg-gray-50 transition-colors group">
                                             <td className="p-4">
-                                                <p className="font-bold text-gray-900 text-sm leading-tight">{tx.profiles?.full_name || 'System'}</p>
-                                                <p className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">{tx.profiles?.member_id}</p>
+                                                {/* Menggunakan tx.user karena relasi di Laravel biasanya 'user' */}
+                                                <p className="font-bold text-gray-900 text-sm leading-tight">{tx.user?.name || 'System'}</p>
+                                                <p className="text-[10px] text-gray-400 font-mono mt-0.5 uppercase">{tx.user?.member_id}</p>
                                             </td>
                                             <td className="p-4">
                                                 <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full w-fit text-[10px] font-black uppercase tracking-tighter ${typeConfig.color}`}>
@@ -234,7 +225,7 @@ export const AdminTransactions = () => {
                                             </td>
                                             <td className="p-4">
                                                 {tx.proof_url ? (
-                                                    <button onClick={() => setSelectedImage(tx.proof_url)} className="text-kkj-blue hover:text-blue-800 text-[10px] font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 transition-colors">
+                                                    <button onClick={() => setSelectedImage(tx.proof_url)} className="text-[#003366] hover:text-blue-800 text-[10px] font-bold flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md border border-blue-100 transition-colors">
                                                         <Eye size={12} /> LIHAT BUKTI
                                                     </button>
                                                 ) : <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">N/A</span>}

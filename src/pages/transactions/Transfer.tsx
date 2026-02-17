@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -16,6 +16,7 @@ export const Transfer = () => {
     const [amount, setAmount] = useState('');
     const [phone, setPhone] = useState('');
     const [recipientName, setRecipientName] = useState<string | null>(null);
+    const [recipientId, setRecipientId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
     const [showPinModal, setShowPinModal] = useState(false);
@@ -35,42 +36,49 @@ export const Transfer = () => {
         if (phone.length < 10) return;
         setIsChecking(true);
 
-        const { data } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('phone', phone)
-            .single();
-
-        if (data) {
-            setRecipientName(data.full_name);
-            toast.success(`Penerima ditemukan: ${data.full_name}`);
-        } else {
+        try {
+            // Panggil API Laravel: POST /check-user
+            const response = await API.post('/check-user', { phone });
+            
+            if (response.data.exists) {
+                setRecipientName(response.data.name);
+                setRecipientId(response.data.id);
+                toast.success(`Penerima ditemukan: ${response.data.name}`);
+            } else {
+                setRecipientName(null);
+                setRecipientId(null);
+                toast.error('Nomor belum terdaftar di aplikasi.');
+            }
+        } catch (error) {
             setRecipientName(null);
-            toast.error('Nomor belum terdaftar di aplikasi.');
+            setRecipientId(null);
+            toast.error('Gagal mengecek nomor tujuan.');
+        } finally {
+            setIsChecking(false);
         }
-        setIsChecking(false);
     };
 
     const executeTransfer = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Memproses transfer...');
         
-        // Bersihkan titik sebelum kirim ke RPC/Database
+        // Bersihkan titik sebelum kirim
         const nominal = parseInt(amount.replace(/\./g, ''));
 
         try {
-            const { error } = await supabase.rpc('transfer_balance', {
-                recipient_phone: phone,
-                amount: nominal
+            // Panggil API Laravel: POST /transfer
+            await API.post('/transfer', {
+                recipient_id: recipientId,
+                amount: nominal,
+                description: `Transfer ke ${recipientName}`
             });
-
-            if (error) throw error;
 
             toast.success('Transfer Berhasil!', { id: toastId });
             navigate('/transaksi/riwayat');
 
         } catch (error: any) {
-            toast.error('Gagal: ' + error.message, { id: toastId });
+            const msg = error.response?.data?.message || 'Transfer gagal';
+            toast.error(msg, { id: toastId });
         } finally {
             setIsLoading(false);
             setShowPinModal(false);
@@ -81,7 +89,7 @@ export const Transfer = () => {
         e.preventDefault();
         const nominal = parseInt(amount.replace(/\./g, ''));
 
-        if (!recipientName) {
+        if (!recipientName || !recipientId) {
             toast.error('Pastikan nomor tujuan benar.');
             return;
         }
@@ -140,6 +148,7 @@ export const Transfer = () => {
                                     onChange={(e) => {
                                         setPhone(e.target.value);
                                         setRecipientName(null);
+                                        setRecipientId(null);
                                     }}
                                     required
                                 />

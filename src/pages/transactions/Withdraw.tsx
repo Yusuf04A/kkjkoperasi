@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
 import { 
     ArrowLeft, CreditCard, Banknote, AlertCircle, 
     Wallet, PiggyBank, CheckCircle, Loader2, Landmark,
@@ -28,14 +27,14 @@ export const Withdraw = () => {
 
     // Daftar Opsi Simpanan
     const simpananOptions = [
-        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-        { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School, color: 'text-orange-600', bg: 'bg-orange-50' },
-        { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
-        { id: 'siqurma', name: 'Qurban', col: 'siqurma_balance', icon: Heart, color: 'text-red-600', bg: 'bg-red-50' },
-        { id: 'siuji', name: 'Haji / Umroh', col: 'siuji_balance', icon: Plane, color: 'text-teal-600', bg: 'bg-teal-50' },
-        { id: 'siwalima', name: 'Walimah', col: 'siwalima_balance', icon: Heart, color: 'text-pink-600', bg: 'bg-pink-50' },
+        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle },
+        { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save },
+        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank },
+        { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School },
+        { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift },
+        { id: 'siqurma', name: 'Qurban', col: 'siqurma_balance', icon: Heart },
+        { id: 'siuji', name: 'Haji / Umroh', col: 'siuji_balance', icon: Plane },
+        { id: 'siwalima', name: 'Walimah', col: 'siwalima_balance', icon: Heart },
     ];
 
     useEffect(() => {
@@ -45,7 +44,8 @@ export const Withdraw = () => {
     // Fungsi mendapatkan saldo aktif berdasarkan pilihan user
     const getActiveBalance = () => {
         if (sourceType === 'tapro') return user?.tapro_balance || 0;
-        if (selectedSimpanan) return user?.[selectedSimpanan.col] || 0;
+        // Gunakan 'as any' jika properti dinamis belum ada di interface User
+        if (selectedSimpanan) return (user as any)?.[selectedSimpanan.col] || 0;
         return 0;
     };
 
@@ -56,7 +56,7 @@ export const Withdraw = () => {
 
     const handleWithdrawClick = (e: React.FormEvent) => {
         e.preventDefault();
-        const nominal = parseInt(amount.replace(/\D/g, ''));
+        const nominal = parseInt(amount.replace(/\./g, ''));
 
         if (sourceType === 'simpanan' && !selectedSimpanan) {
             return toast.error('Pilih jenis simpanan dulu!');
@@ -77,25 +77,26 @@ export const Withdraw = () => {
     const executeWithdraw = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Mengirim permintaan penarikan...');
-        const nominal = parseInt(amount.replace(/\D/g, ''));
+        const nominal = parseInt(amount.replace(/\./g, ''));
 
         try {
-            // Masukkan ke tabel penarikan untuk disetujui admin
-            const { error } = await supabase.from('savings_withdrawals').insert({
-                user_id: user?.id,
-                type: sourceType === 'tapro' ? 'tapro' : selectedSimpanan.id,
+            // Panggil API Laravel: POST /balance dengan tipe withdraw
+            await API.post('/balance', {
+                type: 'withdraw',
                 amount: nominal,
+                // Mengirim metadata tambahan
+                source_type: sourceType,
+                source_id: selectedSimpanan ? selectedSimpanan.id : 'tapro',
                 bank_name: bankName,
                 account_number: accountNumber,
-                status: 'pending'
+                description: `Penarikan ke ${bankName} (${accountNumber})`
             });
-
-            if (error) throw error;
 
             toast.success('Permintaan dikirim! Admin akan memproses segera.', { id: toastId });
             navigate('/transaksi/riwayat');
         } catch (error: any) {
-            toast.error('Gagal: ' + error.message, { id: toastId });
+            const msg = error.response?.data?.message || 'Gagal memproses penarikan';
+            toast.error(msg, { id: toastId });
         } finally {
             setIsLoading(false);
             setShowPinModal(false);
@@ -172,7 +173,8 @@ export const Withdraw = () => {
                                             <opt.icon size={14} />
                                             <span>{opt.name}</span>
                                         </div>
-                                        <span className="opacity-80 font-mono">{formatRupiah(user?.[opt.col] || 0)}</span>
+                                        {/* Menggunakan 'as any' untuk akses properti dinamis */}
+                                        <span className="opacity-80 font-mono">{formatRupiah((user as any)?.[opt.col] || 0)}</span>
                                     </button>
                                 ))}
                             </div>

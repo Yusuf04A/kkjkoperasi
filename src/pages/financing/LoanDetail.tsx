@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Axios
 import { ArrowLeft, Calendar, CheckCircle, Wallet, Clock, AlertTriangle, User, History, X } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -25,15 +25,17 @@ export const LoanDetail = () => {
     // FETCH DATA
     const fetchData = async () => {
         setLoading(true);
-        const { data: loanData } = await supabase.from('loans').select('*').eq('id', id).single();
-        setLoan(loanData);
-
-        if (loanData) {
-            const { data: instData } = await supabase
-                .from('installments').select('*').eq('loan_id', id).order('due_date', { ascending: true });
-            setInstallments(instData || []);
+        try {
+            // Endpoint Laravel: GET /financing/loan/{id}
+            const res = await API.get(`/financing/loan/${id}`);
+            setLoan(res.data.loan);
+            setInstallments(res.data.installments);
+        } catch (err) {
+            toast.error("Gagal memuat data pinjaman");
+            navigate('/pembiayaan');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => { fetchData(); }, [id]);
@@ -44,13 +46,14 @@ export const LoanDetail = () => {
         if (!confirm) return;
         const toastId = toast.loading('Memproses pembayaran...');
         try {
-            const { error } = await supabase.rpc('pay_installment', { installment_id_param: instId });
-            if (error) throw error;
+            // Endpoint Laravel: POST /financing/pay-installment
+            await API.post('/financing/pay-installment', { installment_id: instId });
+            
             toast.success('Pembayaran Berhasil!', { id: toastId });
             fetchData();
             checkSession();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            toast.error(`Gagal: ${err.response?.data?.message || err.message}`, { id: toastId });
         }
     };
 
@@ -69,17 +72,18 @@ export const LoanDetail = () => {
         }
 
         const toastId = toast.loading("Mengirim pengajuan...");
-        const { error } = await supabase.from('loans').update({
-            restructure_req_duration: tenorInt,
-            restructure_reason: reason,
-            restructure_status: 'pending'
-        }).eq('id', loan.id);
-
-        if (error) toast.error("Gagal mengirim request");
-        else {
+        try {
+            // Endpoint Laravel: POST /financing/restructure
+            await API.post('/financing/restructure', {
+                loan_id: loan.id,
+                new_duration: tenorInt,
+                reason: reason
+            });
             toast.success("Pengajuan dikirim ke Admin", { id: toastId });
-            setShowModal(false); 
-            fetchData(); 
+            setShowModal(false);
+            fetchData();
+        } catch (err: any) {
+            toast.error("Gagal mengirim request", { id: toastId });
         }
     };
 
@@ -109,7 +113,7 @@ export const LoanDetail = () => {
                     </div>
                 </div>
                 <img
-                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name}&background=136f42&color=fff`}
+                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.name}&background=136f42&color=fff`}
                     alt="Profile"
                     className="w-10 h-10 rounded-full border-2 border-green-50 shadow-sm"
                 />
@@ -207,8 +211,8 @@ export const LoanDetail = () => {
                                 <div key={item.id} className={cn(
                                     "p-4 rounded-2xl border flex justify-between items-center transition-all",
                                     isPaid 
-                                        ? "bg-white border-green-100 opacity-80" 
-                                        : "bg-white border-gray-100 hover:border-[#136f42] shadow-sm"
+                                    ? "bg-white border-green-100 opacity-80" 
+                                    : "bg-white border-gray-100 hover:border-[#136f42] shadow-sm"
                                 )}>
                                     <div className="flex items-center gap-4">
                                         <div className={cn(

@@ -27,7 +27,6 @@ export const TransactionMenu = () => {
                 { label: 'Setor Simpanan', icon: PiggyBank, color: 'text-green-700', bg: 'bg-green-50', link: '/transaksi/setor', desc: 'Simpanan wajib, qurban, dll' },
                 { label: 'Tabungan Emas', icon: Coins, color: 'text-yellow-600', bg: 'bg-yellow-50', link: '/program/tamasa', desc: 'Investasi emas Tamasa' },
                 { label: 'Properti', icon: Building, color: 'text-[#136f42]', bg: 'bg-green-50', link: '/program/inflip', desc: 'Investasi properti Inflip' },
-                // PENAMBAHAN MENU PEGADAIAN
                 { label: 'Pegadaian', icon: Wallet, color: 'text-[#136f42]', bg: 'bg-green-50', link: '/program/pegadaian', desc: 'Gadai emas syariah' },
             ]
         },
@@ -46,8 +45,7 @@ export const TransactionMenu = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-
-            {/* HEADER STICKY - HIJAU KONSISTEN */}
+            {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
                     <button 
@@ -63,8 +61,6 @@ export const TransactionMenu = () => {
             </div>
 
             <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6 lg:space-y-8">
-
-                {/* GRID LAYOUT UNTUK MENU */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
                     {menuGroups.map((group, idx) => (
                         <div key={idx} className="bg-white rounded-[2rem] p-6 shadow-sm border border-green-50 flex flex-col h-full hover:shadow-md transition-all">
@@ -99,7 +95,6 @@ export const TransactionMenu = () => {
                     ))}
                 </div>
 
-                {/* FOOTER INFO */}
                 <p className="text-center text-slate-300 text-[10px] font-bold uppercase tracking-[0.3em] pt-6">
                     © 2026 Koperasi Pemasaran Karya Kita Jaya
                 </p>

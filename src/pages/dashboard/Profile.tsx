@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { 
@@ -33,7 +33,9 @@ export const Profile = () => {
     useEffect(() => {
         if (user) {
             setFormData({
-                full_name: user.full_name || '',
+                // Sesuaikan 'name' dari database MySQL, jika di MySQL kolomnya 'name' maka pakai user.name
+                // Jika di frontend sebelumnya 'full_name', kita mapping di sini
+                full_name: user.name || '', 
                 phone: user.phone || '',
             });
         }
@@ -49,7 +51,13 @@ export const Profile = () => {
     const handleLogout = async () => {
         const confirm = window.confirm("Apakah Anda yakin ingin keluar dari aplikasi?");
         if (confirm) {
-            await logout();
+            try {
+                // Opsional: Panggil logout di backend untuk hapus token
+                await API.post('/logout'); 
+            } catch (e) {
+                // Ignore error, lanjut logout di client
+            }
+            logout(); // Hapus token & user dari localStorage
             navigate('/login');
         }
     };
@@ -63,23 +71,22 @@ export const Profile = () => {
             if (!event.target.files || event.target.files.length === 0) throw new Error('Pilih gambar terlebih dahulu.');
 
             const file = event.target.files[0];
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            
+            // Gunakan FormData untuk kirim file ke Laravel
+            const formData = new FormData();
+            formData.append('avatar', file);
 
-            const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file);
-            if (uploadError) throw uploadError;
+            // Endpoint Laravel: POST /profile/avatar
+            await API.post('/profile/avatar', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
 
-            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
-            const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user?.id);
-            if (updateError) throw updateError;
-
-            await checkSession();
+            await checkSession(); // Refresh data user agar avatar baru muncul
             toast.success('Foto profil diperbarui!', { id: toastId });
 
         } catch (error: any) {
-            toast.error('Gagal upload: ' + error.message);
+            const msg = error.response?.data?.message || error.message || 'Gagal upload';
+            toast.error('Gagal upload: ' + msg);
         } finally {
             setUploading(false);
         }
@@ -91,12 +98,14 @@ export const Profile = () => {
         if (!confirm) return;
         const toastId = toast.loading('Menghapus foto...');
         try {
-            const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user?.id);
-            if (error) throw error;
+            // Endpoint Laravel: DELETE /profile/avatar
+            await API.delete('/profile/avatar');
+            
             await checkSession();
             toast.success('Foto dihapus.', { id: toastId });
         } catch (error: any) {
-            toast.error('Gagal hapus: ' + error.message, { id: toastId });
+            const msg = error.response?.data?.message || 'Gagal hapus foto';
+            toast.error(msg, { id: toastId });
         }
     };
 
@@ -106,17 +115,18 @@ export const Profile = () => {
         setIsLoading(true);
         const toastId = toast.loading('Menyimpan perubahan...');
         try {
-            const { error } = await supabase.from('profiles').update({
-                full_name: formData.full_name,
+            // Endpoint Laravel: PUT /profile
+            await API.put('/profile', {
+                name: formData.full_name, // Mapping ke kolom 'name' di MySQL
                 phone: formData.phone,
-            }).eq('id', user?.id);
+            });
 
-            if (error) throw error;
             toast.success('Profil diperbarui!', { id: toastId });
             setIsEditing(false);
             await checkSession();
         } catch (error: any) {
-            toast.error('Gagal update: ' + error.message, { id: toastId });
+            const msg = error.response?.data?.message || 'Gagal update profil';
+            toast.error(msg, { id: toastId });
         } finally {
             setIsLoading(false);
         }
@@ -129,13 +139,10 @@ export const Profile = () => {
             return;
         }
 
+        // Validasi PIN lama di frontend (opsional, backend juga akan validasi)
         if (user?.pin) {
-            if (!oldPin) {
+             if (!oldPin) {
                 toast.error("Masukkan PIN Lama untuk verifikasi!");
-                return;
-            }
-            if (oldPin !== user.pin) {
-                toast.error("PIN Lama SALAH!");
                 return;
             }
             if (oldPin === pin) {
@@ -151,22 +158,26 @@ export const Profile = () => {
         setPinLoading(true);
         const toastId = toast.loading("Menyimpan PIN...");
         try {
-            const { error } = await supabase.from('profiles').update({ pin: pin }).eq('id', user?.id);
-            if (error) throw error;
+            // Endpoint Laravel: PUT /profile/pin
+            await API.put('/profile/pin', {
+                pin: pin,
+                current_pin: oldPin // Kirim PIN lama untuk validasi di backend
+            });
 
             toast.success("PIN Berhasil Disimpan!", { id: toastId });
             setPin('');
             setOldPin('');
             await checkSession();
         } catch (err: any) {
-            toast.error("Gagal: " + err.message, { id: toastId });
+            const msg = err.response?.data?.message || "Gagal menyimpan PIN";
+            toast.error(msg, { id: toastId });
         } finally {
             setPinLoading(false);
         }
     };
 
     const handleForgotPin = () => {
-        const message = `Halo Admin Koperasi KKJ, saya ${user?.full_name} (ID: ${user?.member_id}) lupa PIN transaksi saya. Mohon bantuannya untuk reset. Terimakasih.`;
+        const message = `Halo Admin Koperasi KKJ, saya ${user?.name} (ID: ${user?.member_id}) lupa PIN transaksi saya. Mohon bantuannya untuk reset. Terimakasih.`;
         const whatsappUrl = `https://wa.me/6281234567890?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     };
@@ -217,7 +228,7 @@ export const Profile = () => {
                                         {user?.avatar_url ? (
                                             <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                         ) : (
-                                            <span>{getInitials(user?.full_name || 'User')}</span>
+                                            <span>{getInitials(user?.name || 'User')}</span>
                                         )}
                                         {uploading && <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs font-bold">Loading...</div>}
                                     </div>
@@ -239,7 +250,7 @@ export const Profile = () => {
 
                         {/* Nama & Info */}
                         <div className="mb-8">
-                            <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1">{user?.full_name}</h2>
+                            <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1">{user?.name}</h2>
                             <div className="flex flex-wrap items-center gap-3 text-slate-500 text-sm font-bold">
                                 <span>{user?.email}</span>
                                 <span className="hidden sm:inline w-1.5 h-1.5 rounded-full bg-slate-300"></span>
@@ -266,7 +277,7 @@ export const Profile = () => {
                             {/* Tombol Simpan / Batal */}
                             {isEditing && (
                                 <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-50 animate-in fade-in slide-in-from-bottom-2">
-                                    <Button type="button" variant="ghost" onClick={() => { setIsEditing(false); setFormData({ full_name: user?.full_name || '', phone: user?.phone || '' }); }} disabled={isLoading} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold">Batal</Button>
+                                    <Button type="button" variant="ghost" onClick={() => { setIsEditing(false); setFormData({ full_name: user?.name || '', phone: user?.phone || '' }); }} disabled={isLoading} className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 font-bold">Batal</Button>
                                     <Button type="submit" isLoading={isLoading} className="bg-[#136f42] hover:bg-[#0f5c35] px-8 rounded-xl shadow-lg font-bold"> <Save size={18} className="mr-2" /> Simpan Perubahan </Button>
                                 </div>
                             )}

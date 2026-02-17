@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
-import { supabase } from '../../lib/supabase';
+import API from '../../api/api'; // Menggunakan Axios
 import html2canvas from 'html2canvas';
 import toast from 'react-hot-toast';
 
@@ -40,29 +40,33 @@ export const Home = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     useEffect(() => {
+        // Redireksi Admin ke Dashboard Admin
         if (user?.role === 'admin') {
             navigate('/admin/dashboard', { replace: true });
         }
         fetchProducts();
     }, [user, navigate]);
 
+    // Mengambil data produk dari Laravel API
     const fetchProducts = async () => {
         setLoadingShop(true);
-        const { data, error } = await supabase
-            .from('shop_products')
-            .select('*')
-            .eq('is_active', true)
-            .order('name', { ascending: true });
-
-        if (!error && data) setProducts(data);
-        setLoadingShop(false);
+        try {
+            // Endpoint Laravel: GET /shop/products
+            const response = await API.get('/shop/products');
+            setProducts(response.data || []);
+        } catch (error) {
+            console.error("Gagal mengambil produk:", error);
+        } finally {
+            setLoadingShop(false);
+        }
     };
 
     if (user?.role === 'admin') return null;
 
-    // --- DATA ANGGOTA ---
+    // --- DATA ANGGOTA (SINKRON DENGAN MYSQL VIA STORE) ---
+    // Pastikan useAuthStore sudah mengambil data user lengkap dari Laravel
     const userData = {
-        name: user?.full_name || user?.email?.split('@')[0] || 'Anggota KKJ',
+        name: user?.name || 'Anggota KKJ', 
         memberId: user?.member_id || 'MENUNGGU NIAK',
         taproBalance: user?.tapro_balance || 0,
         joinDate: user?.created_at ? new Date(user.created_at).getFullYear().toString() : '2026',
@@ -71,14 +75,14 @@ export const Home = () => {
     };
 
     const otherSavings = [
-        { name: 'Simpanan Pokok', val: user?.simpok_balance || 0 },
-        { name: 'Simpanan Wajib', val: user?.simwa_balance || 0 },
-        { name: 'Simpanan Masa Depan', val: user?.simade_balance || 0 },
-        { name: 'Simpanan Pendidikan', val: user?.sipena_balance || 0 },
-        { name: 'Simpanan Hari Raya', val: user?.sihara_balance || 0 },
-        { name: 'Simpanan Qurban', val: user?.siqurma_balance || 0 },
-        { name: 'Simpanan Haji/Umroh', val: user?.siuji_balance || 0 },
-        { name: 'Simpanan Walimah', val: user?.siwalima_balance || 0 },
+        { name: 'Simpanan Pokok', val: (user as any)?.simpok_balance || 0 },
+        { name: 'Simpanan Wajib', val: (user as any)?.simwa_balance || 0 },
+        { name: 'Simpanan Masa Depan', val: (user as any)?.simade_balance || 0 },
+        { name: 'Simpanan Pendidikan', val: (user as any)?.sipena_balance || 0 },
+        { name: 'Simpanan Hari Raya', val: (user as any)?.sihara_balance || 0 },
+        { name: 'Simpanan Qurban', val: (user as any)?.siqurma_balance || 0 },
+        { name: 'Simpanan Haji/Umroh', val: (user as any)?.siuji_balance || 0 },
+        { name: 'Simpanan Walimah', val: (user as any)?.siwalima_balance || 0 },
     ];
 
     const totalOtherAssets = otherSavings.reduce((acc, curr) => acc + curr.val, 0);
@@ -158,7 +162,6 @@ export const Home = () => {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
                 
                 <div className="max-w-xl mx-auto px-4 relative z-10">
-                    {/* KARTU ANGGOTA (HIJAU GRADIENT) */}
                     <div ref={cardRef} className="w-full bg-gradient-to-br from-[#136f42] to-[#0f5c35] rounded-xl shadow-2xl overflow-hidden border border-yellow-500/40 relative aspect-[1.58/1] flex flex-col justify-between">
                         <div className="flex items-center gap-3 p-4 md:p-6 border-b border-yellow-500/30 bg-black/10 backdrop-blur-sm">
                             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-yellow-500/50 shrink-0">
@@ -329,6 +332,7 @@ export const Home = () => {
                             <h2 className="text-2xl font-bold text-[#136f42] uppercase tracking-tighter leading-none">Keranjang Belanja</h2>
                             <button onClick={() => setIsCartOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={24} /></button>
                         </div>
+
                         {cart.length === 0 ? <div className="py-20 text-center space-y-4"><div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200"><ShoppingBag size={40} /></div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Keranjang Anda Kosong</p></div> : (
                             <div className="space-y-6">
                                 {cart.map(item => (
