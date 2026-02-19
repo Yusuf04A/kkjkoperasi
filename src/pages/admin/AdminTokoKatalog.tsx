@@ -4,7 +4,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import { 
     Plus, Pencil, ArrowLeft, Package, 
     Save, X, RefreshCw, Image as ImageIcon, 
-    Loader2, Clock, Check, Archive, CheckCircle, Calendar, Eye, EyeOff, ListOrdered, ShoppingBag, Search, History
+    Loader2, Clock, Check, Archive, CheckCircle, Calendar, Eye, EyeOff, ListOrdered, ShoppingBag, Search, History, Phone, MapPin
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -42,11 +42,9 @@ export const AdminTokoKatalog = () => {
         setLoading(false);
     };
 
-    // PERBAIKAN BUG: Mengubah cara fetch data agar tidak error 400
     const fetchOrders = async () => {
         setLoading(true);
         try {
-            // 1. Ambil orders dan itemsnya saja dulu (Tanpa relasi bersarang yang bikin error)
             const { data: ordersData, error: ordersError } = await supabase
                 .from('shop_orders')
                 .select('*, shop_order_items(*)')
@@ -54,21 +52,19 @@ export const AdminTokoKatalog = () => {
 
             if (ordersError) throw ordersError;
 
-            // 2. Ambil data profil
+            // Ambil data profil (Hanya info basic)
             const { data: profilesData } = await supabase
                 .from('profiles')
-                .select('id, full_name, member_id, tapro_balance');
+                .select('id, full_name, member_id');
 
-            // 3. Ambil data produk untuk mencocokkan nama
+            // Ambil data produk untuk mencocokkan nama
             const { data: productsData } = await supabase
                 .from('shop_products')
                 .select('id, name');
 
-            // 4. Gabungkan semuanya secara manual di Frontend
             const combinedData = ordersData?.map(order => ({
                 ...order,
                 profiles: profilesData?.find(p => p.id === order.user_id),
-                // Menyisipkan nama produk ke dalam tiap item
                 shop_order_items: order.shop_order_items?.map((item: any) => ({
                     ...item,
                     product_name: productsData?.find(p => p.id === item.product_id)?.name || 'Produk Dihapus'
@@ -88,13 +84,11 @@ export const AdminTokoKatalog = () => {
     const pendingOrders = orders.filter(o => o.status === 'diproses' || o.status === 'pending');
     const historyOrders = orders.filter(o => o.status !== 'diproses' && o.status !== 'pending');
 
-    // --- LOGIC EXTRACT KATEGORI ---
     const existingCategories = useMemo(() => {
         const categories = products.map(p => p.category).filter(Boolean);
         return [...new Set(categories)];
     }, [products]);
 
-    // Search Kategori/Nama untuk Tab Gudang Stok
     const filteredProducts = products.filter(p => 
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -186,7 +180,7 @@ export const AdminTokoKatalog = () => {
         } catch (err) { toast.error("Gagal simpan", { id: toastId }); }
     };
 
-    // FUNGSI RENDER CARD PESANAN AGAR KODE LEBIH RAPI (Digunakan di 2 Tab)
+    // FUNGSI RENDER CARD PESANAN
     const renderOrderCard = (o: any, isHistory: boolean) => (
         <div key={o.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-6 hover:shadow-md transition-all duration-300">
             <div className="flex-1 space-y-4">
@@ -220,8 +214,7 @@ export const AdminTokoKatalog = () => {
                     <div>
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Metode Pickup</p>
                         <p className="text-sm font-bold text-gray-700 flex items-center gap-1.5 mt-1">
-                            {/* PERBAIKAN LOGIKA PENGIRIMAN */}
-                            {o.delivery_method === 'Diantar' || o.delivery_method === 'Diantar Ekspedisi Toko' ? (
+                            {o.delivery_method?.includes('Diantar') ? (
                                 <><Package size={14} className="text-blue-500" /> Diantar Ekspedisi</>
                             ) : (
                                 <><CheckCircle size={14} className="text-green-500" /> Diambil di Toko</>
@@ -230,7 +223,27 @@ export const AdminTokoKatalog = () => {
                     </div>
                 </div>
 
-                {/* DETAIL BARANG PESANAN YANG DIPERBAIKI */}
+                {/* MENAMPILKAN KONTAK DIAMBIL DARI TABEL SHOP_ORDERS */}
+                {o.delivery_method?.includes('Diantar') && (
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3">
+                        <div className="flex items-start gap-2">
+                            <Phone size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Nomor WA Pengiriman</p>
+                                <p className="text-sm font-semibold text-slate-800">{o.delivery_phone || 'Tidak dicantumkan'}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                            <MapPin size={14} className="text-blue-500 mt-0.5 shrink-0" />
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Alamat Pengiriman</p>
+                                <p className="text-sm font-medium text-slate-800 leading-snug">{o.delivery_address || 'Tidak dicantumkan'}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* DETAIL BARANG PESANAN */}
                 <div className="bg-white border border-gray-100 p-4 rounded-xl">
                     <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <ListOrdered size={12}/> Daftar Barang Dipesan
@@ -265,7 +278,7 @@ export const AdminTokoKatalog = () => {
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans text-slate-900 pb-20">
-            {/* Header Konsisten Admin */}
+            {/* Header */}
             <div className="mb-6">
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit transition-colors text-sm font-medium">
                     <ArrowLeft size={18} /> Kembali
@@ -284,7 +297,7 @@ export const AdminTokoKatalog = () => {
                 </div>
             </div>
 
-            {/* TAB NAVIGATION: DIBUAT 3 TAB */}
+            {/* TAB NAVIGATION */}
             <div className="flex gap-2 mb-6 border-b border-gray-200 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('pesanan')}
@@ -486,7 +499,7 @@ export const AdminTokoKatalog = () => {
                                 </div>
                             </div>
 
-                            {/* REVISI KATEGORI BEBAS KETIK */}
+                            {/* KATEGORI BEBAS KETIK */}
                             <div>
                                 <label className="text-xs font-bold text-slate-500 uppercase ml-1 mb-1 block">Kategori Produk</label>
                                 <input 
@@ -501,7 +514,6 @@ export const AdminTokoKatalog = () => {
                                     <option value="Sembako" />
                                     <option value="Atribut" />
                                     <option value="Lainnya" />
-                                    {/* Menampilkan history kategori dari db */}
                                     {existingCategories.map((cat, idx) => (
                                         <option key={idx} value={cat} />
                                     ))}
