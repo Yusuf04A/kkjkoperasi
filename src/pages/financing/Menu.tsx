@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, FileText, Calendar, Wallet } from 'lucide-react';
+import { Plus, ArrowRight, FileText, Calendar, Wallet, Info } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 
 export const FinancingMenu = () => {
@@ -28,13 +28,13 @@ export const FinancingMenu = () => {
 
     return (
         <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans">
-            
+
             {/* --- HERO HEADER (DIRAMPINGKAN) --- */}
             <div className="bg-[#136f42] rounded-[2rem] shadow-xl overflow-hidden relative p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-6 min-h-[180px]">
                 {/* Background Layering */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 z-0"></div>
-                
+
                 <div className="relative z-10 space-y-2 text-center md:text-left">
                     <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                         <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10">
@@ -42,15 +42,14 @@ export const FinancingMenu = () => {
                         </div>
                         <span className="text-[9px] font-black text-[#aeea00] uppercase tracking-[0.2em]">Layanan Digital</span>
                     </div>
-                    {/* Judul lebih kecil agar tidak mendominasi layar */}
                     <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">Pembiayaan</h1>
                     <p className="text-green-50/70 text-sm font-medium max-w-xs leading-snug">
                         Solusi dana cepat dan amanah untuk mendukung kebutuhan Anda.
                     </p>
                 </div>
 
-                <Link 
-                    to="/pembiayaan/ajukan" 
+                <Link
+                    to="/pembiayaan/ajukan"
                     className="relative z-10 bg-[#aeea00] text-[#0f5c35] px-6 py-3 rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 uppercase tracking-wider"
                 >
                     <Plus size={16} strokeWidth={3} /> Ajukan Baru
@@ -63,7 +62,7 @@ export const FinancingMenu = () => {
                 <div className="h-px flex-1 bg-slate-200 rounded-full" />
             </div>
 
-            {/* --- CONTENT LIST (DIRAMPINGKAN) --- */}
+            {/* --- CONTENT LIST --- */}
             {loading ? (
                 <div className="grid gap-4 md:grid-cols-2">
                     {[1, 2].map(i => (
@@ -85,52 +84,91 @@ export const FinancingMenu = () => {
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                    {loans.map((loan) => (
-                        <div key={loan.id} className="group bg-white p-5 lg:p-6 rounded-[1.5rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="space-y-0.5">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{loan.type}</p>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight">{formatRupiah(loan.amount)}</h3>
-                                </div>
-                                <span className={cn(
-                                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border",
-                                    loan.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
-                                    loan.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                    loan.status === 'paid' ? 'bg-[#136f42] text-white border-transparent' :
-                                    'bg-rose-50 text-rose-600 border-rose-100'
-                                )}>
-                                    {loan.status === 'active' ? 'Berjalan' : loan.status === 'paid' ? 'Lunas' : loan.status}
-                                </span>
-                            </div>
+                    {loans.map((loan) => {
+                        // LOGIKA PENGECEKAN BARANG KUSTOM (REJECTED + ADA KATA KATALOG)
+                        const isCatalogRedirect = loan.status === 'rejected' && loan.reason?.toLowerCase().includes('katalog');
+                        const itemName = loan.details?.item || 'Pengadaan Barang';
 
-                            <div className="flex items-center gap-2 mb-5">
-                                <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                    <Calendar size={12} className="text-[#136f42]" />
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Tenor {loan.duration} Bulan</span>
+                        return (
+                            <div key={loan.id} className={`group bg-white p-5 lg:p-6 rounded-[1.5rem] border shadow-sm hover:shadow-lg transition-all relative overflow-hidden ${isCatalogRedirect ? 'border-blue-100' : 'border-slate-100'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="space-y-0.5 max-w-[65%]">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                                            {loan.type}
+                                        </p>
+                                        <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
+                                            {isCatalogRedirect ? itemName : formatRupiah(loan.amount)}
+                                        </h3>
+                                    </div>
+                                    <span className={cn(
+                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border whitespace-nowrap",
+                                        loan.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
+                                            loan.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                loan.status === 'paid' ? 'bg-[#136f42] text-white border-transparent' :
+                                                    isCatalogRedirect ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                        'bg-rose-50 text-rose-600 border-rose-100'
+                                    )}>
+                                        {loan.status === 'active' ? 'Berjalan' :
+                                            loan.status === 'paid' ? 'Lunas' :
+                                                isCatalogRedirect ? 'Cek Katalog' :
+                                                    loan.status === 'rejected' ? 'Ditolak' : loan.status}
+                                    </span>
                                 </div>
-                            </div>
 
-                            <div className="border-t border-slate-50 pt-4 flex justify-between items-center">
-                                <div>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Cicilan / bln</p>
-                                    <p className="text-base font-black text-[#136f42] tracking-tight">{formatRupiah(loan.monthly_payment)}</p>
-                                </div>
-
-                                {loan.status === 'active' || loan.status === 'paid' ? (
-                                    <Link 
-                                        to={`/pembiayaan/${loan.id}`} 
-                                        className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#136f42] transition-colors shadow-md active:scale-95"
-                                    >
-                                        Detail <ArrowRight size={14} />
-                                    </Link>
-                                ) : (
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-black text-amber-600 uppercase italic">Verifikasi Admin</p>
+                                {!isCatalogRedirect && (
+                                    <div className="flex items-center gap-2 mb-5">
+                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                            <Calendar size={12} className="text-[#136f42]" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Tenor {loan.duration} Bulan</span>
+                                        </div>
                                     </div>
                                 )}
+
+                                <div className={`pt-4 flex justify-between items-center ${isCatalogRedirect ? 'border-t border-blue-50' : 'border-t border-slate-50'}`}>
+                                    {isCatalogRedirect ? (
+                                        <div className="w-full">
+                                            <div className="flex gap-2 items-start bg-blue-50 p-3 rounded-xl border border-blue-100 mb-3">
+                                                <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
+                                                <p className="text-[11px] text-blue-800 leading-relaxed font-medium">
+                                                    Barang sudah diverifikasi Admin dan ada di Katalog. Silakan ajukan ulang untuk melihat simulasi cicilan.
+                                                </p>
+                                            </div>
+                                            <Link
+                                                to="/pembiayaan/ajukan"
+                                                className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex justify-center items-center gap-1.5 hover:bg-blue-700 transition-colors shadow-md active:scale-95"
+                                            >
+                                                Pilih dari Katalog <ArrowRight size={14} />
+                                            </Link>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Cicilan / bln</p>
+                                                <p className="text-base font-black text-[#136f42] tracking-tight">{formatRupiah(loan.monthly_payment)}</p>
+                                            </div>
+
+                                            {loan.status === 'active' || loan.status === 'paid' ? (
+                                                <Link
+                                                    to={`/pembiayaan/${loan.id}`}
+                                                    className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#136f42] transition-colors shadow-md active:scale-95"
+                                                >
+                                                    Detail <ArrowRight size={14} />
+                                                </Link>
+                                            ) : loan.status === 'rejected' ? (
+                                                <div className="text-right">
+                                                    <p className="text-[9px] font-black text-rose-600 uppercase italic">Pengajuan Ditolak</p>
+                                                </div>
+                                            ) : (
+                                                <div className="text-right">
+                                                    <p className="text-[9px] font-black text-amber-600 uppercase italic">Verifikasi Admin</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
