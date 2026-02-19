@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Check, X, Loader2, RefreshCw, ArrowLeft, User, ShieldCheck, KeyRound, Phone, Search } from 'lucide-react';
+import { Check, X, Loader2, RefreshCw, ArrowLeft, User, ShieldCheck, KeyRound, Phone, Search, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -92,6 +92,45 @@ export const AdminVerification = () => {
         }
     };
 
+    // --- LOGIC EXPORT TO CSV ---
+    const handleExportCSV = () => {
+        if (filteredUsers.length === 0) {
+            toast.error("Tidak ada data untuk di-export");
+            return;
+        }
+
+        // 1. Definisikan Header CSV
+        const headers = ['Member ID', 'Nama Lengkap', 'Email', 'No. HP', 'Status', 'Saldo Tapro', 'Tanggal Daftar'];
+        
+        // 2. Format Data ke bentuk CSV
+        const csvRows = filteredUsers.map(user => {
+            return [
+                user.member_id || '-',
+                `"${user.full_name || '-'}"`, // Pakai kutip agar aman jika nama ada koma
+                user.email || '-',
+                `"${user.phone || '-'}"`, // Pakai kutip agar angka 0 di awal nomor HP tidak hilang di Excel
+                user.status || '-',
+                user.tapro_balance || 0,
+                format(new Date(user.created_at), 'yyyy-MM-dd HH:mm:ss')
+            ].join(',');
+        });
+
+        // 3. Gabungkan Header dan Baris Data
+        const csvContent = [headers.join(','), ...csvRows].join('\n');
+
+        // 4. Buat file Blob dan Trigger Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Data_Anggota_Koperasi_${format(new Date(), 'dd-MMM-yyyy')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success("Data berhasil di-export!");
+    };
+
     // Filter pencarian
     const filteredUsers = users.filter(u =>
         u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,9 +150,17 @@ export const AdminVerification = () => {
                         <h1 className="text-2xl font-bold text-gray-900">Manajemen Anggota</h1>
                         <p className="text-sm text-gray-500">Verifikasi anggota baru & kelola data anggota aktif.</p>
                     </div>
-                    <button onClick={fetchUsers} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-                        <RefreshCw size={20} />
-                    </button>
+                    <div className="flex gap-2">
+                        {/* TOMBOL EXPORT MUNCUL DI SINI */}
+                        {activeTab === 'active' && (
+                            <button onClick={handleExportCSV} className="p-2 px-4 bg-emerald-600 text-white font-bold text-sm rounded-lg hover:bg-emerald-700 flex items-center gap-2 transition-colors">
+                                <Download size={18} /> Export Data
+                            </button>
+                        )}
+                        <button onClick={fetchUsers} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <RefreshCw size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
 

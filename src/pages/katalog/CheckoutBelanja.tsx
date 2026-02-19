@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
-import { formatRupiah } from '../../lib/utils';
-import { ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet } from 'lucide-react';
+import { formatRupiah, cn } from '../../lib/utils';
+import { ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet, Store, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const CheckoutBelanja = () => {
@@ -16,6 +16,9 @@ export const CheckoutBelanja = () => {
 
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // STATE BARU UNTUK METODE PENGIRIMAN
+    const [deliveryMethod, setDeliveryMethod] = useState<'Diambil di Toko' | 'Diantar'>('Diambil di Toko');
 
     if (!cart.length) {
         navigate('/belanja');
@@ -50,7 +53,8 @@ export const CheckoutBelanja = () => {
                     total_amount: total,
                     status: 'diproses', // 🔑 KUNCI: Agar muncul di Antrean Admin
                     pickup_code: pickupCode,
-                    payment_method: 'tapro'
+                    payment_method: 'tapro',
+                    delivery_method: deliveryMethod // MENYIMPAN OPSI PENGIRIMAN
                 })
                 .select()
                 .single();
@@ -107,6 +111,46 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
+                {/* OPSI PENGIRIMAN (FITUR BARU) */}
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-lg space-y-4 border border-slate-100">
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Opsi Pengiriman</h3>
+                    <div className="flex flex-col gap-3">
+                        <label className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${deliveryMethod === 'Diambil di Toko' ? 'border-[#003366] bg-blue-50/30' : 'border-slate-100 hover:border-blue-100'}`}>
+                            <div className="flex items-center gap-4">
+                                <input 
+                                    type="radio" 
+                                    name="delivery" 
+                                    value="Diambil di Toko"
+                                    checked={deliveryMethod === 'Diambil di Toko'}
+                                    onChange={(e) => setDeliveryMethod(e.target.value as 'Diambil di Toko')}
+                                    className="w-4 h-4 text-[#003366] focus:ring-[#003366]"
+                                />
+                                <div>
+                                    <p className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2"><Store size={14} className="text-[#003366]"/> Diambil di Toko</p>
+                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Ambil sendiri barang di koperasi</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${deliveryMethod === 'Diantar' ? 'border-[#003366] bg-blue-50/30' : 'border-slate-100 hover:border-blue-100'}`}>
+                            <div className="flex items-center gap-4">
+                                <input 
+                                    type="radio" 
+                                    name="delivery" 
+                                    value="Diantar"
+                                    checked={deliveryMethod === 'Diantar'}
+                                    onChange={(e) => setDeliveryMethod(e.target.value as 'Diantar')}
+                                    className="w-4 h-4 text-[#003366] focus:ring-[#003366]"
+                                />
+                                <div>
+                                    <p className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2"><Truck size={14} className="text-[#003366]"/> Diantar Ekspedisi</p>
+                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Ongkir dikoordinasikan via WA admin</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 {/* RINCIAN PESANAN */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-lg space-y-6 border border-slate-100">
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b pb-4">Item Belanja</h3>
@@ -123,7 +167,9 @@ export const CheckoutBelanja = () => {
                     </div>
                     <div className="pt-6 border-t-2 border-dashed flex justify-between items-center">
                         <p className="text-2xl font-[1000] text-[#003366] tracking-tighter">{formatRupiah(total)}</p>
-                        <span className="text-[8px] font-black bg-blue-50 text-[#003366] px-2 py-1 rounded uppercase tracking-widest border border-blue-100">Self Pickup</span>
+                        <span className="text-[8px] font-black bg-blue-50 text-[#003366] px-2 py-1 rounded uppercase tracking-widest border border-blue-100 max-w-[100px] text-right truncate">
+                            {deliveryMethod}
+                        </span>
                     </div>
                 </div>
 
