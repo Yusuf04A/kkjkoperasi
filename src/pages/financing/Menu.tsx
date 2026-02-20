@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, FileText, Calendar, Wallet, Info } from 'lucide-react';
+import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 
 export const FinancingMenu = () => {
@@ -10,6 +10,9 @@ export const FinancingMenu = () => {
     const navigate = useNavigate();
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // STATE BARU: Untuk filter kategori tab
+    const [activeTab, setActiveTab] = useState<'berjalan' | 'lunas'>('berjalan');
 
     useEffect(() => {
         const fetchLoans = async () => {
@@ -26,12 +29,20 @@ export const FinancingMenu = () => {
         fetchLoans();
     }, [user]);
 
+    // LOGIKA FILTER: Memisahkan data berdasarkan tab tanpa mengubah state loans asli
+    const filteredLoans = useMemo(() => {
+        if (activeTab === 'berjalan') {
+            return loans.filter(l => l.status === 'active' || l.status === 'pending');
+        } else {
+            return loans.filter(l => l.status === 'paid' || l.status === 'rejected');
+        }
+    }, [loans, activeTab]);
+
     return (
         <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans">
 
-            {/* --- HERO HEADER (DIRAMPINGKAN) --- */}
+            {/* --- HERO HEADER (TIDAK BERUBAH) --- */}
             <div className="bg-[#136f42] rounded-[2rem] shadow-xl overflow-hidden relative p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-6 min-h-[180px]">
-                {/* Background Layering */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 z-0"></div>
 
@@ -56,36 +67,60 @@ export const FinancingMenu = () => {
                 </Link>
             </div>
 
-            {/* --- SECTION TITLE --- */}
+            {/* --- PENAMBAHAN TAB CATEGORY SESUAI REFERENSI --- */}
+            <div className="flex justify-center px-1">
+                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-md">
+                    <button 
+                        onClick={() => setActiveTab('berjalan')}
+                        className={cn(
+                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            activeTab === 'berjalan' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                        )}
+                    >
+                        <Clock size={14} /> Berjalan
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('lunas')}
+                        className={cn(
+                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            activeTab === 'lunas' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                        )}
+                    >
+                        <CheckCircle size={14} /> Riwayat Lunas
+                    </button>
+                </div>
+            </div>
+
+            {/* --- SECTION TITLE (TIDAK BERUBAH) --- */}
             <div className="flex items-center gap-3 px-1">
-                <h2 className="font-bold text-slate-800 text-base tracking-tight">Riwayat Pengajuan</h2>
+                <h2 className="font-bold text-slate-800 text-base tracking-tight">
+                    {activeTab === 'berjalan' ? 'Pembiayaan Berjalan' : 'Riwayat Pengajuan'}
+                </h2>
                 <div className="h-px flex-1 bg-slate-200 rounded-full" />
             </div>
 
-            {/* --- CONTENT LIST --- */}
+            {/* --- CONTENT LIST (LOGIKA FILTER DIUBAH AGAR SESUAI TAB) --- */}
             {loading ? (
                 <div className="grid gap-4 md:grid-cols-2">
                     {[1, 2].map(i => (
                         <div key={i} className="h-32 bg-white rounded-2xl animate-pulse border border-slate-100 shadow-sm" />
                     ))}
                 </div>
-            ) : loans.length === 0 ? (
+            ) : filteredLoans.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-4">
                     <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center text-[#136f42]/20">
                         <FileText size={32} />
                     </div>
                     <div className="space-y-1">
                         <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Belum ada data</p>
-                        <p className="text-slate-600 text-sm font-medium italic">Anda belum memiliki pengajuan pembiayaan.</p>
+                        <p className="text-slate-600 text-sm font-medium italic">
+                            {activeTab === 'berjalan' ? 'Tidak ada pembiayaan yang sedang berjalan.' : 'Belum ada riwayat pembiayaan yang selesai.'}
+                        </p>
                     </div>
-                    <Link to="/pembiayaan/ajukan" className="text-[#136f42] font-black text-xs uppercase tracking-tight hover:underline flex items-center gap-2">
-                        Mulai ajukan sekarang <ArrowRight size={14} />
-                    </Link>
                 </div>
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                    {loans.map((loan) => {
-                        // LOGIKA PENGECEKAN BARANG KUSTOM (REJECTED + ADA KATA KATALOG)
+                    {filteredLoans.map((loan) => {
                         const isCatalogRedirect = loan.status === 'rejected' && loan.reason?.toLowerCase().includes('katalog');
                         const itemName = loan.details?.item || 'Pengadaan Barang';
 
@@ -154,13 +189,11 @@ export const FinancingMenu = () => {
                                                 >
                                                     Detail <ArrowRight size={14} />
                                                 </Link>
-                                            ) : loan.status === 'rejected' ? (
-                                                <div className="text-right">
-                                                    <p className="text-[9px] font-black text-rose-600 uppercase italic">Pengajuan Ditolak</p>
-                                                </div>
                                             ) : (
                                                 <div className="text-right">
-                                                    <p className="text-[9px] font-black text-amber-600 uppercase italic">Verifikasi Admin</p>
+                                                    <p className={cn("text-[9px] font-black uppercase italic", loan.status === 'rejected' ? "text-rose-600" : "text-amber-600")}>
+                                                        {loan.status === 'rejected' ? 'Pengajuan Ditolak' : 'Verifikasi Admin'}
+                                                    </p>
                                                 </div>
                                             )}
                                         </>

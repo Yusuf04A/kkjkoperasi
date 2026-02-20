@@ -54,7 +54,7 @@ export const AdminVerification = () => {
             const { error } = await supabase.from('profiles').update({ status: 'active' }).eq('id', id);
             if (error) throw error;
 
-            // Buat notifikasi selamat datang (Opsional)
+            // Buat notifikasi selamat datang
             await supabase.from('notifications').insert({
                 user_id: id,
                 title: 'Selamat Bergabung!',
@@ -99,26 +99,20 @@ export const AdminVerification = () => {
             return;
         }
 
-        // 1. Definisikan Header CSV
         const headers = ['Member ID', 'Nama Lengkap', 'Email', 'No. HP', 'Status', 'Saldo Tapro', 'Tanggal Daftar'];
-        
-        // 2. Format Data ke bentuk CSV
         const csvRows = filteredUsers.map(user => {
             return [
                 user.member_id || '-',
-                `"${user.full_name || '-'}"`, // Pakai kutip agar aman jika nama ada koma
+                `"${user.full_name || '-'}"`,
                 user.email || '-',
-                `"${user.phone || '-'}"`, // Pakai kutip agar angka 0 di awal nomor HP tidak hilang di Excel
+                `"${user.phone || '-'}"`,
                 user.status || '-',
                 user.tapro_balance || 0,
                 format(new Date(user.created_at), 'yyyy-MM-dd HH:mm:ss')
             ].join(',');
         });
 
-        // 3. Gabungkan Header dan Baris Data
         const csvContent = [headers.join(','), ...csvRows].join('\n');
-
-        // 4. Buat file Blob dan Trigger Download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -127,11 +121,9 @@ export const AdminVerification = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
         toast.success("Data berhasil di-export!");
     };
 
-    // Filter pencarian
     const filteredUsers = users.filter(u =>
         u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.member_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,8 +131,7 @@ export const AdminVerification = () => {
     );
 
     return (
-        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
-
+        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans">
             <div className="mb-6">
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-kkj-blue mb-4 w-fit">
                     <ArrowLeft size={18} /> Kembali ke Dashboard
@@ -151,14 +142,13 @@ export const AdminVerification = () => {
                         <p className="text-sm text-gray-500">Verifikasi anggota baru & kelola data anggota aktif.</p>
                     </div>
                     <div className="flex gap-2">
-                        {/* TOMBOL EXPORT MUNCUL DI SINI */}
                         {activeTab === 'active' && (
                             <button onClick={handleExportCSV} className="p-2 px-4 bg-emerald-600 text-white font-bold text-sm rounded-lg hover:bg-emerald-700 flex items-center gap-2 transition-colors">
                                 <Download size={18} /> Export Data
                             </button>
                         )}
                         <button onClick={fetchUsers} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-                            <RefreshCw size={20} />
+                            <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
                         </button>
                     </div>
                 </div>
@@ -183,7 +173,6 @@ export const AdminVerification = () => {
                 </button>
             </div>
 
-            {/* SEARCH BAR (Hanya di Tab Active) */}
             {activeTab === 'active' && (
                 <div className="mb-6 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -197,7 +186,6 @@ export const AdminVerification = () => {
                 </div>
             )}
 
-            {/* LIST CONTENT */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -222,15 +210,22 @@ export const AdminVerification = () => {
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
-                                    <tr key={user.id} className="hover:bg-gray-50">
+                                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold uppercase">
-                                                    {user.full_name?.substring(0, 2) || 'US'}
+                                                {/* PERBAIKAN: Menampilkan Foto Profil dari DB */}
+                                                <div className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
+                                                    {user.avatar_url ? (
+                                                        <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <span className="text-gray-400 font-bold uppercase text-xs">
+                                                            {user.full_name?.substring(0, 2) || 'US'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900">{user.full_name}</p>
-                                                    <p className="text-xs text-gray-500 font-mono">{user.member_id || 'Belum ada ID'}</p>
+                                                    <p className="font-bold text-gray-900 leading-tight">{user.full_name}</p>
+                                                    <p className="text-xs text-gray-500 font-mono mt-0.5">{user.member_id || 'PROSES...'}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -263,8 +258,7 @@ export const AdminVerification = () => {
                                             ) : (
                                                 <button
                                                     onClick={() => handleResetPin(user.id, user.full_name)}
-                                                    className="px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-bold flex items-center gap-1 ml-auto"
-                                                    title="Hapus PIN User agar bisa buat baru"
+                                                    className="px-3 py-1.5 border border-orange-200 text-orange-600 hover:bg-orange-50 rounded-lg text-xs font-bold flex items-center gap-1 ml-auto"
                                                 >
                                                     <KeyRound size={14} /> Reset PIN
                                                 </button>
