@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock } from 'lucide-react';
+import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 
 export const FinancingMenu = () => {
@@ -11,8 +11,8 @@ export const FinancingMenu = () => {
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // STATE BARU: Untuk filter kategori tab
-    const [activeTab, setActiveTab] = useState<'berjalan' | 'lunas'>('berjalan');
+    // STATE TAB: Default ke 'berjalan'
+    const [activeTab, setActiveTab] = useState<'verifikasi' | 'berjalan' | 'riwayat'>('berjalan');
 
     useEffect(() => {
         const fetchLoans = async () => {
@@ -23,25 +23,35 @@ export const FinancingMenu = () => {
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
-            if (data) setLoans(data);
+            if (data) {
+                setLoans(data);
+                // Logika Auto-Switch: Jika ada yang pending, buka tab verifikasi secara default
+                const hasPending = data.some(l => l.status === 'pending');
+                if (hasPending) setActiveTab('verifikasi');
+            }
             setLoading(false);
         };
         fetchLoans();
     }, [user]);
 
-    // LOGIKA FILTER: Memisahkan data berdasarkan tab tanpa mengubah state loans asli
+    // HITUNG JUMLAH DATA UNTUK LOGIKA SEMBUNYI TAB
+    const countPending = useMemo(() => loans.filter(l => l.status === 'pending').length, [loans]);
+
+    // LOGIKA FILTER TAB
     const filteredLoans = useMemo(() => {
-        if (activeTab === 'berjalan') {
-            return loans.filter(l => l.status === 'active' || l.status === 'pending');
+        if (activeTab === 'verifikasi') {
+            return loans.filter(l => l.status === 'pending');
+        } else if (activeTab === 'berjalan') {
+            return loans.filter(l => l.status === 'active');
         } else {
             return loans.filter(l => l.status === 'paid' || l.status === 'rejected');
         }
     }, [loans, activeTab]);
 
     return (
-        <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans">
+        <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans text-slate-900 pb-20">
 
-            {/* --- HERO HEADER (TIDAK BERUBAH) --- */}
+            {/* --- HERO HEADER --- */}
             <div className="bg-[#136f42] rounded-[2rem] shadow-xl overflow-hidden relative p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-6 min-h-[180px]">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 z-0"></div>
@@ -67,39 +77,54 @@ export const FinancingMenu = () => {
                 </Link>
             </div>
 
-            {/* --- PENAMBAHAN TAB CATEGORY SESUAI REFERENSI --- */}
+            {/* --- DINAMIS TAB NAVIGATION --- */}
             <div className="flex justify-center px-1">
-                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-md">
+                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-xl">
+                    {/* Tab Verifikasi hanya muncul jika ada data pending */}
+                    {countPending > 0 && (
+                        <button 
+                            onClick={() => setActiveTab('verifikasi')}
+                            className={cn(
+                                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                activeTab === 'verifikasi' ? "bg-amber-500 text-white shadow-md shadow-amber-900/20" : "text-slate-400 hover:text-slate-600"
+                            )}
+                        >
+                            <Clock size={14} /> Tunggu Verifikasi
+                        </button>
+                    )}
+                    
                     <button 
                         onClick={() => setActiveTab('berjalan')}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            activeTab === 'berjalan' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                            activeTab === 'berjalan' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
-                        <Clock size={14} /> Berjalan
+                        <RefreshCw size={14} className={activeTab === 'berjalan' ? 'animate-spin-slow' : ''} /> Berjalan
                     </button>
+
                     <button 
-                        onClick={() => setActiveTab('lunas')}
+                        onClick={() => setActiveTab('riwayat')}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            activeTab === 'lunas' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                            activeTab === 'riwayat' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
-                        <CheckCircle size={14} /> Riwayat Lunas
+                        <History size={14} /> Riwayat
                     </button>
                 </div>
             </div>
 
-            {/* --- SECTION TITLE (TIDAK BERUBAH) --- */}
+            {/* --- SECTION TITLE --- */}
             <div className="flex items-center gap-3 px-1">
-                <h2 className="font-bold text-slate-800 text-base tracking-tight">
-                    {activeTab === 'berjalan' ? 'Pembiayaan Berjalan' : 'Riwayat Pengajuan'}
+                <h2 className="font-bold text-slate-800 text-base tracking-tight capitalize">
+                    {activeTab === 'verifikasi' ? 'Menunggu Konfirmasi Admin' : 
+                     activeTab === 'berjalan' ? 'Pembiayaan Aktif' : 'Riwayat Pengajuan'}
                 </h2>
                 <div className="h-px flex-1 bg-slate-200 rounded-full" />
             </div>
 
-            {/* --- CONTENT LIST (LOGIKA FILTER DIUBAH AGAR SESUAI TAB) --- */}
+            {/* --- CONTENT LIST --- */}
             {loading ? (
                 <div className="grid gap-4 md:grid-cols-2">
                     {[1, 2].map(i => (
@@ -108,13 +133,13 @@ export const FinancingMenu = () => {
                 </div>
             ) : filteredLoans.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-4">
-                    <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center text-[#136f42]/20">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
                         <FileText size={32} />
                     </div>
-                    <div className="space-y-1">
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Belum ada data</p>
+                    <div className="space-y-1 text-center">
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Kosong</p>
                         <p className="text-slate-600 text-sm font-medium italic">
-                            {activeTab === 'berjalan' ? 'Tidak ada pembiayaan yang sedang berjalan.' : 'Belum ada riwayat pembiayaan yang selesai.'}
+                            Tidak ada data pembiayaan di kategori ini.
                         </p>
                     </div>
                 </div>
@@ -137,16 +162,17 @@ export const FinancingMenu = () => {
                                     </div>
                                     <span className={cn(
                                         "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border whitespace-nowrap",
-                                        loan.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
+                                        loan.status === 'active' ? 'bg-green-50 text-[#136f42] border-green-100' :
                                             loan.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                 loan.status === 'paid' ? 'bg-[#136f42] text-white border-transparent' :
                                                     isCatalogRedirect ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                         'bg-rose-50 text-rose-600 border-rose-100'
                                     )}>
-                                        {loan.status === 'active' ? 'Berjalan' :
-                                            loan.status === 'paid' ? 'Lunas' :
+                                        {loan.status === 'active' ? '● Berjalan' :
+                                            loan.status === 'paid' ? '✔ Lunas' :
                                                 isCatalogRedirect ? 'Cek Katalog' :
-                                                    loan.status === 'rejected' ? 'Ditolak' : loan.status}
+                                                    loan.status === 'pending' ? '⌛ Verifikasi' :
+                                                        '✖ Ditolak'}
                                     </span>
                                 </div>
 
@@ -165,7 +191,7 @@ export const FinancingMenu = () => {
                                             <div className="flex gap-2 items-start bg-blue-50 p-3 rounded-xl border border-blue-100 mb-3">
                                                 <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
                                                 <p className="text-[11px] text-blue-800 leading-relaxed font-medium">
-                                                    Barang sudah diverifikasi Admin dan ada di Katalog. Silakan ajukan ulang untuk melihat simulasi cicilan.
+                                                    Barang sudah diverifikasi Admin. Silakan ajukan ulang melalui menu katalog.
                                                 </p>
                                             </div>
                                             <Link
@@ -190,10 +216,14 @@ export const FinancingMenu = () => {
                                                     Detail <ArrowRight size={14} />
                                                 </Link>
                                             ) : (
-                                                <div className="text-right">
-                                                    <p className={cn("text-[9px] font-black uppercase italic", loan.status === 'rejected' ? "text-rose-600" : "text-amber-600")}>
-                                                        {loan.status === 'rejected' ? 'Pengajuan Ditolak' : 'Verifikasi Admin'}
-                                                    </p>
+                                                <div className="flex flex-col items-end">
+                                                    <div className={cn(
+                                                        "flex items-center gap-1 text-[10px] font-black uppercase italic",
+                                                        loan.status === 'rejected' ? "text-rose-600" : "text-amber-600"
+                                                    )}>
+                                                        {loan.status === 'rejected' ? <AlertCircle size={12}/> : <Clock size={12}/>}
+                                                        {loan.status === 'rejected' ? 'Ditolak' : 'Proses Verifikasi'}
+                                                    </div>
                                                 </div>
                                             )}
                                         </>
@@ -211,3 +241,12 @@ export const FinancingMenu = () => {
         </div>
     );
 };
+
+// Penambahan icon lokal untuk tab riwayat (jika belum diimport)
+const History = ({ size, className }: { size?: number, className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+);
+
+const RefreshCw = ({ size, className }: { size?: number, className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+);
