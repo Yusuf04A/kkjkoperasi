@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Calendar, CheckCircle, Wallet, Clock, AlertTriangle, User, History, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Wallet, Clock, AlertTriangle, History, X } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/useAuthStore';
+import { PinModal } from '../../components/PinModal';
 
 export const LoanDetail = () => {
     const { id } = useParams();
@@ -17,12 +18,15 @@ export const LoanDetail = () => {
     const [installments, setInstallments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // State untuk Modal Request
+    // State untuk Modal Request Perpanjangan
     const [showModal, setShowModal] = useState(false);
     const [newTenor, setNewTenor] = useState('');
     const [reason, setReason] = useState('');
 
-    // FETCH DATA
+    // State untuk Pembayaran PIN
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [selectedInstallment, setSelectedInstallment] = useState<{id: string, amount: number} | null>(null);
+
     const fetchData = async () => {
         setLoading(true);
         const { data: loanData } = await supabase.from('loans').select('*').eq('id', id).single();
@@ -38,26 +42,38 @@ export const LoanDetail = () => {
 
     useEffect(() => { fetchData(); }, [id]);
 
-    // LOGIC BAYAR
-    const handlePay = async (instId: string, amount: number) => {
-        const confirm = window.confirm(`Bayar tagihan sebesar ${formatRupiah(amount)}?\nSaldo Tapro akan terpotong.`);
-        if (!confirm) return;
+    const handlePayClick = (instId: string, amount: number) => {
+        if ((user?.tapro_balance || 0) < amount) {
+            return toast.error("Saldo tapro tidak mencukupi untuk bayar tagihan ini.");
+        }
+        setSelectedInstallment({ id: instId, amount });
+        setShowPinModal(true);
+    };
+
+    const executePayment = async () => {
+        if (!selectedInstallment) return;
+
         const toastId = toast.loading('Memproses pembayaran...');
         try {
-            const { error } = await supabase.rpc('pay_installment', { installment_id_param: instId });
+            const { error } = await supabase.rpc('pay_installment', { 
+                installment_id_param: selectedInstallment.id 
+            });
+            
             if (error) throw error;
-            toast.success('Pembayaran Berhasil!', { id: toastId });
+            
+            toast.success('Pembayaran berhasil!', { id: toastId });
             fetchData();
             checkSession();
         } catch (err: any) {
             toast.error(`Gagal: ${err.message}`, { id: toastId });
+        } finally {
+            setShowPinModal(false);
+            setSelectedInstallment(null);
         }
     };
 
-    // LOGIC KIRIM REQUEST (DARI MODAL)
     const submitRestructure = async (e: React.FormEvent) => {
         e.preventDefault();
-
         const tenorInt = parseInt(newTenor);
         if (!tenorInt || tenorInt <= loan.duration) {
             toast.error("Tenor baru harus lebih besar dari tenor saat ini.");
@@ -75,9 +91,9 @@ export const LoanDetail = () => {
             restructure_status: 'pending'
         }).eq('id', loan.id);
 
-        if (error) toast.error("Gagal mengirim request");
+        if (error) toast.error("Gagal mengirim permintaan");
         else {
-            toast.success("Pengajuan dikirim ke Admin", { id: toastId });
+            toast.success("Pengajuan dikirim ke admin", { id: toastId });
             setShowModal(false); 
             fetchData(); 
         }
@@ -89,35 +105,32 @@ export const LoanDetail = () => {
         </div>
     );
     
-    if (!loan) return <div className="min-h-screen flex items-center justify-center text-red-500 font-bold">Data tidak ditemukan</div>;
+    if (!loan) return <div className="min-h-screen flex items-center justify-center text-red-500">Data tidak ditemukan</div>;
 
     const paidCount = installments.filter(i => i.status === 'paid').length;
     const progress = installments.length > 0 ? (paidCount / installments.length) * 100 : 0;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 relative font-sans">
+        <div className="min-h-screen bg-gray-50 pb-24 relative font-sans text-slate-900">
 
-            {/* HEADER (HIJAU KONSISTEN) */}
+            {/* HEADER - REVISI: TIDAK BOLD, TIDAK KAPITAL, TANPA PROFIL */}
             <div className="bg-white border-b border-green-100 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/pembiayaan')} className="p-2 hover:bg-green-50 rounded-full transition-colors text-[#136f42]">
-                        <ArrowLeft size={20} strokeWidth={2.5} />
+                        <ArrowLeft size={20} strokeWidth={2} />
                     </button>
                     <div>
-                        <h1 className="text-base font-black text-gray-900 leading-tight tracking-tight">Detail Pinjaman</h1>
-                        <p className="text-[10px] font-bold text-[#136f42] uppercase tracking-wider">{loan.type}</p>
+                        {/* font-medium agar tidak bold, dan lowercase/capitalize untuk tidak kapital semua */}
+                        <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight">Detail pinjaman</h1>
+                        <p className="text-[10px] font-medium text-[#136f42] tracking-wider capitalize">{loan.type}</p>
                     </div>
                 </div>
-                <img
-                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name}&background=136f42&color=fff`}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full border-2 border-green-50 shadow-sm"
-                />
+                {/* Bagian foto profil di pojok kanan dihapus */}
             </div>
 
             <div className="max-w-2xl mx-auto p-4 space-y-6">
 
-                {/* CARD INFO UTAMA (HIJAU PREMIUM) */}
+                {/* CARD INFO UTAMA */}
                 <div className="bg-[#136f42] p-6 rounded-[2rem] shadow-xl relative overflow-hidden text-white">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                     <div className="absolute right-0 top-0 w-32 h-32 bg-[#aeea00]/10 rounded-full blur-3xl -mr-10 -mt-10" />
@@ -125,11 +138,11 @@ export const LoanDetail = () => {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-black text-green-100/70 uppercase tracking-[0.2em] mb-1">Total Pinjaman</p>
-                                <h2 className="text-3xl font-black tracking-tighter">{formatRupiah(loan.amount)}</h2>
+                                <p className="text-[10px] font-medium text-green-100/70 uppercase tracking-[0.2em] mb-1">Total pinjaman</p>
+                                <h2 className="text-3xl font-bold tracking-tighter">{formatRupiah(loan.amount)}</h2>
                             </div>
                             <div className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg border",
+                                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg border",
                                 loan.status === 'active' ? "bg-[#aeea00] text-[#0f5c35] border-transparent" : "bg-white/10 border-white/20 text-white"
                             )}>
                                 {loan.status === 'active' ? 'Berjalan' : loan.status}
@@ -137,8 +150,8 @@ export const LoanDetail = () => {
                         </div>
 
                         <div className="mt-8 space-y-2">
-                            <div className="flex justify-between text-[10px] font-black uppercase tracking-wider text-green-100/80">
-                                <span>Progress Pelunasan</span>
+                            <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-green-100/80">
+                                <span>Progress pelunasan</span>
                                 <span>{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-black/20 rounded-full h-2 shadow-inner">
@@ -161,9 +174,9 @@ export const LoanDetail = () => {
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-black text-amber-900 uppercase tracking-tighter">Pengajuan Ditinjau</p>
+                            <p className="text-sm font-bold text-amber-900 tracking-tighter">Pengajuan ditinjau</p>
                             <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                                Permintaan perpanjangan tenor menjadi <b>{loan.restructure_req_duration} bulan</b> sedang diproses Admin.
+                                Permintaan perpanjangan tenor menjadi <b>{loan.restructure_req_duration} bulan</b> sedang diproses admin.
                             </p>
                         </div>
                     </div>
@@ -180,7 +193,7 @@ export const LoanDetail = () => {
                                 <AlertTriangle size={24} />
                             </div>
                             <div className="text-left">
-                                <h4 className="font-black text-gray-900 text-sm tracking-tight">Merasa berat membayar?</h4>
+                                <h4 className="font-bold text-gray-900 text-sm tracking-tight">Merasa berat membayar?</h4>
                                 <p className="text-xs text-gray-500 font-medium">Klik untuk ajukan perpanjangan tenor</p>
                             </div>
                         </div>
@@ -190,11 +203,11 @@ export const LoanDetail = () => {
                     </button>
                 )}
 
-                {/* LIST CICILAN */}
+                {/* JADWAL PEMBAYARAN */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 px-1">
                         <History size={18} className="text-[#136f42]" />
-                        <h3 className="font-black text-gray-800 text-sm uppercase tracking-widest">Jadwal Pembayaran</h3>
+                        <h3 className="font-bold text-gray-800 text-sm tracking-widest uppercase">Jadwal pembayaran</h3>
                     </div>
 
                     <div className="space-y-3">
@@ -212,15 +225,15 @@ export const LoanDetail = () => {
                                 )}>
                                     <div className="flex items-center gap-4">
                                         <div className={cn(
-                                            "w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs",
+                                            "w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs",
                                             isPaid ? "bg-green-50 text-green-600" : "bg-gray-50 text-gray-400"
                                         )}>
                                             {index + 1}
                                         </div>
                                         <div>
-                                            <p className="font-black text-gray-900 tracking-tight">{formatRupiah(item.amount)}</p>
+                                            <p className="font-bold text-gray-900 tracking-tight">{formatRupiah(item.amount)}</p>
                                             <p className={cn(
-                                                "text-[10px] mt-0.5 flex items-center gap-1 font-bold uppercase tracking-wider",
+                                                "text-[10px] mt-0.5 flex items-center gap-1 font-medium uppercase tracking-wider",
                                                 isOverdue ? "text-rose-600" : "text-gray-400"
                                             )}>
                                                 <Calendar size={12} /> {format(dueDate, 'dd MMM yyyy', { locale: indonesia })}
@@ -231,13 +244,13 @@ export const LoanDetail = () => {
 
                                     {isPaid ? (
                                         <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full">
-                                            <CheckCircle className="text-green-500" size={16} strokeWidth={3} />
-                                            <span className="text-[10px] text-green-700 font-black tracking-widest">LUNAS</span>
+                                            <CheckCircle className="text-green-500" size={16} strokeWidth={2} />
+                                            <span className="text-[10px] text-green-700 font-bold tracking-widest uppercase">Lunas</span>
                                         </div>
                                     ) : (
                                         <button
-                                            onClick={() => handlePay(item.id, item.amount)}
-                                            className="bg-[#136f42] text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-green-900/10 hover:bg-[#0f5c35] active:scale-90 transition-all flex items-center gap-2"
+                                            onClick={() => handlePayClick(item.id, item.amount)}
+                                            className="bg-[#136f42] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-green-900/10 hover:bg-[#0f5c35] active:scale-90 transition-all flex items-center gap-2"
                                         >
                                             <Wallet size={14} /> Bayar
                                         </button>
@@ -249,12 +262,20 @@ export const LoanDetail = () => {
                 </div>
             </div>
 
+            {/* POPUP PIN DENGAN VIEW PIN */}
+            <PinModal
+                isOpen={showPinModal}
+                onClose={() => setShowPinModal(false)}
+                onSuccess={executePayment}
+                title="Konfirmasi pembayaran"
+            />
+
             {/* MODAL FORM PERPANJANGAN */}
             {showModal && (
                 <div className="fixed inset-0 z-50 bg-[#0f5c35]/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
                     <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Ajukan Perpanjangan</h3>
+                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Ajukan perpanjangan</h3>
                             <button onClick={() => setShowModal(false)} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
                                 <X size={20} className="text-gray-400" />
                             </button>
@@ -262,33 +283,28 @@ export const LoanDetail = () => {
 
                         <form onSubmit={submitRestructure} className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tenor Baru (Total Bulan)</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Tenor baru (bulan)</label>
                                 <input
                                     type="number"
-                                    className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-bold bg-gray-50 transition-all"
-                                    placeholder={`Min: ${loan.duration + 1} Bulan`}
+                                    className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 transition-all"
+                                    placeholder={`Min: ${loan.duration + 1} bulan`}
                                     value={newTenor}
                                     onChange={(e) => setNewTenor(e.target.value)}
                                     required
                                 />
-                                <p className="text-[10px] text-gray-400 mt-2 ml-1 italic leading-relaxed">
-                                    * Tenor berjalan saat ini: {loan.duration} bulan.
-                                </p>
                             </div>
-
                             <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Alasan Perpanjangan</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Alasan</label>
                                 <textarea
-                                    className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 transition-all h-28 resize-none"
-                                    placeholder="Jelaskan kendala Anda secara singkat..."
+                                    className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 h-28 resize-none"
+                                    placeholder="Jelaskan kendala anda..."
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     required
                                 />
                             </div>
-
-                            <button type="submit" className="w-full bg-[#136f42] text-white font-black py-4 rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0f5c35] active:scale-95 transition-all uppercase tracking-widest text-sm">
-                                Kirim Pengajuan
+                            <button type="submit" className="w-full bg-[#136f42] text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0f5c35] active:scale-95 transition-all uppercase tracking-widest text-sm">
+                                Kirim pengajuan
                             </button>
                         </form>
                     </div>

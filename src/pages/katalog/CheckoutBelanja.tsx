@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { formatRupiah, cn } from '../../lib/utils';
-import { ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet, Store, Truck, MapPin, Phone } from 'lucide-react';
+import { 
+    ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet, 
+    Store, Truck, MapPin, Phone, Eye, EyeOff 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export const CheckoutBelanja = () => {
@@ -15,6 +18,9 @@ export const CheckoutBelanja = () => {
 
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
+    
+    // 🔥 STATE BARU: View PIN
+    const [showPin, setShowPin] = useState(false);
 
     const [deliveryMethod, setDeliveryMethod] = useState<'Diambil di Toko' | 'Diantar'>('Diambil di Toko');
     const [phone, setPhone] = useState('');
@@ -117,7 +123,6 @@ export const CheckoutBelanja = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12 font-sans text-slate-900">
-            {/* TEMA WARNA HIJAU KOPERASI - DIPERBAIKI UNTUK MERAPAT KE KIRI */}
             <div className="bg-[#136f42] text-white p-6 rounded-b-[2.5rem] shadow-md">
                 <div className="flex items-center gap-3">
                     <button 
@@ -130,9 +135,7 @@ export const CheckoutBelanja = () => {
                 </div>
             </div>
 
-            {/* Konten tetap di tengah untuk kenyamanan baca (max-w-xl) */}
             <div className="max-w-xl mx-auto px-6 -mt-4 space-y-6">
-                {/* STATUS SALDO */}
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-green-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-green-50 text-[#136f42] rounded-2xl"><Wallet size={24} /></div>
@@ -143,7 +146,6 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
-                {/* OPSI PENGIRIMAN */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-4">
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b border-green-50 pb-4">Opsi Pengiriman</h3>
                     <div className="flex flex-col gap-3">
@@ -155,7 +157,7 @@ export const CheckoutBelanja = () => {
                                     value="Diambil di Toko"
                                     checked={deliveryMethod === 'Diambil di Toko'}
                                     onChange={(e) => setDeliveryMethod(e.target.value as 'Diambil di Toko')}
-                                    className="w-4 h-4 text-[#136f42] focus:ring-[#136f42] accent-[#136f42]"
+                                    className="w-4 h-4 text-[#136f42] accent-[#136f42]"
                                 />
                                 <div>
                                     <p className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2"><Store size={14} className="text-[#136f42]"/> Diambil di Toko</p>
@@ -172,7 +174,7 @@ export const CheckoutBelanja = () => {
                                     value="Diantar"
                                     checked={deliveryMethod === 'Diantar'}
                                     onChange={(e) => setDeliveryMethod(e.target.value as 'Diantar')}
-                                    className="w-4 h-4 text-[#136f42] focus:ring-[#136f42] accent-[#136f42]"
+                                    className="w-4 h-4 text-[#136f42] accent-[#136f42]"
                                 />
                                 <div>
                                     <p className="text-xs font-bold text-slate-700 uppercase flex items-center gap-2"><Truck size={14} className="text-[#136f42]"/> Diantar Ekspedisi</p>
@@ -212,7 +214,6 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
-                {/* RINCIAN PESANAN */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-6">
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b border-green-50 pb-4">Item Belanja</h3>
                     <div className="space-y-4 max-h-60 overflow-y-auto no-scrollbar">
@@ -234,20 +235,29 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
-                {/* VERIFIKASI PIN */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-md text-center border-t-4 border-amber-400 relative overflow-hidden">
                     <ShieldCheck size={32} className="mx-auto text-amber-500 mb-2 relative z-10" />
                     <h4 className="text-sm font-black text-slate-900 uppercase relative z-10">Konfirmasi PIN</h4>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 relative z-10">Keamanan Transaksi KKJ</p>
 
-                    <input 
-                        type="password" 
-                        maxLength={6}
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 text-center text-3xl font-black tracking-[0.5em] focus:border-[#136f42] outline-none relative z-10"
-                        placeholder="••••••"
-                    />
+                    {/* 🔥 FITUR VIEW PIN DENGAN TOMBOL MATA 🔥 */}
+                    <div className="relative group z-10 max-w-[280px] mx-auto">
+                        <input 
+                            type={showPin ? "text" : "password"} 
+                            maxLength={6}
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 text-center text-3xl font-black tracking-[0.5em] focus:border-[#136f42] outline-none transition-all pr-12"
+                            placeholder="••••••"
+                        />
+                        <button 
+                            type="button"
+                            onClick={() => setShowPin(!showPin)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
+                        >
+                            {showPin ? <EyeOff size={22} /> : <Eye size={22} />}
+                        </button>
+                    </div>
 
                     <button 
                         onClick={handlePayment}

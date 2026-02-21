@@ -5,10 +5,12 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { 
     User, Phone, Mail, Shield, Save, ArrowLeft, Camera, 
-    Trash2, ShieldCheck, Lock, HelpCircle, KeyRound, LogOut, Pencil 
+    Trash2, ShieldCheck, Lock, HelpCircle, KeyRound, LogOut, Pencil,
+    Eye, EyeOff, AlertCircle, CheckCircle2 // Tambahan import icon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '../../lib/utils';
 
 export const Profile = () => {
     const { user, checkSession, logout } = useAuthStore();
@@ -30,6 +32,10 @@ export const Profile = () => {
     const [oldPin, setOldPin] = useState(''); 
     const [pinLoading, setPinLoading] = useState(false);
 
+    // 🔥 STATE BARU: Untuk kontrol lihat/sembunyi PIN
+    const [showOldPin, setShowOldPin] = useState(false);
+    const [showNewPin, setShowNewPin] = useState(false);
+
     useEffect(() => {
         if (user) {
             setFormData({
@@ -44,6 +50,22 @@ export const Profile = () => {
             ? name.split(' ').map((n) => n[0]).join('').toUpperCase().substring(0, 2)
             : 'US';
     };
+
+    // 🔥 FUNGSI BARU: Cek Kelemahan PIN
+    const checkPinStrength = (value: string) => {
+        if (value.length === 0) return null;
+        if (value.length < 6) return { label: 'Minimal 6 digit', color: 'text-slate-400' };
+        
+        const isRepeated = /(.)\1{5}/.test(value); // Cek angka kembar (111111)
+        const isSequential = "0123456789012345".includes(value) || "9876543210987654".includes(value);
+
+        if (isRepeated || isSequential) {
+            return { label: 'PIN terlalu lemah (mudah ditebak)', color: 'text-rose-500', isWeak: true };
+        }
+        return { label: 'Kekuatan PIN baik', color: 'text-emerald-500', isWeak: false };
+    };
+
+    const strength = checkPinStrength(pin);
 
     // --- LOGOUT HANDLER ---
     const handleLogout = async () => {
@@ -129,6 +151,12 @@ export const Profile = () => {
             return;
         }
 
+        // Cek apakah PIN lemah sebelum simpan
+        if (strength?.isWeak) {
+            toast.error("PIN terlalu lemah, gunakan kombinasi angka lain.");
+            return;
+        }
+
         if (user?.pin) {
             if (!oldPin) {
                 toast.error("Masukkan PIN Lama untuk verifikasi!");
@@ -188,7 +216,6 @@ export const Profile = () => {
                         <p className="text-gray-500 mt-1 text-sm lg:text-base font-medium">Kelola informasi akun dan preferensi Anda.</p>
                     </div>
                     
-                    {/* 🔥 TOMBOL EDIT PROFIL 🔥 */}
                     {!isEditing && (
                         <Button 
                             onClick={() => setIsEditing(true)} 
@@ -318,35 +345,64 @@ export const Profile = () => {
                             {user?.pin && (
                                 <div>
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">PIN Lama</label>
-                                    <input
-                                        type="password"
-                                        maxLength={6}
-                                        placeholder="******"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
-                                        value={oldPin}
-                                        onChange={(e) => setOldPin(e.target.value.replace(/[^0-9]/g, ''))}
-                                    />
+                                    <div className="relative group">
+                                        <input
+                                            type={showOldPin ? "text" : "password"} // 🔥 View PIN Logic
+                                            maxLength={6}
+                                            placeholder="******"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
+                                            value={oldPin}
+                                            onChange={(e) => setOldPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowOldPin(!showOldPin)} 
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2"
+                                        >
+                                            {showOldPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
-                            <div>
+                            <div className="space-y-2">
                                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">
                                     {user?.pin ? 'PIN Baru' : 'Buat PIN Baru (6 Angka)'}
                                 </label>
-                                <input
-                                    type="password"
-                                    maxLength={6}
-                                    placeholder="******"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
-                                    value={pin}
-                                    onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
-                                />
+                                <div className="relative group">
+                                    <input
+                                        type={showNewPin ? "text" : "password"} // 🔥 View PIN Logic
+                                        maxLength={6}
+                                        placeholder="******"
+                                        className={cn(
+                                            "w-full bg-slate-50 border rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 outline-none transition-all",
+                                            strength?.isWeak ? "border-rose-200 focus:ring-rose-50 focus:border-rose-500" : "border-slate-200 focus:ring-green-50 focus:border-[#136f42]"
+                                        )}
+                                        value={pin}
+                                        onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowNewPin(!showNewPin)} 
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2"
+                                    >
+                                        {showNewPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+
+                                {/* 🔥 INFO KELEMAHAN PIN 🔥 */}
+                                {strength && (
+                                    <div className={cn("flex items-center gap-1.5 ml-1 animate-in fade-in slide-in-from-top-1", strength.color)}>
+                                        {strength.isWeak ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+                                        <span className="text-[10px] font-bold uppercase tracking-tight">{strength.label}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <Button
                                 onClick={handleSavePin}
                                 isLoading={pinLoading}
-                                disabled={pin.length < 6 || (!!user?.pin && oldPin.length < 6)}
+                                disabled={pin.length < 6 || (!!user?.pin && oldPin.length < 6) || strength?.isWeak}
                                 className="w-full bg-[#136f42] hover:bg-[#0f5c35] text-white py-4 rounded-xl font-bold shadow-lg shadow-green-900/20 disabled:opacity-50 active:scale-95 transition-all"
                             >
                                 <KeyRound size={18} className="mr-2" />
