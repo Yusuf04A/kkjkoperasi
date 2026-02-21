@@ -1,18 +1,21 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock, AlertCircle, History, RefreshCw, ChevronRight } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
+import { SuccessModal } from '../../components/SuccessModal'; 
 
 export const FinancingMenu = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation(); 
+    
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // STATE TAB: Default ke 'berjalan'
     const [activeTab, setActiveTab] = useState<'verifikasi' | 'berjalan' | 'riwayat'>('berjalan');
+
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         const fetchLoans = async () => {
@@ -25,31 +28,51 @@ export const FinancingMenu = () => {
 
             if (data) {
                 setLoans(data);
-                // Logika Auto-Switch: Jika ada yang pending, buka tab verifikasi secara default
                 const hasPending = data.some(l => l.status === 'pending');
                 if (hasPending) setActiveTab('verifikasi');
             }
             setLoading(false);
         };
-        fetchLoans();
-    }, [user]);
 
-    // HITUNG JUMLAH DATA UNTUK LOGIKA SEMBUNYI TAB
+        const params = new URLSearchParams(location.search);
+        if (params.get('success') === 'true') {
+            setShowSuccessModal(true);
+            window.history.replaceState({}, '', '/pembiayaan');
+        }
+
+        fetchLoans();
+    }, [user, location]);
+
     const countPending = useMemo(() => loans.filter(l => l.status === 'pending').length, [loans]);
 
-    // LOGIKA FILTER TAB
+    // 🔥 LOGIKA FILTER CERDAS: Menyembunyikan "Ditolak" jika sudah ada pengajuan baru 🔥
     const filteredLoans = useMemo(() => {
+        // Ambil daftar nama barang yang sedang aktif atau sedang diverifikasi
+        const activeItemNames = loans
+            .filter(l => l.status === 'active' || l.status === 'pending')
+            .map(l => (l.details?.name || l.details?.item || '').toLowerCase());
+
         if (activeTab === 'verifikasi') {
             return loans.filter(l => l.status === 'pending');
         } else if (activeTab === 'berjalan') {
             return loans.filter(l => l.status === 'active');
         } else {
-            return loans.filter(l => l.status === 'paid' || l.status === 'rejected');
+            // Di tab Riwayat: Tampilkan yang lunas, atau ditolak TAPI yang belum diajukan ulang
+            return loans.filter(l => {
+                if (l.status === 'paid') return true;
+                if (l.status === 'rejected') {
+                    const itemName = (l.details?.name || l.details?.item || '').toLowerCase();
+                    // JIKA barang ini sudah ada di daftar 'pending' atau 'active', sembunyikan yang 'rejected'
+                    const alreadyReapplied = activeItemNames.includes(itemName);
+                    return !alreadyReapplied;
+                }
+                return false;
+            });
         }
     }, [loans, activeTab]);
 
     return (
-        <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans text-slate-900 pb-20">
+        <div className="p-4 lg:p-6 space-y-6 min-h-screen bg-gray-50 font-sans text-slate-900 pb-20 text-left">
 
             {/* --- HERO HEADER --- */}
             <div className="bg-[#136f42] rounded-[2rem] shadow-xl overflow-hidden relative p-6 lg:p-8 flex flex-col md:flex-row justify-between items-center gap-6 min-h-[180px]">
@@ -57,7 +80,7 @@ export const FinancingMenu = () => {
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 z-0"></div>
 
                 <div className="relative z-10 space-y-2 text-center md:text-left">
-                    <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 justify-center md:justify-start text-left">
                         <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10">
                             <Wallet size={18} className="text-[#aeea00]" />
                         </div>
@@ -79,8 +102,7 @@ export const FinancingMenu = () => {
 
             {/* --- DINAMIS TAB NAVIGATION --- */}
             <div className="flex justify-center px-1">
-                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-xl">
-                    {/* Tab Verifikasi hanya muncul jika ada data pending */}
+                <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-xl text-left">
                     {countPending > 0 && (
                         <button 
                             onClick={() => setActiveTab('verifikasi')}
@@ -89,7 +111,7 @@ export const FinancingMenu = () => {
                                 activeTab === 'verifikasi' ? "bg-amber-500 text-white shadow-md shadow-amber-900/20" : "text-slate-400 hover:text-slate-600"
                             )}
                         >
-                            <Clock size={14} /> Tunggu Verifikasi
+                            <Clock size={14} /> Verifikasi
                         </button>
                     )}
                     
@@ -100,7 +122,7 @@ export const FinancingMenu = () => {
                             activeTab === 'berjalan' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
-                        <RefreshCw size={14} className={activeTab === 'berjalan' ? 'animate-spin-slow' : ''} /> Berjalan
+                        <RefreshCw size={14} /> Berjalan
                     </button>
 
                     <button 
@@ -115,8 +137,8 @@ export const FinancingMenu = () => {
                 </div>
             </div>
 
-            {/* --- SECTION TITLE --- */}
-            <div className="flex items-center gap-3 px-1">
+            {/* --- LIST CONTENT --- */}
+            <div className="flex items-center gap-3 px-1 text-left">
                 <h2 className="font-bold text-slate-800 text-base tracking-tight capitalize">
                     {activeTab === 'verifikasi' ? 'Menunggu Konfirmasi Admin' : 
                      activeTab === 'berjalan' ? 'Pembiayaan Aktif' : 'Riwayat Pengajuan'}
@@ -124,109 +146,90 @@ export const FinancingMenu = () => {
                 <div className="h-px flex-1 bg-slate-200 rounded-full" />
             </div>
 
-            {/* --- CONTENT LIST --- */}
             {loading ? (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 text-left">
                     {[1, 2].map(i => (
                         <div key={i} className="h-32 bg-white rounded-2xl animate-pulse border border-slate-100 shadow-sm" />
                     ))}
                 </div>
             ) : filteredLoans.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-4">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-200">
-                        <FileText size={32} />
-                    </div>
-                    <div className="space-y-1 text-center">
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Kosong</p>
-                        <p className="text-slate-600 text-sm font-medium italic">
-                            Tidak ada data pembiayaan di kategori ini.
-                        </p>
-                    </div>
+                <div className="text-center py-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center space-y-4 italic text-slate-400">
+                    <FileText size={32} className="opacity-20" />
+                    <p className="text-sm font-medium">Tidak ada data pembiayaan di kategori ini.</p>
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 text-left">
                     {filteredLoans.map((loan) => {
                         const isCatalogRedirect = loan.status === 'rejected' && loan.reason?.toLowerCase().includes('katalog');
-                        const itemName = loan.details?.item || 'Pengadaan Barang';
+                        const itemName = loan.details?.name || loan.details?.item || loan.details?.item_name || '';
 
                         return (
-                            <div key={loan.id} className={`group bg-white p-5 lg:p-6 rounded-[1.5rem] border shadow-sm hover:shadow-lg transition-all relative overflow-hidden ${isCatalogRedirect ? 'border-blue-100' : 'border-slate-100'}`}>
+                            <div key={loan.id} className={cn(
+                                "group bg-white p-6 rounded-[2rem] border shadow-sm transition-all relative overflow-hidden flex flex-col",
+                                isCatalogRedirect ? 'border-blue-200 bg-blue-50/20 shadow-blue-900/5' : 'border-slate-100 hover:shadow-md'
+                            )}>
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="space-y-0.5 max-w-[65%]">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                                            {loan.type}
-                                        </p>
-                                        <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
-                                            {isCatalogRedirect ? itemName : formatRupiah(loan.amount)}
-                                        </h3>
+                                    <div className="space-y-0.5 max-w-[70%] text-left">
+                                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{loan.type}</p>
+                                            {itemName && (
+                                                <span className="text-[9px] font-bold text-[#136f42] uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded border border-green-100 truncate">
+                                                    - {itemName}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-900 tracking-tighter">{formatRupiah(loan.amount)}</h3>
                                     </div>
                                     <span className={cn(
-                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border whitespace-nowrap",
+                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase border whitespace-nowrap",
                                         loan.status === 'active' ? 'bg-green-50 text-[#136f42] border-green-100' :
                                             loan.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                 loan.status === 'paid' ? 'bg-[#136f42] text-white border-transparent' :
-                                                    isCatalogRedirect ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                        'bg-rose-50 text-rose-600 border-rose-100'
+                                                    'bg-rose-50 text-rose-600 border-rose-100'
                                     )}>
-                                        {loan.status === 'active' ? '● Berjalan' :
-                                            loan.status === 'paid' ? '✔ Lunas' :
-                                                isCatalogRedirect ? 'Cek Katalog' :
-                                                    loan.status === 'pending' ? '⌛ Verifikasi' :
-                                                        '✖ Ditolak'}
+                                        {loan.status === 'active' ? 'Berjalan' :
+                                            loan.status === 'paid' ? 'Lunas' :
+                                                loan.status === 'pending' ? 'Verifikasi' : 'Ditolak'}
                                     </span>
                                 </div>
 
-                                {!isCatalogRedirect && (
-                                    <div className="flex items-center gap-2 mb-5">
-                                        <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                            <Calendar size={12} className="text-[#136f42]" />
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase">Tenor {loan.duration} Bulan</span>
-                                        </div>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                                        <Calendar size={12} className="text-[#136f42]" />
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Tenor {loan.duration} Bulan</span>
                                     </div>
-                                )}
+                                </div>
 
-                                <div className={`pt-4 flex justify-between items-center ${isCatalogRedirect ? 'border-t border-blue-50' : 'border-t border-slate-50'}`}>
+                                <div className="pt-4 border-t border-slate-100 mt-auto text-left">
                                     {isCatalogRedirect ? (
-                                        <div className="w-full">
-                                            <div className="flex gap-2 items-start bg-blue-50 p-3 rounded-xl border border-blue-100 mb-3">
+                                        <div className="space-y-3">
+                                            <div className="flex items-start gap-2 bg-white/50 p-3 rounded-xl border border-blue-100">
                                                 <Info size={14} className="text-blue-600 shrink-0 mt-0.5" />
-                                                <p className="text-[11px] text-blue-800 leading-relaxed font-medium">
-                                                    Barang sudah diverifikasi Admin. Silakan ajukan ulang melalui menu katalog.
+                                                <p className="text-[10px] text-blue-800 font-medium leading-relaxed">
+                                                    {loan.reason}
                                                 </p>
                                             </div>
-                                            <Link
-                                                to="/pembiayaan/ajukan"
-                                                className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex justify-center items-center gap-1.5 hover:bg-blue-700 transition-colors shadow-md active:scale-95"
+                                            <button 
+                                                onClick={() => navigate('/pembiayaan/ajukan')}
+                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                                             >
-                                                Pilih dari Katalog <ArrowRight size={14} />
-                                            </Link>
+                                                Pilih Dari Katalog <ArrowRight size={14} />
+                                            </button>
                                         </div>
                                     ) : (
-                                        <>
+                                        <div className="flex justify-between items-center text-left">
                                             <div>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase leading-none mb-1">Cicilan / bln</p>
-                                                <p className="text-base font-black text-[#136f42] tracking-tight">{formatRupiah(loan.monthly_payment)}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Cicilan / bln</p>
+                                                <p className="text-base font-black text-[#136f42] tracking-tighter">
+                                                    {loan.status === 'rejected' ? 'Rp 0' : formatRupiah(loan.monthly_payment)}
+                                                </p>
                                             </div>
-
-                                            {loan.status === 'active' || loan.status === 'paid' ? (
-                                                <Link
-                                                    to={`/pembiayaan/${loan.id}`}
-                                                    className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-[#136f42] transition-colors shadow-md active:scale-95"
-                                                >
+                                            {(loan.status === 'active' || loan.status === 'paid') && (
+                                                <Link to={`/pembiayaan/${loan.id}`} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#136f42] transition-all shadow-md active:scale-95">
                                                     Detail <ArrowRight size={14} />
                                                 </Link>
-                                            ) : (
-                                                <div className="flex flex-col items-end">
-                                                    <div className={cn(
-                                                        "flex items-center gap-1 text-[10px] font-black uppercase italic",
-                                                        loan.status === 'rejected' ? "text-rose-600" : "text-amber-600"
-                                                    )}>
-                                                        {loan.status === 'rejected' ? <AlertCircle size={12}/> : <Clock size={12}/>}
-                                                        {loan.status === 'rejected' ? 'Ditolak' : 'Proses Verifikasi'}
-                                                    </div>
-                                                </div>
                                             )}
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -235,18 +238,16 @@ export const FinancingMenu = () => {
                 </div>
             )}
 
-            <p className="text-center text-slate-300 text-[9px] font-bold uppercase tracking-[0.2em] pt-6">
+            <p className="text-center text-slate-300 text-[9px] font-bold uppercase tracking-[0.2em] pt-10">
                 © 2026 Koperasi Pemasaran Karya Kita Jaya
             </p>
+
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="PENGAJUAN TERKIRIM!"
+                message="Pengajuan pembiayaan Anda telah berhasil dikirim. Admin akan segera melakukan verifikasi dan meninjau berkas Anda dalam maksimal 1x24 jam."
+            />
         </div>
     );
 };
-
-// Penambahan icon lokal untuk tab riwayat (jika belum diimport)
-const History = ({ size, className }: { size?: number, className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-);
-
-const RefreshCw = ({ size, className }: { size?: number, className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
-);

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Pencil, EyeOff, Trash2, ArrowLeft, Megaphone, Clock, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
+import { Plus, Pencil, EyeOff, Trash2, ArrowLeft, Megaphone, Clock, CheckCircle2, AlertCircle, Eye, Info } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
+import toast from 'react-hot-toast';
 
 interface KabarKKJ {
   id: string;
@@ -19,12 +20,23 @@ export default function AdminKabar() {
   const [list, setList] = useState<KabarKKJ[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mapping warna untuk fallback jika tidak ada gambar
+  // 🔥 STATE BARU UNTUK CUSTOM POPUP CONFIRMATION 🔥
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    kabarId: string;
+    kabarTitle: string;
+  }>({
+    isOpen: false,
+    kabarId: '',
+    kabarTitle: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const colorMap: Record<string, string> = {
     blue: 'bg-blue-600',
     biru_tua: 'bg-[#003366]',
     yellow: 'bg-amber-400',
-    green: 'bg-[#136f42]', // Diubah ke hijau kkj
+    green: 'bg-[#136f42]', 
     red: 'bg-rose-600',
   };
 
@@ -43,14 +55,40 @@ export default function AdminKabar() {
   }, []);
 
   const toggleActive = async (id: string, active: boolean) => {
-    await supabase.from('kabar_kkj').update({ is_active: !active }).eq('id', id);
-    fetchData();
+    const toastId = toast.loading('memperbarui status...');
+    try {
+        await supabase.from('kabar_kkj').update({ is_active: !active }).eq('id', id);
+        toast.success('status kabar diperbarui', { id: toastId });
+        fetchData();
+    } catch (err) {
+        toast.error('gagal memperbarui status', { id: toastId });
+    }
   };
 
-  const deleteKabar = async (id: string) => {
-    if (!confirm('Yakin hapus kabar ini?')) return;
-    await supabase.from('kabar_kkj').delete().eq('id', id);
-    fetchData();
+  // --- 🔥 LOGIKA HAPUS KABAR (VIA CUSTOM MODAL) 🔥 ---
+  const triggerDelete = (id: string, title: string) => {
+    setConfirmModal({
+        isOpen: true,
+        kabarId: id,
+        kabarTitle: title
+    });
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
+    const toastId = toast.loading('menghapus kabar...');
+    try {
+      const { error } = await supabase.from('kabar_kkj').delete().eq('id', confirmModal.kabarId);
+      if (error) throw error;
+      
+      toast.success('kabar berhasil dihapus', { id: toastId });
+      setConfirmModal({ isOpen: false, kabarId: '', kabarTitle: '' });
+      fetchData();
+    } catch (err: any) {
+      toast.error('gagal menghapus: ' + err.message, { id: toastId });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (loading) return (
@@ -60,23 +98,22 @@ export default function AdminKabar() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      {/* HEADER - HIJAU KONSISTEN */}
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-900">
+      {/* HEADER */}
       <div className="bg-white border-b sticky top-0 z-30 px-6 py-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex flex-col gap-2">
-            {/* Tombol Kembali */}
             <Link 
               to="/admin/dashboard" 
               className="flex items-center gap-2 text-gray-400 hover:text-[#136f42] transition-all group w-fit"
             >
               <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-medium">Kembali</span>
+              <span className="text-sm font-bold lowercase">kembali</span>
             </Link>
 
             <div className="flex flex-col mt-1">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">Manajemen Kabar</h1>
-              <p className="text-sm text-gray-500 font-medium mt-1">Kelola pengumuman dan berita anggota</p>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none lowercase">manajemen kabar kkj</h1>
+              <p className="text-sm text-gray-500 font-medium mt-1 lowercase">kelola pengumuman dan berita terbaru untuk anggota</p>
             </div>
           </div>
           
@@ -84,7 +121,7 @@ export default function AdminKabar() {
             to="/admin/kabar/tambah"
             className="bg-[#136f42] text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-xl hover:bg-[#0f5c35] transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 active:scale-95"
           >
-            <Plus size={18} strokeWidth={3} /> Tambah Kabar
+            <Plus size={18} strokeWidth={3} /> tambah kabar kkj
           </Link>
         </div>
       </div>
@@ -93,9 +130,9 @@ export default function AdminKabar() {
         {list.length === 0 ? (
           <div className="bg-white rounded-[2.5rem] p-20 text-center border-2 border-dashed border-gray-100 shadow-sm">
             <Megaphone size={48} className="mx-auto text-gray-200 mb-4" />
-            <h3 className="text-lg font-bold text-gray-900">Belum Ada Kabar</h3>
-            <p className="text-gray-500 text-sm max-w-xs mx-auto mt-2 font-medium">
-              Mulai buat pengumuman pertama Anda untuk anggota koperasi hari ini.
+            <h3 className="text-lg font-bold text-gray-900 lowercase">belum ada kabar terbaru</h3>
+            <p className="text-gray-500 text-sm max-w-xs mx-auto mt-2 font-medium lowercase">
+              mulai buat pengumuman pertama anda untuk seluruh anggota koperasi hari ini.
             </p>
           </div>
         ) : (
@@ -103,8 +140,7 @@ export default function AdminKabar() {
             {list.map((item) => (
               <div key={item.id} className="bg-white rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col h-full border-b-4 border-b-transparent hover:border-b-[#136f42]">
                 
-                {/* IMAGE/HEADER SECTION */}
-                <div className={cn("h-48 relative overflow-hidden", !item.image_url && (colorMap[item.color] || 'bg-gray-600'))}>
+                <div className={cn("h-48 relative overflow-hidden bg-gray-200", !item.image_url && (colorMap[item.color] || 'bg-gray-600'))}>
                   {item.image_url ? (
                     <>
                       <img 
@@ -132,14 +168,13 @@ export default function AdminKabar() {
                   </div>
                 </div>
 
-                {/* CONTENT SECTION */}
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex justify-between items-start gap-4 mb-3">
-                    <h3 className="font-bold text-slate-800 leading-tight text-base line-clamp-2 min-h-[2.75rem] group-hover:text-[#136f42] transition-colors">
+                    <h3 className="font-bold text-slate-800 leading-tight text-base line-clamp-2 min-h-[2.75rem] group-hover:text-[#136f42] transition-colors uppercase tracking-tight">
                       {item.title}
                     </h3>
                     <div className={cn(
-                      "p-1.5 rounded-lg shrink-0",
+                      "p-1.5 rounded-lg shrink-0 transition-colors",
                       item.is_active ? "bg-green-50 text-[#136f42]" : "bg-gray-50 text-gray-300"
                     )}>
                       {item.is_active ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
@@ -157,7 +192,7 @@ export default function AdminKabar() {
                         item.is_active ? "bg-[#136f42] animate-pulse shadow-[0_0_8px_rgba(19,111,66,0.5)]" : "bg-gray-300"
                       )} />
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        {item.is_active ? 'Tampil' : 'Draft'}
+                        {item.is_active ? 'tampil' : 'draft'}
                       </span>
                     </div>
 
@@ -176,7 +211,7 @@ export default function AdminKabar() {
                         <Pencil size={16} />
                       </Link>
                       <button
-                        onClick={() => deleteKabar(item.id)}
+                        onClick={() => triggerDelete(item.id, item.title)}
                         className="p-2.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-xl transition-all active:scale-90"
                       >
                         <Trash2 size={16} />
@@ -189,6 +224,41 @@ export default function AdminKabar() {
           </div>
         )}
       </div>
+
+      {/* --- 🔥 CUSTOM POPUP CONFIRMATION MODAL 🔥 --- */}
+      {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+              <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                      <Trash2 size={32} />
+                  </div>
+                  
+                  <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                      Hapus kabar ini?
+                  </h3>
+                  
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4 lowercase">
+                      tindakan ini akan menghapus kabar <b>"{confirmModal.kabarTitle}"</b> secara permanen dari server dan aplikasi anggota.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                      <button 
+                        onClick={() => setConfirmModal({ isOpen: false, kabarId: '', kabarTitle: '' })} 
+                        className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
+                      >
+                          batal
+                      </button>
+                      <button 
+                        onClick={executeDelete} 
+                        disabled={isDeleting}
+                        className="py-3.5 bg-rose-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-transform disabled:opacity-50"
+                      >
+                          {isDeleting ? 'memproses...' : 'ya, hapus'}
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 }

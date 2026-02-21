@@ -8,6 +8,7 @@ import {
     Store, Truck, MapPin, Phone, Eye, EyeOff 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 IMPORT MODAL SUKSES 🔥
 
 export const CheckoutBelanja = () => {
     const navigate = useNavigate();
@@ -19,8 +20,11 @@ export const CheckoutBelanja = () => {
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // 🔥 STATE BARU: View PIN
+    // STATE BARU: View PIN
     const [showPin, setShowPin] = useState(false);
+
+    // 🔥 STATE BARU: Tampilkan Modal Sukses
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [deliveryMethod, setDeliveryMethod] = useState<'Diambil di Toko' | 'Diantar'>('Diambil di Toko');
     const [phone, setPhone] = useState('');
@@ -111,8 +115,10 @@ export const CheckoutBelanja = () => {
                 description: `Belanja Toko: ${order.id.slice(0,8)}` 
             });
 
-            toast.success("Pesanan Terkirim! Menunggu Konfirmasi Admin.", { id: toastId });
-            navigate('/transaksi/riwayat'); 
+            toast.dismiss(toastId); // Matikan loading toast
+
+            // 🔥 MUNCULKAN POPUP DI TENGAH, JANGAN LANGSUNG NAVIGATE 🔥
+            setShowSuccessModal(true); 
             
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
@@ -261,14 +267,25 @@ export const CheckoutBelanja = () => {
 
                     <button 
                         onClick={handlePayment}
-                        disabled={loading}
-                        className="w-full mt-6 bg-[#136f42] text-white py-5 rounded-[2rem] font-[1000] text-sm uppercase tracking-[0.2em] shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-slate-300 relative z-10"
+                        disabled={loading || pin.length < 6}
+                        className="w-full mt-6 bg-[#136f42] text-white py-5 rounded-[2rem] font-[1000] text-sm uppercase tracking-[0.2em] shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none relative z-10"
                     >
                         {loading ? <Loader2 className="animate-spin" /> : <>Kirim ke Antrean <ChevronRight size={20} /></>}
                     </button>
                     <p className="text-[9px] text-slate-400 font-medium italic mt-4 relative z-10">Pesanan akan divalidasi oleh admin sebelum saldo TAPRO Anda dikurangi.</p>
                 </div>
             </div>
+
+            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    navigate('/transaksi/riwayat'); // Baru pindah halaman saat ditutup
+                }}
+                title="PESANAN TERKIRIM!"
+                message={`Terima kasih! Pesanan Anda sedang diproses dan menunggu konfirmasi admin. Saldo TAPRO Anda akan otomatis terpotong saat disetujui.`}
+            />
         </div>
     );
 };

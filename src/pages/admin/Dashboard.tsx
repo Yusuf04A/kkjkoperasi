@@ -31,44 +31,88 @@ export const AdminDashboard = () => {
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
 
+    // 🔥 Fungsi fetchStats dipisah agar lebih mudah dipanggil ulang
     const fetchStats = async () => {
-        const { count: pendingMember } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingTrans } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingLoan } = await supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { data: restructureData } = await supabase.from('loans').select('id').eq('restructure_status', 'pending');
-        const { count: pendingTamasa } = await supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingPawn } = await supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-        const { count: pendingOrders } = await supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses');
-        const { count: pendingLHU } = await supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting');
-        const { count: activeInflip } = await supabase.from('inflip_projects').select('*', { count: 'exact', head: true }).eq('status', 'open');
-        const { count: pendingWithdrawals } = await supabase.from('savings_withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        try {
+            const [
+                { count: pendingMember },
+                { count: pendingTrans },
+                { count: pendingLoan },
+                { data: restructureData },
+                { count: pendingTamasa },
+                { count: pendingPawn },
+                { count: pendingOrders },
+                { count: pendingLHU },
+                { count: activeInflip },
+                { count: pendingWithdrawals }
+            ] = await Promise.all([
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                supabase.from('loans').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                supabase.from('loans').select('id').eq('restructure_status', 'pending'),
+                supabase.from('tamasa_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+                supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses'),
+                supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting'),
+                supabase.from('inflip_projects').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+                supabase.from('savings_withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+            ]);
 
-        setStats({
-            pendingUsers: pendingMember || 0,
-            pendingTx: pendingTrans || 0,
-            pendingLoans: pendingLoan || 0,
-            pendingRestructures: restructureData?.length || 0,
-            pendingTamasa: pendingTamasa || 0,
-            pendingPawn: pendingPawn || 0,
-            pendingOrders: pendingOrders || 0,
-            pendingLHU: pendingLHU || 0,
-            activeInflip: activeInflip || 0,
-            pendingWithdrawals: pendingWithdrawals || 0,
-        });
+            setStats({
+                pendingUsers: pendingMember || 0,
+                pendingTx: pendingTrans || 0,
+                pendingLoans: pendingLoan || 0,
+                pendingRestructures: restructureData?.length || 0,
+                pendingTamasa: pendingTamasa || 0,
+                pendingPawn: pendingPawn || 0,
+                pendingOrders: pendingOrders || 0,
+                pendingLHU: pendingLHU || 0,
+                activeInflip: activeInflip || 0,
+                pendingWithdrawals: pendingWithdrawals || 0,
+            });
 
-        if (restructureData && restructureData.length > 0) {
-            setFirstRestructureId(restructureData[0].id);
+            if (restructureData && restructureData.length > 0) {
+                setFirstRestructureId(restructureData[0].id);
+            }
+        } catch (error) {
+            console.error("Gagal memuat statistik admin", error);
         }
     };
 
     useEffect(() => {
+        // Panggil pertama kali saat komponen dirender
         fetchStats();
-        const channel = supabase
-            .channel('dashboard-updates')
-            .on('postgres_changes', { event: '*', schema: 'public' }, () => fetchStats())
-            .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        // 🔥 PERBAIKAN LOGIKA REALTIME SUPABASE 🔥
+        // Memecah pendengar event per tabel agar tangkapan notifikasi lebih instan
+        const channel = supabase.channel('admin-dashboard-updates');
+
+        const tablesToWatch = [
+            'profiles', 'transactions', 'loans', 'tamasa_transactions', 
+            'pawn_transactions', 'shop_orders', 'lhu_distributions', 
+            'inflip_projects', 'savings_withdrawals'
+        ];
+
+        tablesToWatch.forEach((table) => {
+            channel.on(
+                'postgres_changes', 
+                { event: '*', schema: 'public', table: table }, 
+                () => {
+                    // Setiap ada perubahan INSERT/UPDATE/DELETE di salah satu tabel ini, data direfresh instan
+                    fetchStats();
+                }
+            );
+        });
+
+        channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Realtime Admin Dashboard Aktif');
+            }
+        });
+
+        return () => { 
+            supabase.removeChannel(channel); 
+        };
     }, []);
 
     const handleLogout = async () => {
@@ -137,11 +181,17 @@ export const AdminDashboard = () => {
                 </div>
 
                 {/* NOTIFIKASI URGENT */}
-                {(stats.pendingWithdrawals > 0 || stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0) && (
+                {(stats.pendingWithdrawals > 0 || stats.pendingRestructures > 0 || stats.pendingUsers > 0 || stats.pendingLHU > 0 || stats.pendingOrders > 0 || stats.pendingLoans > 0 || stats.pendingTamasa > 0 || stats.pendingPawn > 0 || stats.pendingTx > 0) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-4">
                         {stats.pendingWithdrawals > 0 && <AlertCard to="/admin/simpanan" title={`${stats.pendingWithdrawals} Request Tarik Tunai`} type="danger" />}
                         {stats.pendingLoans > 0 && <AlertCard to="/admin/pembiayaan" title={`${stats.pendingLoans} Pengajuan Pinjaman`} type="danger" />}
                         {stats.pendingRestructures > 0 && <AlertCard to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
+                        
+                        {/* Menambahkan Indikator Notif Tamasa, Gadai, Transaksi jika ada antrean */}
+                        {stats.pendingTamasa > 0 && <AlertCard to="/admin/tamasa" title={`${stats.pendingTamasa} Request Tamasa`} type="warning" />}
+                        {stats.pendingPawn > 0 && <AlertCard to="/admin/pegadaian" title={`${stats.pendingPawn} Pengajuan Gadai`} type="warning" />}
+                        {stats.pendingTx > 0 && <AlertCard to="/admin/transaksi" title={`${stats.pendingTx} Transaksi Finance`} type="warning" />}
+                        
                         {stats.pendingUsers > 0 && <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />}
                         {stats.pendingLHU > 0 && <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />}
                         {stats.pendingOrders > 0 && <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PinModal } from '../../components/PinModal';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
 
 export const SetorSimpanan = () => {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ export const SetorSimpanan = () => {
     const [selectedSimpanan, setSelectedSimpanan] = useState<any>(null);
     const [amount, setAmount] = useState<string>('');
     const [showPinModal, setShowPinModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State Modal Sukses
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const simpananOptions = [
@@ -59,22 +61,36 @@ export const SetorSimpanan = () => {
         const cleanAmount = parseInt(amount.replace(/\./g, ''));
 
         try {
+            // 1. Potong Saldo Tapro
             const { error: errTapro } = await supabase.from('profiles').update({ tapro_balance: (user?.tapro_balance || 0) - cleanAmount }).eq('id', user?.id);
             if (errTapro) throw errTapro;
 
+            // 2. Ambil saldo tujuan saat ini
             const { data: currentProfile } = await supabase.from('profiles').select(selectedSimpanan.col).eq('id', user?.id).single();
             const currentDestBalance = currentProfile ? currentProfile[selectedSimpanan.col] : 0;
 
+            // 3. Tambah Saldo Tujuan
             const { error: errDest } = await supabase.from('profiles').update({ [selectedSimpanan.col]: (Number(currentDestBalance) || 0) + cleanAmount }).eq('id', user?.id);
             if (errDest) throw errDest;
 
+            // 4. Catat Transaksi
             await supabase.from('transactions').insert({
-                user_id: user?.id, type: 'transfer_out', amount: cleanAmount, status: 'success', description: `Setor ke ${selectedSimpanan.name}`
+                user_id: user?.id, 
+                type: 'transfer_out', 
+                amount: cleanAmount, 
+                status: 'success', 
+                description: `Setor ke ${selectedSimpanan.name}`
             });
 
-            toast.success("Saldo berhasil dipindahkan!", { id: toastId });
-            setAmount('');
-            setSelectedSimpanan(null);
+            // 5. SELESAI: Tutup Modal PIN & Tampilkan Modal Sukses Tengah
+            toast.dismiss(toastId);
+            setShowPinModal(false);
+            
+            // Beri sedikit delay agar transisi modal PIN ke Modal Sukses mulus
+            setTimeout(() => {
+                setShowSuccessModal(true);
+            }, 100);
+            
             await checkSession();
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
@@ -92,9 +108,9 @@ export const SetorSimpanan = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+        <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-900">
             
-            {/* HEADER (HIJAU KONSISTEN) */}
+            {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
                     <button 
@@ -103,18 +119,18 @@ export const SetorSimpanan = () => {
                     >
                         <ArrowLeft size={20} strokeWidth={2.5} />
                     </button>
-                    <h1 className="text-lg font-bold text-gray-900">
-                        Setor Simpanan
+                    <h1 className="text-lg font-bold text-gray-900 leading-none lowercase">
+                        Setor simpanan
                     </h1>
                 </div>
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-6">
                 
-                {/* SUMBER DANA (HIJAU HUTAN) */}
-                <div className="bg-[#136f42] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                {/* SUMBER DANA */}
+                <div className="bg-[#136f42] rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#136f42] to-[#0f5c35] opacity-90 z-0"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] opacity-90 z-0"></div>
                     
                     <div className="relative z-10">
                         <p className="text-green-100/70 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Sumber Dana Utama</p>
@@ -125,15 +141,12 @@ export const SetorSimpanan = () => {
                         <h2 className="text-3xl font-black font-mono tracking-tighter">
                             {user ? formatRupiah(user.tapro_balance) : 'Rp 0'}
                         </h2>
-                        <p className="text-[10px] text-green-100/60 mt-3 font-medium italic">
-                            *Saldo ini akan dipindahkan ke kategori simpanan pilihan Anda.
-                        </p>
                     </div>
                 </div>
 
                 {/* PILIH TUJUAN */}
                 <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-1">Pilih Tujuan Simpanan</h3>
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-1 lowercase">Pilih tujuan simpanan</h3>
                     <div className="grid grid-cols-2 gap-3">
                         {simpananOptions.map((item) => (
                             <button 
@@ -145,7 +158,7 @@ export const SetorSimpanan = () => {
                                     : 'border-gray-100 bg-white hover:border-green-200 shadow-sm'
                                 }`}
                             >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110 shadow-sm ${item.bg} ${item.color}`}>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-sm ${item.bg} ${item.color}`}>
                                     <item.icon size={20} />
                                 </div>
                                 <h4 className={`font-bold text-sm mb-1 tracking-tight ${selectedSimpanan?.id === item.id ? 'text-[#136f42]' : 'text-gray-800'}`}>
@@ -165,9 +178,9 @@ export const SetorSimpanan = () => {
 
                 {/* INPUT NOMINAL */}
                 {selectedSimpanan && (
-                    <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-green-50 animate-in slide-in-from-bottom-6 duration-500">
+                    <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-green-50 animate-in slide-in-from-bottom-4 duration-500">
                         <div className="flex items-center justify-between mb-5">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nominal Setoran</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest lowercase">Nominal setoran</span>
                             <span className="text-[10px] font-black text-[#136f42] bg-green-50 px-3 py-1 rounded-full border border-green-100 uppercase tracking-tighter">
                                 Ke: {selectedSimpanan.name}
                             </span>
@@ -185,29 +198,36 @@ export const SetorSimpanan = () => {
                             />
                         </div>
 
-                        <div className="bg-amber-50 p-4 rounded-xl flex gap-3 items-start border border-amber-100 mb-8 shadow-sm">
-                            <AlertCircle size={18} className="text-amber-600 mt-0.5 shrink-0" />
-                            <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
-                                Pastikan tujuan simpanan sudah benar. Saldo Tapro akan langsung dipindahkan setelah konfirmasi PIN berhasil.
-                            </p>
-                        </div>
-
                         <button 
                             onClick={handleInitialSubmit} 
                             disabled={isSubmitting} 
                             className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-lg hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest"
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Lanjut Konfirmasi"}
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Lanjut konfirmasi"}
                         </button>
                     </div>
                 )}
             </div>
 
+            {/* MODAL PIN */}
             <PinModal 
                 isOpen={showPinModal} 
                 onClose={() => setShowPinModal(false)} 
                 onSuccess={executeTransfer} 
-                title="Konfirmasi Setoran" 
+                title="Konfirmasi setoran" 
+            />
+
+            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    setAmount('');
+                    setSelectedSimpanan(null);
+                    navigate('/dashboard'); // Arahkan kembali setelah ditutup
+                }}
+                title="SETORAN BERHASIL!"
+                message={`Saldo Tapro Anda telah berhasil dipindahkan ke ${selectedSimpanan?.name}. Silakan cek riwayat simpanan Anda secara berkala.`}
             />
         </div>
     );

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
 import { 
     ArrowLeft, Check, X, RefreshCw, Clock, Coins, 
-    FileText, Calendar, Loader2, Archive, CheckCircle, Save, TrendingUp
+    FileText, Calendar, Loader2, Archive, CheckCircle, Save, TrendingUp, AlertCircle, Info
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
@@ -22,6 +22,18 @@ export const AdminTamasa = () => {
     const [newPriceInput, setNewPriceInput] = useState('');
     const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
+    // 🔥 STATE UNTUK CUSTOM POPUP CONFIRMATION 🔥
+    const [confirmModal, setConfirmModal] = useState<{ 
+        isOpen: boolean; 
+        type: 'approve' | 'reject' | null; 
+        transaction: any; 
+    }>({
+        isOpen: false,
+        type: null,
+        transaction: null
+    });
+    const [isProcessing, setIsProcessing] = useState(false);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -35,10 +47,11 @@ export const AdminTamasa = () => {
             
             if (goldData) setCurrentGoldPrice(goldData.buy_price);
 
-            // 2. Ambil Transaksi
+            // 2. Ambil Transaksi 
+            // 🔥 PERBAIKAN DI SINI: Menghapus "!fk_final_tamasa_trx" agar Supabase auto-detect relasinya 🔥
             let query = supabase
                 .from("tamasa_transactions")
-                .select(`*, profiles!fk_final_tamasa_trx (full_name, member_id, phone)`)
+                .select(`*, profiles (full_name, member_id, phone)`)
                 .order("created_at", { ascending: false });
 
             if (activeTab === 'pending') {
@@ -89,9 +102,17 @@ export const AdminTamasa = () => {
         }
     };
 
-    const handleApprove = async (tx: any) => {
-        const confirm = window.confirm(`Setujui pembelian emas ${tx.estimasi_gram.toFixed(4)} gram?`);
-        if (!confirm) return;
+    // --- TRIGGER MODAL ---
+    const triggerModal = (type: 'approve' | 'reject', transaction: any) => {
+        setConfirmModal({ isOpen: true, type, transaction });
+    };
+
+    // --- LOGIC APPROVE PEMBELIAN EMAS (Via Custom Modal) ---
+    const executeApprove = async () => {
+        const tx = confirmModal.transaction;
+        if (!tx) return;
+
+        setIsProcessing(true);
         const toastId = toast.loading("Memproses...");
 
         try {
@@ -111,14 +132,21 @@ export const AdminTamasa = () => {
             });
 
             toast.success("Disetujui!", { id: toastId });
+            setConfirmModal({ isOpen: false, type: null, transaction: null });
             fetchData();
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
+        } finally {
+            setIsProcessing(false);
         }
     };
 
-    const handleReject = async (tx: any) => {
-        if (!window.confirm("Tolak dan kembalikan saldo user?")) return;
+    // --- LOGIC REJECT PEMBELIAN EMAS (Via Custom Modal) ---
+    const executeReject = async () => {
+        const tx = confirmModal.transaction;
+        if (!tx) return;
+
+        setIsProcessing(true);
         const toastId = toast.loading("Menolak...");
         try {
             await supabase.from("tamasa_transactions").update({ status: "rejected", approved_at: new Date().toISOString() }).eq("id", tx.id);
@@ -135,9 +163,12 @@ export const AdminTamasa = () => {
                 });
             }
             toast.success("Ditolak & Dana Dikembalikan", { id: toastId });
+            setConfirmModal({ isOpen: false, type: null, transaction: null });
             fetchData();
         } catch (err) {
             toast.error("Gagal menolak", { id: toastId });
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -292,13 +323,13 @@ export const AdminTamasa = () => {
                                     {tx.status === 'pending' ? (
                                         <>
                                             <button 
-                                                onClick={() => handleApprove(tx)} 
+                                                onClick={() => triggerModal('approve', tx)} 
                                                 className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <Check size={18} /> Setujui
                                             </button>
                                             <button 
-                                                onClick={() => handleReject(tx)} 
+                                                onClick={() => triggerModal('reject', tx)} 
                                                 className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <X size={18} /> Tolak
@@ -316,6 +347,37 @@ export const AdminTamasa = () => {
                     </div>
                 )}
             </div>
+
+            {/* 🔥 CUSTOM POPUP CONFIRMATION MODAL 🔥 */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20 text-center">
+                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", confirmModal.type === 'approve' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600')}>
+                            {confirmModal.type === 'approve' ? <Info size={32} /> : <AlertCircle size={32} />}
+                        </div>
+                        
+                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                            {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Tolak Transaksi'}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 px-4 lowercase">
+                            {confirmModal.type === 'approve' 
+                                ? `Setujui pembelian emas sebesar ${confirmModal.transaction?.estimasi_gram.toFixed(4)} gram untuk anggota ${confirmModal.transaction?.profiles?.full_name}?` 
+                                : `Tolak pembelian ini? Saldo Tapro sebesar ${formatRupiah(confirmModal.transaction?.setoran)} akan dikembalikan secara otomatis ke anggota.`
+                            }
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, transaction: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                                Batal
+                            </button>
+                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isProcessing} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                                {isProcessing ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

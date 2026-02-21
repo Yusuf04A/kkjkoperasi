@@ -8,6 +8,7 @@ import { ArrowLeft, Phone, Send, Search, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
 import { PinModal } from '../../components/PinModal';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
 
 export const Transfer = () => {
     const navigate = useNavigate();
@@ -19,10 +20,12 @@ export const Transfer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
     const [showPinModal, setShowPinModal] = useState(false);
+    
+    // 🔥 STATE UNTUK SUCCESS MODAL
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-    // --- FUNGSI FORMAT RUPIAH OTOMATIS ---
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\D/g, ''); // Ambil angka saja
+        const rawValue = e.target.value.replace(/\D/g, ''); 
         if (rawValue) {
             const formattedValue = parseInt(rawValue).toLocaleString('id-ID');
             setAmount(formattedValue);
@@ -54,8 +57,6 @@ export const Transfer = () => {
     const executeTransfer = async () => {
         setIsLoading(true);
         const toastId = toast.loading('Memproses transfer...');
-        
-        // Bersihkan titik sebelum kirim ke RPC/Database
         const nominal = parseInt(amount.replace(/\./g, ''));
 
         try {
@@ -66,8 +67,8 @@ export const Transfer = () => {
 
             if (error) throw error;
 
-            toast.success('Transfer Berhasil!', { id: toastId });
-            navigate('/transaksi/riwayat');
+            toast.dismiss(toastId);
+            setShowSuccessModal(true); // 🔥 Tampilkan Modal Berhasil
 
         } catch (error: any) {
             toast.error('Gagal: ' + error.message, { id: toastId });
@@ -98,7 +99,7 @@ export const Transfer = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
             
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
@@ -112,7 +113,7 @@ export const Transfer = () => {
 
             <div className="max-w-xl mx-auto p-4 space-y-8">
                 
-                {/* INFO SALDO (GRADASI HIJAU) */}
+                {/* INFO SALDO */}
                 <div className="bg-gradient-to-r from-[#136f42] to-[#0f5c35] p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                     <div className="relative z-10">
@@ -154,13 +155,13 @@ export const Transfer = () => {
                             </button>
                         </div>
                         {recipientName && (
-                            <div className="mt-3 bg-green-50 text-[#136f42] p-3 rounded-xl flex items-center gap-2 text-sm font-bold border border-green-100">
+                            <div className="mt-3 bg-green-50 text-[#136f42] p-3 rounded-xl flex items-center gap-2 text-sm font-bold border border-green-100 animate-in slide-in-from-top-2">
                                 <UserCheck size={18} /> Penerima: {recipientName}
                             </div>
                         )}
                     </div>
 
-                    {/* NOMINAL DENGAN FORMAT TITIK */}
+                    {/* NOMINAL */}
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">Nominal Transfer</label>
                         <div className="relative">
@@ -194,6 +195,17 @@ export const Transfer = () => {
                 onClose={() => setShowPinModal(false)}
                 onSuccess={executeTransfer}
                 title="Konfirmasi Transfer"
+            />
+
+            {/* 🔥 SUCCESS MODAL POPUP 🔥 */}
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    navigate('/transaksi/riwayat');
+                }}
+                title="Transfer Berhasil!"
+                message={`Saldo sebesar Rp ${amount} telah berhasil dikirim kepada ${recipientName}.`}
             />
         </div>
     );

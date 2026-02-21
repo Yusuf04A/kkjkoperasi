@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PinModal } from '../../components/PinModal';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
 
 export const Inflip = () => {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export const Inflip = () => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [investAmount, setInvestAmount] = useState<string>('');
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State Modal Sukses
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -128,11 +130,14 @@ export const Inflip = () => {
         type: 'success'
       });
 
-      toast.success("Investasi Berhasil!", { id: toastId });
-      setInvestAmount('');
-      setSelectedProject(null);
-      setActiveTab('portfolio');
-      checkSession();
+      toast.dismiss(toastId);
+      setShowPinModal(false);
+      
+      // 🔥 Tampilkan Popup Sukses
+      setShowSuccessModal(true); 
+
+      await checkSession();
+      fetchData();
     } catch (err: any) {
       toast.error("Gagal: " + err.message, { id: toastId });
     } finally {
@@ -141,9 +146,9 @@ export const Inflip = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 overflow-y-scroll font-sans">
+    <div className="min-h-screen bg-gray-50 pb-24 overflow-y-scroll font-sans text-slate-900">
 
-      {/* HEADER (HIJAU KONSISTEN) */}
+      {/* HEADER */}
       <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
         <div className="px-4 py-4 flex items-center gap-3">
           <button
@@ -152,7 +157,7 @@ export const Inflip = () => {
           >
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
-          <h1 className="text-lg font-bold text-gray-900 leading-none">
+          <h1 className="text-lg font-bold text-gray-900 leading-none tracking-tight">
             INFLIP (Properti)
           </h1>
         </div>
@@ -160,7 +165,7 @@ export const Inflip = () => {
 
       <div className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
 
-        {/* HERO SECTION (HIJAU HUTAN) */}
+        {/* HERO SECTION */}
         <div className="bg-[#136f42] rounded-[2rem] p-6 lg:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center gap-6">
           <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10" />
@@ -197,7 +202,7 @@ export const Inflip = () => {
           </div>
         </div>
 
-        {/* TABS NAVIGATION (HIJAU KONSISTEN) */}
+        {/* TABS NAVIGATION */}
         <div className="flex p-1.5 bg-green-900/5 rounded-2xl w-full max-w-md mx-auto mb-6 border border-green-100">
           <button
             onClick={() => setActiveTab('browse')}
@@ -322,7 +327,7 @@ export const Inflip = () => {
         </div>
       </div>
 
-      {/* MODAL INVESTASI (HIJAU RAPI) */}
+      {/* MODAL INPUT NOMINAL */}
       {selectedProject && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="fixed inset-0 bg-[#0f5c35]/80 backdrop-blur-md" onClick={() => setSelectedProject(null)}></div>
@@ -354,6 +359,17 @@ export const Inflip = () => {
       )}
 
       <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeInvestment} title="Konfirmasi INFLIP" />
+
+      {/* 🔥 SUCCESS MODAL POPUP 🔥 */}
+      <SuccessModal 
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setActiveTab('portfolio');
+        }}
+        title="INVESTASI BERHASIL!"
+        message={`Selamat! Anda telah berhasil berinvestasi sebesar Rp ${investAmount} di proyek "${selectedProject?.title}". Pantau perkembangan properti Anda di menu Portofolio.`}
+      />
     </div>
   );
 };

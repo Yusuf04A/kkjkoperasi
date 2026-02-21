@@ -12,6 +12,7 @@ import {
 import toast from 'react-hot-toast';
 import { formatRupiah, cn } from '../../lib/utils';
 import { PinModal } from '../../components/PinModal';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
 
 export const Withdraw = () => {
     const navigate = useNavigate();
@@ -24,7 +25,10 @@ export const Withdraw = () => {
     const [bankName, setBankName] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    // STATE MODAL
     const [showPinModal, setShowPinModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State baru
 
     // Daftar Opsi Simpanan
     const simpananOptions = [
@@ -42,7 +46,6 @@ export const Withdraw = () => {
         if (!user) checkSession();
     }, [user]);
 
-    // Fungsi mendapatkan saldo aktif berdasarkan pilihan user
     const getActiveBalance = () => {
         if (sourceType === 'tapro') return user?.tapro_balance || 0;
         if (selectedSimpanan) return user?.[selectedSimpanan.col] || 0;
@@ -80,7 +83,6 @@ export const Withdraw = () => {
         const nominal = parseInt(amount.replace(/\D/g, ''));
 
         try {
-            // Masukkan ke tabel penarikan untuk disetujui admin
             const { error } = await supabase.from('savings_withdrawals').insert({
                 user_id: user?.id,
                 type: sourceType === 'tapro' ? 'tapro' : selectedSimpanan.id,
@@ -92,8 +94,9 @@ export const Withdraw = () => {
 
             if (error) throw error;
 
-            toast.success('Permintaan dikirim! Admin akan memproses segera.', { id: toastId });
-            navigate('/transaksi/riwayat');
+            toast.dismiss(toastId); // Tutup loading toast
+            setShowSuccessModal(true); // 🔥 Tampilkan Modal Berhasil
+
         } catch (error: any) {
             toast.error('Gagal: ' + error.message, { id: toastId });
         } finally {
@@ -105,13 +108,13 @@ export const Withdraw = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900">
             
-            {/* HEADER (HIJAU) */}
+            {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-green-50 transition">
                         <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-lg font-bold text-gray-900">Tarik Tunai</h1>
+                    <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight">Tarik Tunai</h1>
                 </div>
             </div>
 
@@ -141,7 +144,7 @@ export const Withdraw = () => {
                     </button>
                 </div>
 
-                {/* 2. SALDO CARD (HIJAU HUTAN) */}
+                {/* 2. SALDO CARD */}
                 <div className="rounded-3xl bg-[#136f42] p-6 text-white shadow-xl relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
                     <div className="absolute inset-0 bg-gradient-to-br from-[#136f42] to-[#0f5c35] opacity-90 z-0"></div>
@@ -154,7 +157,6 @@ export const Withdraw = () => {
                             {formatRupiah(getActiveBalance())}
                         </h2>
 
-                        {/* List Opsi Simpanan jika Non-Tapro dipilih */}
                         {sourceType === 'simpanan' && (
                             <div className="mt-4 grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                                 {simpananOptions.map((opt) => (
@@ -246,6 +248,17 @@ export const Withdraw = () => {
                 onClose={() => setShowPinModal(false)}
                 onSuccess={executeWithdraw}
                 title="Konfirmasi Penarikan"
+            />
+
+            {/* 🔥 SUCCESS MODAL POPUP 🔥 */}
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    navigate('/transaksi/riwayat');
+                }}
+                title="Penarikan Diajukan!"
+                message={`Permintaan penarikan sebesar Rp ${amount} telah berhasil dikirim ke Admin untuk verifikasi.`}
             />
         </div>
     );

@@ -8,6 +8,7 @@ import { id as indonesia } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PinModal } from '../../components/PinModal';
+import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
 
 export const LoanDetail = () => {
     const { id } = useParams();
@@ -23,8 +24,9 @@ export const LoanDetail = () => {
     const [newTenor, setNewTenor] = useState('');
     const [reason, setReason] = useState('');
 
-    // State untuk Pembayaran PIN
+    // State untuk Pembayaran PIN & Success Modal
     const [showPinModal, setShowPinModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State Modal Sukses Tengah
     const [selectedInstallment, setSelectedInstallment] = useState<{id: string, amount: number} | null>(null);
 
     const fetchData = async () => {
@@ -61,7 +63,11 @@ export const LoanDetail = () => {
             
             if (error) throw error;
             
-            toast.success('Pembayaran berhasil!', { id: toastId });
+            toast.dismiss(toastId);
+            
+            // 🔥 TAMPILKAN MODAL SUKSES DI TENGAH
+            setShowSuccessModal(true); 
+
             fetchData();
             checkSession();
         } catch (err: any) {
@@ -109,23 +115,24 @@ export const LoanDetail = () => {
 
     const paidCount = installments.filter(i => i.status === 'paid').length;
     const progress = installments.length > 0 ? (paidCount / installments.length) * 100 : 0;
+    const itemName = loan.details?.name || loan.details?.item || loan.details?.item_name || "";
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 relative font-sans text-slate-900">
 
-            {/* HEADER - REVISI: TIDAK BOLD, TIDAK KAPITAL, TANPA PROFIL */}
+            {/* HEADER */}
             <div className="bg-white border-b border-green-100 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/pembiayaan')} className="p-2 hover:bg-green-50 rounded-full transition-colors text-[#136f42]">
                         <ArrowLeft size={20} strokeWidth={2} />
                     </button>
                     <div>
-                        {/* font-medium agar tidak bold, dan lowercase/capitalize untuk tidak kapital semua */}
-                        <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight">Detail pinjaman</h1>
-                        <p className="text-[10px] font-medium text-[#136f42] tracking-wider capitalize">{loan.type}</p>
+                        <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight lowercase">Detail pinjaman</h1>
+                        <p className="text-[10px] font-bold text-[#136f42] tracking-wider uppercase">
+                            {loan.type} {itemName && `- ${itemName}`}
+                        </p>
                     </div>
                 </div>
-                {/* Bagian foto profil di pojok kanan dihapus */}
             </div>
 
             <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -138,7 +145,7 @@ export const LoanDetail = () => {
                     <div className="relative z-10">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-medium text-green-100/70 uppercase tracking-[0.2em] mb-1">Total pinjaman</p>
+                                <p className="text-[10px] font-medium text-green-100/70 uppercase tracking-[0.2em] mb-1 lowercase">Total pinjaman</p>
                                 <h2 className="text-3xl font-bold tracking-tighter">{formatRupiah(loan.amount)}</h2>
                             </div>
                             <div className={cn(
@@ -150,7 +157,7 @@ export const LoanDetail = () => {
                         </div>
 
                         <div className="mt-8 space-y-2">
-                            <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-green-100/80">
+                            <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-green-100/80 lowercase">
                                 <span>Progress pelunasan</span>
                                 <span>{Math.round(progress)}%</span>
                             </div>
@@ -160,7 +167,7 @@ export const LoanDetail = () => {
                                     style={{ width: `${progress}%` }} 
                                 />
                             </div>
-                            <p className="text-[10px] text-right text-green-100/50 font-medium italic">
+                            <p className="text-[10px] text-right text-green-100/50 font-medium italic lowercase">
                                 {paidCount} dari {installments.length} angsuran telah terbayar
                             </p>
                         </div>
@@ -174,8 +181,8 @@ export const LoanDetail = () => {
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-amber-900 tracking-tighter">Pengajuan ditinjau</p>
-                            <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                            <p className="text-sm font-bold text-amber-900 tracking-tighter lowercase">Pengajuan ditinjau</p>
+                            <p className="text-xs text-amber-800 font-medium leading-relaxed lowercase">
                                 Permintaan perpanjangan tenor menjadi <b>{loan.restructure_req_duration} bulan</b> sedang diproses admin.
                             </p>
                         </div>
@@ -193,8 +200,8 @@ export const LoanDetail = () => {
                                 <AlertTriangle size={24} />
                             </div>
                             <div className="text-left">
-                                <h4 className="font-bold text-gray-900 text-sm tracking-tight">Merasa berat membayar?</h4>
-                                <p className="text-xs text-gray-500 font-medium">Klik untuk ajukan perpanjangan tenor</p>
+                                <h4 className="font-bold text-gray-900 text-sm tracking-tight lowercase">Merasa berat membayar?</h4>
+                                <p className="text-xs text-gray-500 font-medium lowercase">Klik untuk ajukan perpanjangan tenor</p>
                             </div>
                         </div>
                         <div className="bg-[#136f42] text-white p-2 rounded-lg group-hover:bg-[#0f5c35]">
@@ -207,7 +214,7 @@ export const LoanDetail = () => {
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 px-1">
                         <History size={18} className="text-[#136f42]" />
-                        <h3 className="font-bold text-gray-800 text-sm tracking-widest uppercase">Jadwal pembayaran</h3>
+                        <h3 className="font-bold text-gray-800 text-sm tracking-widest uppercase lowercase">Jadwal pembayaran</h3>
                     </div>
 
                     <div className="space-y-3">
@@ -237,7 +244,7 @@ export const LoanDetail = () => {
                                                 isOverdue ? "text-rose-600" : "text-gray-400"
                                             )}>
                                                 <Calendar size={12} /> {format(dueDate, 'dd MMM yyyy', { locale: indonesia })}
-                                                {isOverdue && <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[8px] ml-1">Terlambat</span>}
+                                                {isOverdue && <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[8px] ml-1 lowercase">Terlambat</span>}
                                             </p>
                                         </div>
                                     </div>
@@ -262,7 +269,6 @@ export const LoanDetail = () => {
                 </div>
             </div>
 
-            {/* POPUP PIN DENGAN VIEW PIN */}
             <PinModal
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}
@@ -270,12 +276,22 @@ export const LoanDetail = () => {
                 title="Konfirmasi pembayaran"
             />
 
+            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
+            <SuccessModal 
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                }}
+                title="PEMBAYARAN BERHASIL!"
+                message={`Angsuran pinjaman Anda telah berhasil dibayar. Progress pelunasan Anda kini telah diperbarui secara otomatis.`}
+            />
+
             {/* MODAL FORM PERPANJANGAN */}
             {showModal && (
                 <div className="fixed inset-0 z-50 bg-[#0f5c35]/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
                     <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Ajukan perpanjangan</h3>
+                            <h3 className="text-xl font-bold text-gray-900 tracking-tight lowercase">Ajukan perpanjangan</h3>
                             <button onClick={() => setShowModal(false)} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
                                 <X size={20} className="text-gray-400" />
                             </button>
@@ -283,7 +299,7 @@ export const LoanDetail = () => {
 
                         <form onSubmit={submitRestructure} className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Tenor baru (bulan)</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1 lowercase">Tenor baru (bulan)</label>
                                 <input
                                     type="number"
                                     className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 transition-all"
@@ -294,7 +310,7 @@ export const LoanDetail = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Alasan</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1 lowercase">Alasan</label>
                                 <textarea
                                     className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 h-28 resize-none"
                                     placeholder="Jelaskan kendala anda..."
