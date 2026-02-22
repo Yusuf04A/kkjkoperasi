@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { X, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'; // BENAR
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import toast from 'react-hot-toast';
@@ -21,6 +21,13 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
 
     // 🔥 STATE BARU: Untuk menampilkan UI Sukses di dalam modal
     const [isSuccess, setIsSuccess] = useState(false);
+
+    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
+    const playSuccessSound = () => {
+        const audio = new Audio('/sounds/pop.mp3'); // Pastikan file ada di public/sounds/pop.mp3
+        audio.volume = 0.5;
+        audio.play().catch(err => console.log("Autoplay dicegah atau file tidak ditemukan:", err));
+    };
 
     // Reset state setiap kali modal dibuka/ditutup
     useEffect(() => {
@@ -47,6 +54,9 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
 
         // 2. Validasi PIN
         if (pin === user.pin) {
+            // 🔥 PUTAR SUARA NOTIFIKASI
+            playSuccessSound();
+
             // 🔥 UBAH TAMPILAN JADI POPUP SUKSES TENGAH
             setIsSuccess(true);
             
@@ -114,7 +124,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="relative group">
                         <input
-                            type={showPin ? "text" : "password"} // 🔥 LOGIKA VIEW PIN
+                            type={showPin ? "text" : "password"} 
                             inputMode="numeric"
                             maxLength={6}
                             className="w-full text-center text-3xl tracking-[0.5em] font-black py-4 bg-slate-50 border-b-4 border-slate-100 focus:border-[#136f42] outline-none transition-all rounded-xl text-slate-700"
@@ -124,7 +134,6 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                             autoFocus
                         />
                         
-                        {/* 🔥 TOMBOL MATA (VIEW PIN) */}
                         <button 
                             type="button"
                             onClick={() => setShowPin(!showPin)}

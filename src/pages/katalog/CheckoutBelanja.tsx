@@ -5,10 +5,10 @@ import { supabase } from '../../lib/supabase';
 import { formatRupiah, cn } from '../../lib/utils';
 import { 
     ArrowLeft, ShieldCheck, Loader2, ChevronRight, Wallet, 
-    Store, Truck, MapPin, Phone, Eye, EyeOff 
+    Store, Truck, MapPin, Phone, Eye, EyeOff, CheckCircle, X 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { SuccessModal } from '../../components/SuccessModal'; // 🔥 IMPORT MODAL SUKSES 🔥
+import { SuccessModal } from '../../components/SuccessModal'; 
 
 export const CheckoutBelanja = () => {
     const navigate = useNavigate();
@@ -20,15 +20,24 @@ export const CheckoutBelanja = () => {
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // STATE BARU: View PIN
     const [showPin, setShowPin] = useState(false);
-
-    // 🔥 STATE BARU: Tampilkan Modal Sukses
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [isPinSuccess, setIsPinSuccess] = useState(false); // 🔥 State animasi centang di PIN
 
     const [deliveryMethod, setDeliveryMethod] = useState<'Diambil di Toko' | 'Diantar'>('Diambil di Toko');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
+
+    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
+    const playSuccessSound = () => {
+        try {
+            const audio = new Audio('/sounds/pop.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.warn("Autoplay dicegah browser", err));
+        } catch (e) {
+            console.error("File audio tidak ditemukan");
+        }
+    };
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -49,6 +58,11 @@ export const CheckoutBelanja = () => {
 
     const handlePayment = async () => {
         if (pin.length < 6) return toast.error("Masukkan 6 digit PIN");
+        
+        // TypeScript casting untuk menghindari error 'pin does not exist'
+        const userPin = (user as any)?.pin;
+        if (pin !== userPin) return toast.error("PIN yang Anda masukkan salah!");
+
         if ((user?.tapro_balance || 0) < total) return toast.error("Saldo TAPRO tidak cukup");
 
         if (deliveryMethod === 'Diantar') {
@@ -57,22 +71,14 @@ export const CheckoutBelanja = () => {
             }
         }
 
+        // 🔥 PIN BENAR: Jalankan suara & animasi centang
+        playSuccessSound();
+        setIsPinSuccess(true);
         setLoading(true);
+
         const toastId = toast.loading("Memproses pesanan...");
 
         try {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('pin')
-                .eq('id', user?.id)
-                .single();
-
-            if (profile?.pin !== pin) {
-                setLoading(false);
-                toast.dismiss(toastId);
-                return toast.error("PIN Salah!");
-            }
-
             if (deliveryMethod === 'Diantar') {
                 await supabase.from('profiles').update({ phone, address }).eq('id', user?.id);
             }
@@ -115,15 +121,17 @@ export const CheckoutBelanja = () => {
                 description: `Belanja Toko: ${order.id.slice(0,8)}` 
             });
 
-            toast.dismiss(toastId); // Matikan loading toast
-
-            // 🔥 MUNCULKAN POPUP DI TENGAH, JANGAN LANGSUNG NAVIGATE 🔥
-            setShowSuccessModal(true); 
+            // Beri jeda sedikit agar animasi centang terlihat
+            setTimeout(() => {
+                toast.dismiss(toastId);
+                setShowSuccessModal(true); 
+                setIsPinSuccess(false);
+            }, 1500);
             
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
-        } finally {
             setLoading(false);
+            setIsPinSuccess(false);
         }
     };
 
@@ -145,14 +153,14 @@ export const CheckoutBelanja = () => {
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-green-100 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-green-50 text-[#136f42] rounded-2xl"><Wallet size={24} /></div>
-                        <div>
+                        <div className="text-left">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo TAPRO</p>
                             <p className="text-lg font-black text-slate-900">{formatRupiah(user?.tapro_balance || 0)}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-4">
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-4 text-left">
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b border-green-50 pb-4">Opsi Pengiriman</h3>
                     <div className="flex flex-col gap-3">
                         <label className={cn("flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all", deliveryMethod === 'Diambil di Toko' ? "border-[#136f42] bg-green-50/50" : "border-slate-100 hover:border-green-100")}>
@@ -220,7 +228,7 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-6">
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-green-100 space-y-6 text-left">
                     <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] border-b border-green-50 pb-4">Item Belanja</h3>
                     <div className="space-y-4 max-h-60 overflow-y-auto no-scrollbar">
                         {cart.map((item: any) => (
@@ -241,47 +249,59 @@ export const CheckoutBelanja = () => {
                     </div>
                 </div>
 
+                {/* --- BAGIAN PIN DENGAN ANIMASI SUKSES --- */}
                 <div className="bg-white rounded-[2.5rem] p-8 shadow-md text-center border-t-4 border-amber-400 relative overflow-hidden">
-                    <ShieldCheck size={32} className="mx-auto text-amber-500 mb-2 relative z-10" />
-                    <h4 className="text-sm font-black text-slate-900 uppercase relative z-10">Konfirmasi PIN</h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 relative z-10">Keamanan Transaksi KKJ</p>
+                    {isPinSuccess ? (
+                        <div className="py-4 animate-in fade-in">
+                            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
+                                <CheckCircle size={48} strokeWidth={2.5} />
+                            </div>
+                            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-1">PIN BENAR</h3>
+                            <p className="text-xs text-slate-400 font-medium">Memproses pesanan anda...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <ShieldCheck size={32} className="mx-auto text-amber-500 mb-2 relative z-10" />
+                            <h4 className="text-sm font-black text-slate-900 uppercase relative z-10">Konfirmasi PIN</h4>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4 relative z-10">Keamanan Transaksi KKJ</p>
 
-                    {/* 🔥 FITUR VIEW PIN DENGAN TOMBOL MATA 🔥 */}
-                    <div className="relative group z-10 max-w-[280px] mx-auto">
-                        <input 
-                            type={showPin ? "text" : "password"} 
-                            maxLength={6}
-                            value={pin}
-                            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 text-center text-3xl font-black tracking-[0.5em] focus:border-[#136f42] outline-none transition-all pr-12"
-                            placeholder="••••••"
-                        />
-                        <button 
-                            type="button"
-                            onClick={() => setShowPin(!showPin)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
-                        >
-                            {showPin ? <EyeOff size={22} /> : <Eye size={22} />}
-                        </button>
-                    </div>
+                            <div className="relative group z-10 max-w-[280px] mx-auto">
+                                <input 
+                                    type={showPin ? "text" : "password"} 
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 text-center text-3xl font-black tracking-[0.5em] focus:border-[#136f42] outline-none transition-all pr-12"
+                                    placeholder="••••••"
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowPin(!showPin)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
+                                >
+                                    {showPin ? <EyeOff size={22} /> : <Eye size={22} />}
+                                </button>
+                            </div>
 
-                    <button 
-                        onClick={handlePayment}
-                        disabled={loading || pin.length < 6}
-                        className="w-full mt-6 bg-[#136f42] text-white py-5 rounded-[2rem] font-[1000] text-sm uppercase tracking-[0.2em] shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none relative z-10"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <>Kirim ke Antrean <ChevronRight size={20} /></>}
-                    </button>
+                            <button 
+                                onClick={handlePayment}
+                                disabled={loading || pin.length < 6}
+                                className="w-full mt-6 bg-[#136f42] text-white py-5 rounded-[2rem] font-[1000] text-sm uppercase tracking-[0.2em] shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-slate-300 disabled:shadow-none relative z-10"
+                            >
+                                {loading ? <Loader2 className="animate-spin" /> : <>Kirim ke Antrean <ChevronRight size={20} /></>}
+                            </button>
+                        </>
+                    )}
                     <p className="text-[9px] text-slate-400 font-medium italic mt-4 relative z-10">Pesanan akan divalidasi oleh admin sebelum saldo TAPRO Anda dikurangi.</p>
                 </div>
             </div>
 
-            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
             <SuccessModal 
                 isOpen={showSuccessModal}
                 onClose={() => {
                     setShowSuccessModal(false);
-                    navigate('/transaksi/riwayat'); // Baru pindah halaman saat ditutup
+                    navigate('/transaksi/riwayat'); 
                 }}
                 title="PESANAN TERKIRIM!"
                 message={`Terima kasih! Pesanan Anda sedang diproses dan menunggu konfirmasi admin. Saldo TAPRO Anda akan otomatis terpotong saat disetujui.`}

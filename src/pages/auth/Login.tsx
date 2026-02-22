@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore'; // 🔥 Import checkSession
 import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '../../components/ui/Input';
@@ -8,6 +9,7 @@ import logoKKJ from '/src/assets/Logo-kkj.png';
 
 export const Login = () => {
     const navigate = useNavigate();
+    const { checkSession } = useAuthStore(); // 🔥 Ambil fungsi checkSession
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -51,12 +53,16 @@ export const Login = () => {
                     return;
                 }
 
+                // 🔥 PERBAIKAN: Jalankan checkSession untuk sinkronisasi state login global 🔥
+                await checkSession(); 
+
                 toast.success(`Selamat Datang, ${profile.full_name}!`);
 
+                // 🔥 Navigasi langsung berdasarkan role
                 if (profile?.role === 'admin') {
-                    navigate('/admin/dashboard');
+                    navigate('/admin/dashboard', { replace: true });
                 } else {
-                    navigate('/');
+                    navigate('/', { replace: true });
                 }
             }
 
@@ -87,7 +93,7 @@ export const Login = () => {
                                 className="w-20 h-20 object-contain"
                             />
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col text-left">
                             <span className="font-black tracking-[0.2em] text-lg uppercase text-white shadow-black drop-shadow-sm leading-none">
                                 KOPERASI
                             </span>
@@ -97,15 +103,15 @@ export const Login = () => {
                         </div>
                     </div>
 
-                    <h1 className="text-5xl font-extrabold leading-tight mb-6 tracking-tight">
+                    <h1 className="text-5xl font-extrabold leading-tight mb-6 tracking-tight text-left">
                         Berkoperasi Demi Wujud <span className="text-[#aeea00]">Kesejahteraan Bersama</span>
                     </h1>
-                    <p className="text-green-100/90 text-lg leading-relaxed max-w-lg font-medium">
+                    <p className="text-green-100/90 text-lg leading-relaxed max-w-lg font-medium text-left">
                         Platform digital terpadu untuk layanan simpanan, pembiayaan, dan transaksi yang aman & transparan.
                     </p>
                 </div>
 
-                <div className="relative z-10 text-xs text-green-200/60 font-light tracking-wider">
+                <div className="relative z-10 text-xs text-green-200/60 font-light tracking-wider text-left">
                     &copy; 2026 Koperasi Pemasaran Karya Kita Jaya. All rights reserved.
                 </div>
             </div>
@@ -126,7 +132,7 @@ export const Login = () => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         
-                        <div className="space-y-1">
+                        <div className="space-y-1 text-left">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Email</label>
                             <div className="relative">
                                 <Input
@@ -141,7 +147,7 @@ export const Login = () => {
                             </div>
                         </div>
                         
-                        <div className="space-y-1">
+                        <div className="space-y-1 text-left">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Password</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -24,6 +24,7 @@ export const TopUp = () => {
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pin, setPin] = useState('');
     const [showPin, setShowPin] = useState(false);
+    const [isPinSuccess, setIsPinSuccess] = useState(false); // 🔥 State animasi centang di modal PIN
 
     // --- STATE SUCCESS MODAL ---
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -32,6 +33,26 @@ export const TopUp = () => {
         { name: 'BCA', number: '1234567890', holder: 'KOPERASI KKJ PUSAT' },
         { name: 'MANDIRI', number: '0987654321', holder: 'KOPERASI KKJ PUSAT' },
     ];
+
+    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
+    const playSuccessSound = () => {
+        try {
+            const audio = new Audio('/sounds/pop.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.warn("Autoplay dicegah browser", err));
+        } catch (e) {
+            console.error("Audio file not found");
+        }
+    };
+
+    // Reset state PIN saat modal ditutup/buka
+    useEffect(() => {
+        if (!isPinModalOpen) {
+            setPin('');
+            setShowPin(false);
+            setIsPinSuccess(false);
+        }
+    }, [isPinModalOpen]);
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const rawValue = e.target.value.replace(/\D/g, ''); 
@@ -48,17 +69,15 @@ export const TopUp = () => {
         toast.success('Nomor rekening disalin!');
     };
 
-    // --- 🔥 FUNGSI UPLOAD DENGAN KOMPRESI OTOMATIS 🔥 ---
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             
             const toastId = toast.loading('Mengompres gambar...');
             try {
-                // Konfigurasi kompresi
                 const options = {
-                    maxSizeMB: 1,           // Ukuran maksimal 1MB
-                    maxWidthOrHeight: 1024, // Resolusi maksimal 1024px
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1024,
                     useWebWorker: true,
                 };
 
@@ -68,7 +87,6 @@ export const TopUp = () => {
                 toast.success('Gambar siap diunggah!', { id: toastId });
             } catch (error) {
                 toast.error('Gagal mengompres gambar', { id: toastId });
-                // Fallback jika gagal kompres, gunakan file asli
                 setProofFile(file);
                 setPreviewUrl(URL.createObjectURL(file));
             }
@@ -86,16 +104,22 @@ export const TopUp = () => {
     };
 
     const handleFinalSubmit = async () => {
-        if (pin !== user?.pin) return toast.error("PIN Transaksi Salah!");
+        // TypeScript casting untuk menghindari error 'pin does not exist'
+        const userPin = (user as any)?.pin;
 
+        if (pin !== userPin) return toast.error("PIN Transaksi Salah!");
+
+        // 🔥 PIN BENAR: Jalankan animasi & suara
+        playSuccessSound();
+        setIsPinSuccess(true);
         setIsLoading(true);
+
         const toastId = toast.loading('Mengirim data transaksi...');
 
         try {
             const fileExt = proofFile?.name.split('.').pop() || 'jpg';
             const fileName = `topup-${user?.id}-${Date.now()}.${fileExt}`;
 
-            // Upload file yang sudah dikompres
             if (proofFile) {
                 await supabase.storage.from('transaction-proofs').upload(fileName, proofFile);
             }
@@ -111,14 +135,16 @@ export const TopUp = () => {
                 proof_url: publicUrl
             });
 
-            toast.dismiss(toastId);
-            setIsPinModalOpen(false);
-            setIsSuccessModalOpen(true); 
+            setTimeout(() => {
+                toast.dismiss(toastId);
+                setIsPinModalOpen(false);
+                setIsSuccessModalOpen(true); 
+            }, 1500);
 
         } catch (error: any) {
             toast.error('Gagal: ' + error.message, { id: toastId });
-        } finally {
             setIsLoading(false);
+            setIsPinSuccess(false);
         }
     };
 
@@ -140,7 +166,7 @@ export const TopUp = () => {
                 <div className="space-y-3">
                     <h2 className="text-xs font-bold text-[#136f42] uppercase tracking-wider pl-1">Transfer ke Rekening</h2>
                     {bankAccounts.map((bank, idx) => (
-                        <div key={idx} className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex justify-between items-center group hover:border-[#136f42] transition-colors">
+                        <div key={idx} className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex justify-between items-center group hover:border-[#136f42] transition-colors text-left">
                             <div>
                                 <p className="text-[10px] font-black text-[#136f42] bg-green-50 w-fit px-2 py-1 rounded mb-1 uppercase tracking-wide">{bank.name}</p>
                                 <p className="font-mono text-lg font-bold text-gray-900 tracking-tight">{bank.number}</p>
@@ -152,7 +178,7 @@ export const TopUp = () => {
                 </div>
 
                 {/* FORM */}
-                <form onSubmit={handlePreSubmit} className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6">
+                <form onSubmit={handlePreSubmit} className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6 text-left">
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Nominal Top Up</label>
                         <div className="relative">
@@ -175,13 +201,13 @@ export const TopUp = () => {
                             {previewUrl ? (
                                 <div className="relative">
                                     <img src={previewUrl} className="h-40 mx-auto rounded-lg object-contain shadow-md" alt="Preview Bukti" />
-                                    <p className="text-center text-xs text-[#136f42] font-bold mt-2 lowercase">Klik untuk ganti gambar</p>
+                                    <p className="text-center text-xs text-[#136f42] font-bold mt-2">Klik untuk ganti gambar</p>
                                 </div>
                             ) : (
                                 <div className="text-center text-gray-400">
                                     <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3"><UploadCloud size={24} className="text-[#136f42]" /></div>
                                     <p className="text-sm font-bold text-gray-600">Upload Foto / Screenshot</p>
-                                    <p className="text-[10px] mt-1 uppercase font-bold tracking-tighter text-slate-300">Ukuran akan dikompres otomatis</p>
+                                    <p className="text-[10px] mt-1 font-bold text-slate-300 uppercase tracking-tighter">Ukuran akan dikompres otomatis</p>
                                 </div>
                             )}
                             <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -193,7 +219,7 @@ export const TopUp = () => {
                     </Button>
                 </form>
 
-                <div className="bg-green-50 p-5 rounded-xl border border-green-200 text-[#136f42] text-sm shadow-sm">
+                <div className="bg-green-50 p-5 rounded-xl border border-green-200 text-[#136f42] text-sm shadow-sm text-left">
                     <p className="font-bold flex items-center gap-2 mb-2"><CheckCircle size={18} /> Informasi Penting</p>
                     <ul className="list-disc list-inside space-y-1.5 text-xs font-medium opacity-90 ml-1 leading-relaxed">
                         <li>Admin memverifikasi maksimal 1x24 jam kerja.</li>
@@ -205,50 +231,63 @@ export const TopUp = () => {
             {/* --- MODAL PIN --- */}
             {isPinModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-white/20">
-                        <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-sm"><Lock size={20}/></div>
-                                <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Verifikasi PIN</h2>
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-white/20 text-center">
+                        {isPinSuccess ? (
+                            <div className="py-4 animate-in fade-in">
+                                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
+                                    <CheckCircle size={48} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-1">PIN Benar</h3>
+                                <p className="text-xs text-slate-400 font-medium">Memproses pengajuan anda...</p>
                             </div>
-                            <button onClick={() => setIsPinModalOpen(false)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors"><X size={20}/></button>
-                        </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-sm"><Lock size={20}/></div>
+                                        <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">Verifikasi PIN</h2>
+                                    </div>
+                                    <button onClick={() => setIsPinModalOpen(false)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors"><X size={20}/></button>
+                                </div>
 
-                        <div className="space-y-4">
-                            <p className="text-xs text-slate-400 font-medium leading-relaxed px-1">Masukkan 6 digit PIN transaksi Anda untuk mengonfirmasi pengajuan Top Up ini.</p>
-                            
-                            <div className="relative group">
-                                <input
-                                    type={showPin ? "text" : "password"} 
-                                    maxLength={6}
-                                    placeholder="******"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-2xl font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all text-center text-slate-800 shadow-inner"
-                                    value={pin}
-                                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                                />
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowPin(!showPin)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
-                                >
-                                    {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
+                                <div className="space-y-4">
+                                    <p className="text-xs text-slate-400 font-medium leading-relaxed px-1 text-left">Masukkan 6 digit PIN transaksi anda untuk mengonfirmasi pengajuan Top Up ini.</p>
+                                    
+                                    <div className="relative group">
+                                        <input
+                                            type={showPin ? "text" : "password"} 
+                                            maxLength={6}
+                                            inputMode="numeric"
+                                            placeholder="******"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 text-2xl font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all text-center text-slate-800 shadow-inner"
+                                            value={pin}
+                                            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowPin(!showPin)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
+                                        >
+                                            {showPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        </button>
+                                    </div>
 
-                            <Button
-                                onClick={handleFinalSubmit}
-                                isLoading={isLoading}
-                                disabled={pin.length < 6}
-                                className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-green-900/20 active:scale-95"
-                            >
-                                Konfirmasi & Kirim
-                            </Button>
-                        </div>
+                                    <Button
+                                        onClick={handleFinalSubmit}
+                                        isLoading={isLoading}
+                                        disabled={pin.length < 6}
+                                        className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-green-900/20 active:scale-95"
+                                    >
+                                        Konfirmasi & Kirim
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
 
-            {/* 🔥 SUCCESS MODAL POPUP 🔥 */}
+            {/* SUCCESS MODAL POPUP */}
             <SuccessModal 
                 isOpen={isSuccessModalOpen}
                 onClose={() => {
@@ -256,7 +295,7 @@ export const TopUp = () => {
                     navigate('/transaksi/riwayat');
                 }}
                 title="Top Up Berhasil Diajukan!"
-                message="Pengajuan Anda sedang diproses. Saldo akan bertambah otomatis setelah admin melakukan verifikasi dalam maksimal 1x24 jam."
+                message="Pengajuan anda sedang diproses. Saldo akan bertambah otomatis setelah admin melakukan verifikasi dalam maksimal 1x24 jam."
             />
         </div>
     );
