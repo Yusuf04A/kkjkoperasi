@@ -157,6 +157,11 @@ export const AdminTokoKatalog = () => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Validasi ukuran awal (Maks 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            return toast.error("Ukuran file terlalu besar (maksimal 10MB)");
+        }
+
         setUploading(true);
         const toastId = toast.loading("Mengompres & Mengunggah...");
 
@@ -372,14 +377,21 @@ export const AdminTokoKatalog = () => {
             {/* MODAL TAMBAH/EDIT PRODUK */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-                    <form onSubmit={handleSaveProduct} className="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-white/20">
+                    <form onSubmit={handleSaveProduct} className="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-white/20 text-left">
                         <div className="flex justify-between items-center border-b pb-4">
                             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">{editingId ? 'Ubah Data Produk' : 'Tambah Produk Baru'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={20}/></button>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors uppercase"><X size={20}/></button>
                         </div>
                         
                         <div className="space-y-4">
-                            <label className="block w-full h-40 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-green-50/30 transition-all group overflow-hidden">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <ImageIcon size={14} className="text-[#136f42]" /> Foto Produk
+                                </label>
+                                <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">Maks 10MB</span>
+                            </div>
+
+                            <label className="block w-full h-40 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-green-50/30 transition-all group overflow-hidden bg-slate-50/30">
                                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
                                 {formData.image_url ? (
                                     <img src={formData.image_url} className="w-full h-full object-contain p-2 animate-in fade-in" alt="Preview Produk" />
@@ -387,7 +399,12 @@ export const AdminTokoKatalog = () => {
                                     <div className="text-center group-hover:scale-105 transition-transform duration-300">
                                         <ImageIcon className="mx-auto text-slate-300 mb-2" size={32}/>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Foto Produk</p>
-                                        <p className="text-[9px] text-slate-300 mt-1 font-bold italic">Otomatis Dikompres</p>
+                                        <div className="mt-2 flex flex-col gap-1">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-center gap-1">
+                                                <Info size={10} /> jpg, png, webp
+                                            </p>
+                                            <p className="text-[10px] font-black text-[#136f42] uppercase tracking-tighter">Otomatis Dikompres ke 1MB</p>
+                                        </div>
                                     </div>
                                 )}
                             </label>
@@ -422,14 +439,14 @@ export const AdminTokoKatalog = () => {
                         </h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8">
                             {confirmModal.type === 'approve' ? (
-                                <>Pesanan akan ditandai <b>Siap Diambil</b> dan stok barang akan dipotong secara otomatis.</>
+                                <>Pesanan akan ditandai <b>Siapi Diambil</b> dan stok barang akan dipotong secara otomatis.</>
                             ) : (
                                 <>Pesanan akan dibatalkan dan saldo Tapro sebesar <b>{formatRupiah(confirmModal.order.total_amount)}</b> akan dikembalikan ke anggota.</>
                             )}
                         </p>
 
                         <div className="grid grid-cols-2 gap-3 text-center">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: 'approve', order: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: 'approve', order: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform uppercase">
                                 Batal
                             </button>
                             <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>

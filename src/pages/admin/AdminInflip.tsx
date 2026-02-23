@@ -4,7 +4,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import { 
     Plus, Pencil, ArrowLeft, Building, MapPin, 
     Save, X, Image as ImageIcon, 
-    Trash2, TrendingUp, Package, Loader2
+    Trash2, TrendingUp, Package, Loader2, Info
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -89,19 +89,24 @@ export const AdminInflip = () => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             
+            // 🔥 Validasi ukuran maksimal 10MB sebelum kompresi
+            if (file.size > 10 * 1024 * 1024) {
+                return toast.error("Ukuran file terlalu besar (maksimal 10MB)");
+            }
+
             const toastId = toast.loading("Mengompres foto properti...");
             try {
                 // Konfigurasi Kompresi
                 const options = {
-                    maxSizeMB: 1,           // Target ukuran maksimal 1MB
-                    maxWidthOrHeight: 1280, // Resolusi sedikit lebih tinggi untuk properti agar detail
+                    maxSizeMB: 1,           // Target ukuran maksimal 1MB hasil kompresi
+                    maxWidthOrHeight: 1280, // Resolusi untuk properti agar detail
                     useWebWorker: true,
                 };
 
                 const compressedFile = await imageCompression(file, options);
                 setImageFile(compressedFile);
                 setImagePreview(URL.createObjectURL(compressedFile));
-                toast.success("Foto diproses & diperkecil!", { id: toastId });
+                toast.success("Foto berhasil dikompres & siap unggah!", { id: toastId });
             } catch (error) {
                 toast.error("Gagal mengompres gambar", { id: toastId });
                 // Fallback: tetap gunakan file asli jika kompresi gagal
@@ -258,18 +263,25 @@ export const AdminInflip = () => {
             {/* --- MODAL FORM --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 border border-gray-200 max-h-[90vh] overflow-y-auto">
+                    <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 border border-gray-200 max-h-[90vh] overflow-y-auto text-left">
                         
                         <div className="flex justify-between items-center border-b pb-4 mb-6">
                             <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">{formData.id ? 'Edit Proyek Properti' : 'Tambah Proyek Baru'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"><X size={20}/></button>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors uppercase"><X size={20}/></button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             {/* KIRI: Gambar & Status */}
                             <div className="space-y-4">
-                                <label className="block w-full h-48 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-green-50 hover:border-kkj-blue transition-all group relative overflow-hidden bg-gray-50">
+                                <div className="flex justify-between items-center px-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <ImageIcon size={14} className="text-[#003366]" /> Foto Properti
+                                    </label>
+                                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">Maks 10MB</span>
+                                </div>
+
+                                <label className="block w-full h-48 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 hover:border-[#003366] transition-all group relative overflow-hidden bg-gray-50">
                                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                                     {imagePreview ? (
                                         <>
@@ -277,10 +289,15 @@ export const AdminInflip = () => {
                                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black uppercase tracking-widest">Ganti Foto Proyek</div>
                                         </>
                                     ) : (
-                                        <div className="text-center group-hover:scale-105 transition-transform duration-300">
+                                        <div className="text-center group-hover:scale-105 transition-transform duration-300 px-4">
                                             <ImageIcon className="mx-auto text-gray-300 mb-2" size={40}/>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Unggah Foto Properti</p>
-                                            <p className="text-[9px] text-slate-300 mt-1 uppercase font-bold italic">Otomatis Dikompres</p>
+                                            <p className="text-sm font-bold text-gray-600 first-letter:uppercase">Pilih foto properti</p>
+                                            <div className="mt-2 flex flex-col gap-1">
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-center gap-1">
+                                                    <Info size={10} /> jpg, png, webp
+                                                </p>
+                                                <p className="text-[10px] font-black text-[#003366] uppercase tracking-tighter">Otomatis Dikompres ke 1MB</p>
+                                            </div>
                                         </div>
                                     )}
                                 </label>

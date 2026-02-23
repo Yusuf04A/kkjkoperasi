@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Save, X, Layout, Megaphone, Palette, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, X, Layout, Megaphone, Palette, Image as ImageIcon, Trash2, Info } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import toast from 'react-hot-toast';
 // 🔥 IMPORT LIBRARY KOMPRESI
@@ -54,6 +54,11 @@ export default function AdminKabarForm() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
+      // 🔥 Validasi ukuran maksimal 10MB sebelum kompresi
+      if (file.size > 10 * 1024 * 1024) {
+        return toast.error("Ukuran file terlalu besar (maksimal 10MB)");
+      }
+
       const toastId = toast.loading("mengompres gambar kabar...");
       try {
         // Konfigurasi Kompresi
@@ -149,7 +154,7 @@ export default function AdminKabarForm() {
       </div>
 
       <div className="max-w-5xl mx-auto p-4 sm:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start text-left">
           
           {/* KOLOM KIRI: FORM */}
           <form onSubmit={handleSubmit} className="space-y-6 animate-in slide-in-from-left-4 duration-500">
@@ -187,9 +192,12 @@ export default function AdminKabarForm() {
 
               {/* UPLOAD GAMBAR */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-1">
-                    <ImageIcon size={14} /> gambar kabar (otomatis dikompres)
-                </label>
+                <div className="flex justify-between items-center px-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                        <ImageIcon size={14} /> banner kabar
+                    </label>
+                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase tracking-tight">Maks 10MB</span>
+                </div>
                 
                 {!imagePreview ? (
                     <div 
@@ -199,8 +207,13 @@ export default function AdminKabarForm() {
                         <div className="w-12 h-12 bg-white text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-sm">
                             <ImageIcon size={24} />
                         </div>
-                        <p className="text-xs font-bold text-slate-600">Klik untuk upload gambar</p>
-                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter italic">Ukuran akan disusutkan otomatis</p>
+                        <p className="text-sm font-bold text-gray-600 first-letter:uppercase">pilih foto / banner kabar</p>
+                        <div className="mt-2 flex flex-col gap-1">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-center gap-1">
+                                <Info size={10} /> format: jpg, png, webp
+                            </p>
+                            <p className="text-[10px] font-black text-[#003366] uppercase tracking-tighter">Ukuran akan dikompres otomatis ke 1MB</p>
+                        </div>
                     </div>
                 ) : (
                     <div className="relative rounded-2xl overflow-hidden border border-slate-200 group shadow-md">
@@ -209,14 +222,14 @@ export default function AdminKabarForm() {
                             <button 
                                 type="button" 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="bg-white text-slate-700 px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-transform"
+                                className="bg-white text-slate-700 px-4 py-2 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-transform uppercase"
                             >
                                 Ganti
                             </button>
                             <button 
                                 type="button" 
                                 onClick={handleRemoveImage}
-                                className="bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-1 active:scale-95 transition-transform"
+                                className="bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-1 active:scale-95 transition-transform uppercase"
                             >
                                 <Trash2 size={14} /> Hapus
                             </button>
@@ -286,14 +299,14 @@ export default function AdminKabarForm() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 bg-[#003366] text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 bg-[#003366] text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 uppercase"
                 >
                   <Save size={18} /> {isSaving ? 'menyimpan...' : 'simpan perubahan'}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate('/admin/kabar')}
-                  className="px-6 border border-slate-200 text-slate-500 py-4 rounded-2xl font-bold text-sm hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="px-6 border border-slate-200 text-slate-500 py-4 rounded-2xl font-bold text-sm hover:bg-slate-50 active:scale-95 transition-all flex items-center justify-center gap-2 uppercase"
                 >
                   <X size={18} /> batal
                 </button>
@@ -302,14 +315,14 @@ export default function AdminKabarForm() {
           </form>
 
           {/* KOLOM KANAN: LIVE PREVIEW */}
-          <div className="lg:sticky lg:top-28 space-y-4 animate-in slide-in-from-right-4 duration-500">
-            <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] ml-2">
+          <div className="lg:sticky lg:top-28 space-y-4 animate-in slide-in-from-right-4 duration-500 text-center">
+            <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em] ml-2 justify-center lg:justify-start">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Live Preview (Tampilan Anggota)
             </div>
             
             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-300/50 border border-slate-100 overflow-hidden">
-               <div className="w-full max-w-[280px] mx-auto bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+               <div className="w-full max-w-[280px] mx-auto bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden text-left">
                   
                   {/* PREVIEW GAMBAR ATAU WARNA HEADER */}
                   {imagePreview ? (

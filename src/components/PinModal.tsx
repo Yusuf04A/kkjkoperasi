@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'; // BENAR
+import { X, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'; 
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import toast from 'react-hot-toast';
 
 interface PinModalProps {
     isOpen: boolean;
@@ -15,18 +14,17 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
     const { user } = useAuthStore();
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
-    
-    // STATE UNTUK KONTROL LIHAT/SEMBUNYI PIN
     const [showPin, setShowPin] = useState(false);
 
-    // 🔥 STATE BARU: Untuk menampilkan UI Sukses di dalam modal
+    // 🔥 STATE UNTUK KONTROL UI BERHASIL & GAGAL 🔥
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isError, setIsError] = useState(false);
 
     // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
     const playSuccessSound = () => {
-        const audio = new Audio('/sounds/pop.mp3'); // Pastikan file ada di public/sounds/pop.mp3
+        const audio = new Audio('/sounds/pop.mp3');
         audio.volume = 0.5;
-        audio.play().catch(err => console.log("Autoplay dicegah atau file tidak ditemukan:", err));
+        audio.play().catch(err => console.log("Gagal putar suara:", err));
     };
 
     // Reset state setiap kali modal dibuka/ditutup
@@ -35,6 +33,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
             setPin('');
             setShowPin(false);
             setIsSuccess(false);
+            setIsError(false);
             setLoading(false);
         }
     }, [isOpen]);
@@ -45,36 +44,46 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
         e.preventDefault();
         setLoading(true);
 
-        // 1. Cek apakah user sudah punya PIN di database
-        if (!user?.pin) {
-            toast.error("Anda belum mengatur PIN. Silakan atur di menu Profil.");
+        // TypeScript casting untuk menghindari error 'pin does not exist'
+        const userPin = (user as any)?.pin;
+
+        // 1. Cek keberadaan PIN
+        if (!userPin) {
             onClose();
             return;
         }
 
         // 2. Validasi PIN
-        if (pin === user.pin) {
-            // 🔥 PUTAR SUARA NOTIFIKASI
+        if (pin === userPin) {
+            // 🔥 Bunyi suara saat PIN BENAR
             playSuccessSound();
-
-            // 🔥 UBAH TAMPILAN JADI POPUP SUKSES TENGAH
             setIsSuccess(true);
+            setIsError(false);
             
-            // Beri jeda 1.5 detik agar user bisa melihat animasi centang hijaunya
+            // Beri jeda 1.5 detik agar user bisa melihat animasi centang hijau
             setTimeout(() => {
-                onSuccess(); // Jalankan fungsi transaksi (bayar/tarik/topup)
-                onClose();   // Tutup modal
+                onSuccess(); 
+                onClose();   
             }, 1500);
 
         } else {
-            toast.error("PIN Salah! Silakan coba lagi.");
-            setPin('');
-            setLoading(false);
+            // 🔥 Bunyi suara saat PIN SALAH
+            playSuccessSound();
+            
+            // Tampilkan popup merah di tengah
+            setIsError(true);
+            
+            // Tunggu 1.5 detik lalu kembalikan ke form input agar user bisa coba lagi
+            setTimeout(() => {
+                setIsError(false);
+                setPin('');
+                setLoading(false);
+            }, 1500);
         }
     };
 
     // =========================================================================
-    // 🔥 TAMPILAN JIKA PIN BENAR (GANTI WUJUD JADI CENTANG HIJAU)
+    // 🔥 TAMPILAN JIKA PIN BENAR (CENTANG HIJAU)
     // =========================================================================
     if (isSuccess) {
         return (
@@ -83,12 +92,25 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                     <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
                         <CheckCircle size={56} strokeWidth={2.5} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">
-                        PIN BENAR
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                        Verifikasi keamanan berhasil...
-                    </p>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">PIN BENAR</h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">verifikasi keamanan berhasil...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // =========================================================================
+    // 🔥 TAMPILAN JIKA PIN SALAH (PERINGATAN MERAH DI TENGAH)
+    // =========================================================================
+    if (isError) {
+        return (
+            <div className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-white/20">
+                    <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-600 shadow-inner animate-bounce">
+                        <AlertCircle size={56} strokeWidth={2.5} />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 text-rose-600">PIN SALAH!</h3>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed lowercase">silakan masukkan pin yang benar.</p>
                 </div>
             </div>
         );
@@ -116,8 +138,8 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                         <Lock size={28} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                    <p className="text-[11px] text-slate-400 font-medium mt-1 px-2 leading-relaxed">
-                        Demi keamanan transaksi, masukkan 6 digit PIN anda.
+                    <p className="text-[11px] text-slate-400 font-medium mt-1 px-2 leading-relaxed text-center lowercase">
+                        demi keamanan transaksi, masukkan 6 digit pin anda.
                     </p>
                 </div>
 
@@ -127,7 +149,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                             type={showPin ? "text" : "password"} 
                             inputMode="numeric"
                             maxLength={6}
-                            className="w-full text-center text-3xl tracking-[0.5em] font-black py-4 bg-slate-50 border-b-4 border-slate-100 focus:border-[#136f42] outline-none transition-all rounded-xl text-slate-700"
+                            className="w-full text-center text-3xl tracking-[0.5em] font-black py-4 bg-slate-50 border-b-4 border-slate-100 focus:border-[#136f42] outline-none transition-all rounded-xl text-slate-700 shadow-inner"
                             placeholder="••••••"
                             value={pin}
                             onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
@@ -153,7 +175,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                 </form>
 
                 <div className="text-center mt-6">
-                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">
+                    <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed text-center">
                         Lupa pin transaksi? <br/> Hubungi admin koperasi.
                     </p>
                 </div>

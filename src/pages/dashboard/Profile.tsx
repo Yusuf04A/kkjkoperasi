@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { 
     User, Phone, Mail, Shield, Save, ArrowLeft, Camera, 
     Trash2, ShieldCheck, Lock, HelpCircle, KeyRound, LogOut, Pencil,
-    Eye, EyeOff, AlertCircle, CheckCircle2, Info
+    Eye, EyeOff, AlertCircle, CheckCircle2, Info, CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +39,10 @@ export const Profile = () => {
     const [showOldPin, setShowOldPin] = useState(false);
     const [showNewPin, setShowNewPin] = useState(false);
     
+    // 🔥 STATE BARU UNTUK POPUP TENGAH GAGAL & SUKSES 🔥
+    const [isPinSuccess, setIsPinSuccess] = useState(false);
+    const [isPinError, setIsPinError] = useState(false);
+
     // STATE MODAL SUKSES (Profil & PIN)
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successConfig, setSuccessConfig] = useState({ title: '', message: '' });
@@ -48,6 +52,17 @@ export const Profile = () => {
         isOpen: false,
         type: 'logout'
     });
+
+    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
+    const playSuccessSound = () => {
+        try {
+            const audio = new Audio('/sounds/pop.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.warn("Audio play blocked", err));
+        } catch (e) {
+            console.error("Audio file not found");
+        }
+    };
 
     useEffect(() => {
         if (user) {
@@ -125,6 +140,7 @@ export const Profile = () => {
 
             await checkSession();
             toast.dismiss(toastId);
+            playSuccessSound();
             setSuccessConfig({ title: 'FOTO DIPERBARUI!', message: 'Foto profil Anda berhasil dikompres dan disimpan secara otomatis.' });
             setShowSuccessModal(true);
 
@@ -148,6 +164,7 @@ export const Profile = () => {
             await checkSession();
             toast.dismiss(toastId);
             setConfirmModal({ ...confirmModal, isOpen: false });
+            playSuccessSound();
             setSuccessConfig({ title: 'FOTO DIHAPUS!', message: 'Foto profil Anda telah berhasil dihapus dari sistem.' });
             setShowSuccessModal(true);
         } catch (error: any) {
@@ -168,6 +185,7 @@ export const Profile = () => {
 
             if (error) throw error;
             toast.dismiss(toastId);
+            playSuccessSound();
             setSuccessConfig({ title: 'PROFIL DIPERBARUI!', message: 'Perubahan data profil Anda berhasil disimpan.' });
             setShowSuccessModal(true);
             setIsEditing(false);
@@ -194,8 +212,15 @@ export const Profile = () => {
                 toast.error("Masukkan PIN Lama untuk verifikasi!");
                 return;
             }
+            // 🔥 PERBAIKAN: PIN LAMA SALAH -> POPUP MERAH TENGAH
             if (oldPin !== user.pin) {
-                toast.error("PIN Lama SALAH!");
+                playSuccessSound();
+                setIsPinError(true);
+                // toast.error dihapus agar tidak menumpuk di atas
+                setTimeout(() => {
+                    setIsPinError(false);
+                    setOldPin('');
+                }, 1500);
                 return;
             }
             if (oldPin === pin) {
@@ -208,21 +233,26 @@ export const Profile = () => {
 
     const handleSavePin = async () => {
         setPinLoading(true);
-        const toastId = toast.loading("Menyimpan PIN...");
         try {
             const { error } = await supabase.from('profiles').update({ pin: pin }).eq('id', user?.id);
             if (error) throw error;
 
-            toast.dismiss(toastId);
             setConfirmModal({ ...confirmModal, isOpen: false });
-            setSuccessConfig({ title: 'PIN BERHASIL DISIMPAN!', message: 'Keamanan akun Anda kini lebih terjaga. Gunakan PIN ini untuk setiap transaksi keluar.' });
-            setShowSuccessModal(true);
-            setPin('');
-            setOldPin('');
-            await checkSession();
+            playSuccessSound();
+            setIsPinSuccess(true);
+
+            setTimeout(async () => {
+                setIsPinSuccess(false);
+                setSuccessConfig({ title: 'PIN BERHASIL DISIMPAN!', message: 'Keamanan akun Anda kini lebih terjaga. Gunakan PIN ini untuk setiap transaksi keluar.' });
+                setShowSuccessModal(true);
+                setPin('');
+                setOldPin('');
+                await checkSession();
+                setPinLoading(false);
+            }, 1500);
+
         } catch (err: any) {
-            toast.error("Gagal: " + err.message, { id: toastId });
-        } finally {
+            toast.error("Gagal: " + err.message);
             setPinLoading(false);
         }
     };
@@ -288,7 +318,7 @@ export const Profile = () => {
                             </div>
                         </div>
 
-                        <div className="mb-8">
+                        <div className="mb-8 text-left">
                             <h2 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight mb-1">{user?.full_name}</h2>
                             <div className="flex flex-wrap items-center gap-3 text-slate-500 text-sm font-bold lowercase">
                                 <span>{user?.email}</span>
@@ -299,12 +329,12 @@ export const Profile = () => {
 
                         <div className="h-px bg-slate-100 mb-8"></div>
 
-                        <form onSubmit={handleUpdateProfile} className="space-y-8">
+                        <form onSubmit={handleUpdateProfile} className="space-y-8 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 <Input label="Nama Lengkap" icon={<User size={18} />} value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-green-200 focus:ring-green-100" : "bg-slate-50 border-transparent"} />
                                 <Input label="Nomor WhatsApp" icon={<Phone size={18} />} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={!isEditing || isLoading} className={isEditing ? "bg-white border-green-200 focus:ring-green-100" : "bg-slate-50 border-transparent"} />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-left">
                                 <Input label="Email Akun" icon={<Mail size={18} />} value={user?.email || ''} disabled={true} className="bg-slate-50/50 text-slate-400 border-slate-100 cursor-not-allowed" />
                                 <Input label="Nomor Induk Anggota (NIAK)" icon={<Shield size={18} />} value={user?.member_id || 'Belum Diterbitkan'} disabled={true} className="bg-slate-50/50 text-slate-400 border-slate-100 cursor-not-allowed font-mono tracking-wider font-bold" />
                             </div>
@@ -320,48 +350,74 @@ export const Profile = () => {
 
                 {/* KEAMANAN AKUN (PIN) */}
                 <div className="bg-white rounded-[2.5rem] shadow-xl shadow-green-900/5 border border-green-50 overflow-hidden relative p-8 lg:p-10 mb-8">
-                    <div className="flex items-center gap-4 mb-8 border-b border-slate-50 pb-6">
+                    
+                    {/* 🔥 POPUP GAGAL & PROSES BERHASIL (TENGAH AREA) 🔥 */}
+                    {(isPinError || isPinSuccess) && (
+                        <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+                            <div className="text-center p-8 animate-in zoom-in-95">
+                                {isPinError ? (
+                                    <>
+                                        <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-600 shadow-inner animate-bounce">
+                                            <AlertCircle size={48} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-lg font-black text-rose-600 uppercase tracking-tight mb-1">PIN LAMA SALAH!</h3>
+                                        <p className="text-xs text-slate-400 font-medium lowercase">silakan periksa kembali pin lama anda.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
+                                            <CheckCircle size={48} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-lg font-black text-[#136f42] uppercase tracking-tight mb-1">PROSES BERHASIL</h3>
+                                        <p className="text-xs text-slate-400 font-medium lowercase">mengamankan akun anda...</p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-4 mb-8 border-b border-slate-50 pb-6 text-left">
                         <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-[#136f42]">
                             <ShieldCheck size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-slate-900 tracking-tight">Keamanan Akun</h2>
-                            <p className="text-sm font-medium text-slate-500">Atur PIN 6 digit untuk keamanan transaksi.</p>
+                            <p className="text-sm font-medium text-slate-500 lowercase">atur pin 6 digit untuk keamanan transaksi.</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+                        <div className="text-left">
                             <div className={`p-5 rounded-2xl border flex items-start gap-4 ${user?.pin ? 'bg-[#aeea00]/10 border-[#aeea00] text-[#0f5c35]' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
                                 <div className={`p-2.5 rounded-xl ${user?.pin ? 'bg-[#aeea00] text-[#0f5c35]' : 'bg-amber-100 text-amber-600'}`}>
                                     {user?.pin ? <ShieldCheck size={24} /> : <Lock size={24} />}
                                 </div>
                                 <div>
                                     <h3 className="font-black text-sm uppercase tracking-wide">{user?.pin ? 'PIN Transaksi Aktif' : 'PIN Belum Diatur'}</h3>
-                                    <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed">
+                                    <p className="text-xs mt-1 font-medium opacity-80 leading-relaxed lowercase">
                                         {user?.pin
-                                            ? "Akun Anda terlindungi. PIN digunakan untuk verifikasi setiap transaksi keluar."
-                                            : "Segera atur PIN untuk mengaktifkan fitur transfer dan penarikan saldo."}
+                                            ? "akun anda terlindungi. pin digunakan untuk verifikasi setiap transaksi keluar."
+                                            : "segera atur pin untuk mengaktifkan fitur transfer dan penarikan saldo."}
                                     </p>
                                 </div>
                             </div>
                             {user?.pin && (
-                                <button onClick={handleForgotPin} className="mt-4 text-xs text-[#136f42] font-bold hover:underline flex items-center gap-2 ml-1">
-                                    <HelpCircle size={14} /> Lupa PIN Saya?
+                                <button onClick={handleForgotPin} className="mt-4 text-xs text-[#136f42] font-bold hover:underline flex items-center gap-2 ml-1 lowercase">
+                                    <HelpCircle size={14} /> lupa pin saya?
                                 </button>
                             )}
                         </div>
 
-                        <div className="space-y-5">
+                        <div className="space-y-5 text-left">
                             {user?.pin && (
                                 <div>
-                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">PIN Lama</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">PIN Lama</label>
                                     <div className="relative group">
                                         <input
                                             type={showOldPin ? "text" : "password"} 
                                             maxLength={6}
                                             placeholder="******"
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all text-slate-800"
                                             value={oldPin}
                                             onChange={(e) => setOldPin(e.target.value.replace(/[^0-9]/g, ''))}
                                         />
@@ -373,7 +429,7 @@ export const Profile = () => {
                             )}
 
                             <div className="space-y-2">
-                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">
                                     {user?.pin ? 'PIN Baru' : 'Buat PIN Baru (6 Angka)'}
                                 </label>
                                 <div className="relative group">
@@ -382,7 +438,7 @@ export const Profile = () => {
                                         maxLength={6}
                                         placeholder="******"
                                         className={cn(
-                                            "w-full bg-slate-50 border rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 outline-none transition-all",
+                                            "w-full bg-slate-50 border rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 outline-none transition-all text-slate-800",
                                             strength?.isWeak ? "border-rose-200 focus:ring-rose-50 focus:border-rose-500" : "border-slate-200 focus:ring-green-50 focus:border-[#136f42]"
                                         )}
                                         value={pin}

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, Calendar, CheckCircle, Wallet, Clock, AlertTriangle, History, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Wallet, Clock, AlertTriangle, History, X, Loader2 } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PinModal } from '../../components/PinModal';
-import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
+import { SuccessModal } from '../../components/SuccessModal';
 
 export const LoanDetail = () => {
     const { id } = useParams();
@@ -26,8 +26,19 @@ export const LoanDetail = () => {
 
     // State untuk Pembayaran PIN & Success Modal
     const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State Modal Sukses Tengah
+    const [showSuccessModal, setShowSuccessModal] = useState(false); 
     const [selectedInstallment, setSelectedInstallment] = useState<{id: string, amount: number} | null>(null);
+
+    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
+    const playSuccessSound = () => {
+        try {
+            const audio = new Audio('/sounds/pop.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(err => console.warn("Autoplay dicegah browser", err));
+        } catch (e) {
+            console.error("File audio tidak ditemukan");
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -46,7 +57,7 @@ export const LoanDetail = () => {
 
     const handlePayClick = (instId: string, amount: number) => {
         if ((user?.tapro_balance || 0) < amount) {
-            return toast.error("Saldo tapro tidak mencukupi untuk bayar tagihan ini.");
+            return toast.error("saldo tapro tidak mencukupi untuk bayar tagihan ini.");
         }
         setSelectedInstallment({ id: instId, amount });
         setShowPinModal(true);
@@ -55,7 +66,6 @@ export const LoanDetail = () => {
     const executePayment = async () => {
         if (!selectedInstallment) return;
 
-        const toastId = toast.loading('Memproses pembayaran...');
         try {
             const { error } = await supabase.rpc('pay_installment', { 
                 installment_id_param: selectedInstallment.id 
@@ -63,15 +73,14 @@ export const LoanDetail = () => {
             
             if (error) throw error;
             
-            toast.dismiss(toastId);
-            
-            // 🔥 TAMPILKAN MODAL SUKSES DI TENGAH
+            // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
+            playSuccessSound();
             setShowSuccessModal(true); 
 
             fetchData();
             checkSession();
         } catch (err: any) {
-            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            toast.error(`gagal: ${err.message}`);
         } finally {
             setShowPinModal(false);
             setSelectedInstallment(null);
@@ -82,52 +91,53 @@ export const LoanDetail = () => {
         e.preventDefault();
         const tenorInt = parseInt(newTenor);
         if (!tenorInt || tenorInt <= loan.duration) {
-            toast.error("Tenor baru harus lebih besar dari tenor saat ini.");
+            toast.error("tenor baru harus lebih besar dari tenor saat ini.");
             return;
         }
         if (!reason.trim()) {
-            toast.error("Alasan wajib diisi.");
+            toast.error("alasan wajib diisi.");
             return;
         }
 
-        const toastId = toast.loading("Mengirim pengajuan...");
+        const toastId = toast.loading("mengirim pengajuan...");
         const { error } = await supabase.from('loans').update({
             restructure_req_duration: tenorInt,
             restructure_reason: reason,
             restructure_status: 'pending'
         }).eq('id', loan.id);
 
-        if (error) toast.error("Gagal mengirim permintaan");
+        if (error) toast.error("gagal mengirim permintaan");
         else {
-            toast.success("Pengajuan dikirim ke admin", { id: toastId });
+            playSuccessSound();
+            toast.success("pengajuan dikirim ke admin", { id: toastId });
             setShowModal(false); 
             fetchData(); 
         }
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#136f42] border-t-transparent"></div>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 text-slate-900">
+            <Loader2 className="w-10 h-10 text-[#136f42] animate-spin mb-4" />
         </div>
     );
     
-    if (!loan) return <div className="min-h-screen flex items-center justify-center text-red-500">Data tidak ditemukan</div>;
+    if (!loan) return <div className="min-h-screen flex items-center justify-center text-rose-500 lowercase">data tidak ditemukan</div>;
 
     const paidCount = installments.filter(i => i.status === 'paid').length;
     const progress = installments.length > 0 ? (paidCount / installments.length) * 100 : 0;
     const itemName = loan.details?.name || loan.details?.item || loan.details?.item_name || "";
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 relative font-sans text-slate-900">
+        <div className="min-h-screen bg-gray-50 pb-24 relative font-sans text-slate-900 text-left lowercase">
 
             {/* HEADER */}
             <div className="bg-white border-b border-green-100 sticky top-0 z-30 px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/pembiayaan')} className="p-2 hover:bg-green-50 rounded-full transition-colors text-[#136f42]">
+                    <button onClick={() => navigate('/pembiayaan')} className="p-2 hover:bg-green-50 rounded-full transition-colors text-[#136f42] uppercase">
                         <ArrowLeft size={20} strokeWidth={2} />
                     </button>
                     <div>
-                        <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight lowercase">Detail pinjaman</h1>
+                        <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight first-letter:uppercase">detail pinjaman</h1>
                         <p className="text-[10px] font-bold text-[#136f42] tracking-wider uppercase">
                             {loan.type} {itemName && `- ${itemName}`}
                         </p>
@@ -138,18 +148,18 @@ export const LoanDetail = () => {
             <div className="max-w-2xl mx-auto p-4 space-y-6">
 
                 {/* CARD INFO UTAMA */}
-                <div className="bg-[#136f42] p-6 rounded-[2rem] shadow-xl relative overflow-hidden text-white">
+                <div className="bg-[#136f42] p-6 rounded-[2rem] shadow-xl relative overflow-hidden text-white uppercase">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                     <div className="absolute right-0 top-0 w-32 h-32 bg-[#aeea00]/10 rounded-full blur-3xl -mr-10 -mt-10" />
                     
                     <div className="relative z-10">
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-[10px] font-medium text-green-100/70 uppercase tracking-[0.2em] mb-1 lowercase">Total pinjaman</p>
+                                <p className="text-[10px] font-medium text-green-100/70 tracking-[0.2em] mb-1 lowercase">total pinjaman</p>
                                 <h2 className="text-3xl font-bold tracking-tighter">{formatRupiah(loan.amount)}</h2>
                             </div>
                             <div className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg border",
+                                "px-3 py-1 rounded-full text-[10px] font-bold tracking-widest shadow-lg border",
                                 loan.status === 'active' ? "bg-[#aeea00] text-[#0f5c35] border-transparent" : "bg-white/10 border-white/20 text-white"
                             )}>
                                 {loan.status === 'active' ? 'Berjalan' : loan.status}
@@ -157,8 +167,8 @@ export const LoanDetail = () => {
                         </div>
 
                         <div className="mt-8 space-y-2">
-                            <div className="flex justify-between text-[10px] font-medium uppercase tracking-wider text-green-100/80 lowercase">
-                                <span>Progress pelunasan</span>
+                            <div className="flex justify-between text-[10px] font-medium tracking-wider text-green-100/80 lowercase">
+                                <span>progress pelunasan</span>
                                 <span>{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-black/20 rounded-full h-2 shadow-inner">
@@ -181,9 +191,9 @@ export const LoanDetail = () => {
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-amber-900 tracking-tighter lowercase">Pengajuan ditinjau</p>
-                            <p className="text-xs text-amber-800 font-medium leading-relaxed lowercase">
-                                Permintaan perpanjangan tenor menjadi <b>{loan.restructure_req_duration} bulan</b> sedang diproses admin.
+                            <p className="text-sm font-bold text-amber-900 tracking-tighter first-letter:uppercase">pengajuan ditinjau</p>
+                            <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                                permintaan perpanjangan tenor menjadi <b>{loan.restructure_req_duration} bulan</b> sedang diproses admin.
                             </p>
                         </div>
                     </div>
@@ -199,12 +209,12 @@ export const LoanDetail = () => {
                             <div className="p-3 bg-green-50 text-[#136f42] rounded-xl group-hover:bg-white transition-colors">
                                 <AlertTriangle size={24} />
                             </div>
-                            <div className="text-left">
-                                <h4 className="font-bold text-gray-900 text-sm tracking-tight lowercase">Merasa berat membayar?</h4>
-                                <p className="text-xs text-gray-500 font-medium lowercase">Klik untuk ajukan perpanjangan tenor</p>
+                            <div>
+                                <h4 className="font-bold text-gray-900 text-sm tracking-tight first-letter:uppercase">merasa berat membayar?</h4>
+                                <p className="text-xs text-gray-500 font-medium">klik untuk ajukan perpanjangan tenor</p>
                             </div>
                         </div>
-                        <div className="bg-[#136f42] text-white p-2 rounded-lg group-hover:bg-[#0f5c35]">
+                        <div className="bg-[#136f42] text-white p-2 rounded-lg group-hover:bg-[#0f5c35] uppercase">
                             <ArrowLeft size={16} className="rotate-180" />
                         </div>
                     </button>
@@ -212,9 +222,9 @@ export const LoanDetail = () => {
 
                 {/* JADWAL PEMBAYARAN */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-3 px-1">
+                    <div className="flex items-center gap-3 px-1 uppercase">
                         <History size={18} className="text-[#136f42]" />
-                        <h3 className="font-bold text-gray-800 text-sm tracking-widest uppercase lowercase">Jadwal pembayaran</h3>
+                        <h3 className="font-bold text-gray-800 text-sm tracking-widest lowercase first-letter:uppercase">jadwal pembayaran</h3>
                     </div>
 
                     <div className="space-y-3">
@@ -238,28 +248,28 @@ export const LoanDetail = () => {
                                             {index + 1}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900 tracking-tight">{formatRupiah(item.amount)}</p>
+                                            <p className="font-bold text-gray-900 tracking-tight uppercase">{formatRupiah(item.amount)}</p>
                                             <p className={cn(
-                                                "text-[10px] mt-0.5 flex items-center gap-1 font-medium uppercase tracking-wider",
+                                                "text-[10px] mt-0.5 flex items-center gap-1 font-medium tracking-wider uppercase",
                                                 isOverdue ? "text-rose-600" : "text-gray-400"
                                             )}>
                                                 <Calendar size={12} /> {format(dueDate, 'dd MMM yyyy', { locale: indonesia })}
-                                                {isOverdue && <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[8px] ml-1 lowercase">Terlambat</span>}
+                                                {isOverdue && <span className="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[8px] ml-1 lowercase">terlambat</span>}
                                             </p>
                                         </div>
                                     </div>
 
                                     {isPaid ? (
-                                        <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full">
+                                        <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full uppercase">
                                             <CheckCircle className="text-green-500" size={16} strokeWidth={2} />
-                                            <span className="text-[10px] text-green-700 font-bold tracking-widest uppercase">Lunas</span>
+                                            <span className="text-[10px] text-green-700 font-bold tracking-widest">lunas</span>
                                         </div>
                                     ) : (
                                         <button
                                             onClick={() => handlePayClick(item.id, item.amount)}
                                             className="bg-[#136f42] text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-green-900/10 hover:bg-[#0f5c35] active:scale-90 transition-all flex items-center gap-2"
                                         >
-                                            <Wallet size={14} /> Bayar
+                                            <Wallet size={14} /> bayar
                                         </button>
                                     )}
                                 </div>
@@ -273,54 +283,54 @@ export const LoanDetail = () => {
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}
                 onSuccess={executePayment}
-                title="Konfirmasi pembayaran"
+                title="konfirmasi pembayaran"
             />
 
-            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
+            {/* SUCCESS MODAL POPUP DI TENGAH */}
             <SuccessModal 
                 isOpen={showSuccessModal}
                 onClose={() => {
                     setShowSuccessModal(false);
                 }}
                 title="PEMBAYARAN BERHASIL!"
-                message={`Angsuran pinjaman Anda telah berhasil dibayar. Progress pelunasan Anda kini telah diperbarui secara otomatis.`}
+                message={`angsuran pinjaman anda telah berhasil dibayar. progress pelunasan anda kini telah diperbarui secara otomatis.`}
             />
 
             {/* MODAL FORM PERPANJANGAN */}
             {showModal && (
                 <div className="fixed inset-0 z-50 bg-[#0f5c35]/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500 text-left">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight lowercase">Ajukan perpanjangan</h3>
-                            <button onClick={() => setShowModal(false)} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors">
+                            <h3 className="text-xl font-bold text-gray-900 tracking-tight first-letter:uppercase">ajukan perpanjangan</h3>
+                            <button onClick={() => setShowModal(false)} className="p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors uppercase">
                                 <X size={20} className="text-gray-400" />
                             </button>
                         </div>
 
                         <form onSubmit={submitRestructure} className="space-y-5">
                             <div>
-                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1 lowercase">Tenor baru (bulan)</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">tenor baru (bulan)</label>
                                 <input
                                     type="number"
                                     className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 transition-all"
-                                    placeholder={`Min: ${loan.duration + 1} bulan`}
+                                    placeholder={`min: ${loan.duration + 1} bulan`}
                                     value={newTenor}
                                     onChange={(e) => setNewTenor(e.target.value)}
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1 lowercase">Alasan</label>
+                                <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">alasan</label>
                                 <textarea
                                     className="w-full p-4 rounded-2xl border border-gray-100 focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none text-sm font-medium bg-gray-50 h-28 resize-none"
-                                    placeholder="Jelaskan kendala anda..."
+                                    placeholder="jelaskan kendala anda..."
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     required
                                 />
                             </div>
                             <button type="submit" className="w-full bg-[#136f42] text-white font-bold py-4 rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0f5c35] active:scale-95 transition-all uppercase tracking-widest text-sm">
-                                Kirim pengajuan
+                                kirim pengajuan
                             </button>
                         </form>
                     </div>
