@@ -41,10 +41,9 @@ export const Withdraw = () => {
         }
     };
 
-    // Daftar Opsi Simpanan
+    // DAFTAR OPSI SIMPANAN YANG BISA DITARIK SAJA
+    // Simpanan Pokok, Wajib, dan Donasi Kebersamaan telah dihapus dari list ini
     const simpananOptions = [
-        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
-        { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save, color: 'text-indigo-600', bg: 'bg-indigo-50' },
         { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-emerald-600', bg: 'bg-emerald-50' },
         { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School, color: 'text-orange-600', bg: 'bg-orange-50' },
         { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -55,7 +54,7 @@ export const Withdraw = () => {
 
     useEffect(() => {
         if (!user) checkSession();
-    }, [user]);
+    }, [user, checkSession]);
 
     const getActiveBalance = () => {
         if (sourceType === 'tapro') return user?.tapro_balance || 0;
@@ -104,7 +103,6 @@ export const Withdraw = () => {
 
             if (error) throw error;
 
-            // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
             playSuccessSound();
             setShowSuccessModal(true); 
 
@@ -151,7 +149,8 @@ export const Withdraw = () => {
                         )}
                     >
                         <PiggyBank size={24} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-center">non-tapro</span>
+                        {/* REVISI: Label Diganti dari NON-TAPRO ke SIMPANAN */}
+                        <span className="text-[10px] font-black uppercase tracking-widest text-center">simpanan</span>
                     </button>
                 </div>
 
@@ -241,7 +240,7 @@ export const Withdraw = () => {
                         disabled={isLoading || (parseInt(amount.replace(/\D/g, '')) > getActiveBalance())}
                         className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-2xl bg-[#136f42] text-white hover:bg-[#0f5c35] shadow-lg active:scale-95 transition-all disabled:opacity-50"
                     >
-                        {isLoading ? <Loader2 className="animate-spin" /> : <><Banknote size={18} className="inline mr-2 uppercase" /> ajukan penarikan</>}
+                        {isLoading ? <Loader2 className="animate-spin mx-auto" /> : <><Banknote size={18} className="inline mr-2 uppercase" /> ajukan penarikan</>}
                     </button>
                 </form>
 
@@ -261,7 +260,6 @@ export const Withdraw = () => {
                 title="konfirmasi penarikan"
             />
 
-            {/* SUCCESS MODAL POPUP */}
             <SuccessModal 
                 isOpen={showSuccessModal}
                 onClose={() => {

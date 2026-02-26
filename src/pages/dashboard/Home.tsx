@@ -31,7 +31,10 @@ export const Home = () => {
     const [showDetailAssets, setShowDetailAssets] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
 
-    // --- STATE BELANJA ---
+    // --- state multi-select simpanan ---
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    // --- state belanja ---
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingShop, setLoadingShop] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +63,7 @@ export const Home = () => {
 
     if (user?.role === 'admin') return null;
 
-    // --- DATA ANGGOTA ---
+    // --- data anggota ---
     const userData = {
         name: user?.full_name || user?.email?.split('@')[0] || 'Anggota KKJ',
         memberId: user?.member_id || 'MENUNGGU NIAK',
@@ -70,24 +73,38 @@ export const Home = () => {
         branch: 'Pusat'
     };
 
+    // 🔥 fungsi format Rp kapital
+    const formatRpUpper = (amount: number) => {
+        return formatRupiah(amount).replace('rp', 'Rp');
+    };
+
     const otherSavings = [
-        { name: 'Simpanan Pokok', val: user?.simpok_balance || 0 },
-        { name: 'Simpanan Wajib', val: user?.simwa_balance || 0 },
-        { name: 'Simpanan Masa Depan', val: user?.simade_balance || 0 },
-        { name: 'Simpanan Pendidikan', val: user?.sipena_balance || 0 },
-        { name: 'Simpanan Hari Raya', val: user?.sihara_balance || 0 },
-        { name: 'Simpanan Qurban', val: user?.siqurma_balance || 0 },
-        { name: 'Simpanan Haji/Umroh', val: user?.siuji_balance || 0 },
-        { name: 'Simpanan Walimah', val: user?.siwalima_balance || 0 },
+        { id: 'simpok', name: 'simpanan pokok', val: user?.simpok_balance || 0 },
+        { id: 'simwa', name: 'simpanan wajib', val: user?.simwa_balance || 0 },
+        { id: 'simade', name: 'simpanan masa depan', val: user?.simade_balance || 0 },
+        { id: 'sipena', name: 'simpanan pendidikan', val: user?.sipena_balance || 0 },
+        { id: 'sihara', name: 'simpanan hari raya', val: user?.sihara_balance || 0 },
+        { id: 'siqurma', name: 'simpanan qurban', val: user?.siqurma_balance || 0 },
+        { id: 'siuji', name: 'simpanan haji/umroh', val: user?.siuji_balance || 0 },
+        { id: 'siwalima', name: 'simpanan walimah', val: user?.siwalima_balance || 0 },
     ];
 
-    const totalOtherAssets = otherSavings.reduce((acc, curr) => acc + curr.val, 0);
+    // --- logika penjumlahan kumulatif ---
+    const totalAssetsDisplay = selectedIds.length > 0 
+        ? otherSavings.filter(s => selectedIds.includes(s.id)).reduce((acc, curr) => acc + curr.val, 0)
+        : otherSavings.reduce((acc, curr) => acc + curr.val, 0);
 
-    // --- LOGIKA KERANJANG ---
+    const toggleSelection = (id: string) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    // --- logika belanja ---
     const addToCart = (product: Product) => {
         const existing = cart.find(item => item.product.id === product.id);
         if (existing) {
-            if (existing.quantity >= product.stock) return toast.error("Stok tidak mencukupi");
+            if (existing.quantity >= product.stock) return toast.error("stok tidak mencukupi");
             setCart(cart.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
         } else {
             setCart([...cart, { product, quantity: 1 }]);
@@ -106,38 +123,41 @@ export const Home = () => {
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // --- HANDLERS KARTU ---
+    // --- handlers kartu ---
     const handleDownloadCard = async () => {
         if (!cardRef.current) return;
-        const toastId = toast.loading('Mencetak kartu HD...');
+        const toastId = toast.loading('mencetak kartu...');
         try {
             await new Promise(resolve => setTimeout(resolve, 500));
-            const canvas = await html2canvas(cardRef.current, { backgroundColor: null, scale: 3, useCORS: true, windowWidth: 1920, windowHeight: 1080 });
+            const canvas = await html2canvas(cardRef.current, { 
+                backgroundColor: null, scale: 3, useCORS: true,
+                width: 632, height: 400
+            });
             const link = document.createElement('a');
             link.download = `KARTU-KKJ-${userData.name.replace(/\s+/g, '_')}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            toast.success('Kartu berhasil disimpan!', { id: toastId });
-        } catch (err) { toast.error('Gagal menyimpan kartu', { id: toastId }); }
+            toast.success('berhasil disimpan!', { id: toastId });
+        } catch (err) { toast.error('gagal simpan', { id: toastId }); }
     };
 
     const handleShare = async () => {
         if (!cardRef.current) return;
-        const toastId = toast.loading('Membuka menu share...');
+        const toastId = toast.loading('menyiapkan share...');
         try {
             const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true });
             canvas.toBlob(async (blob) => {
                 if (!blob) return;
                 const file = new File([blob], "kartu-anggota.png", { type: "image/png" });
                 if (navigator.share) {
-                    await navigator.share({ title: 'Kartu Anggota Koperasi KKJ', text: `Halo, ini kartu anggota digital saya di Koperasi KKJ a.n ${userData.name}.`, files: [file] });
+                    await navigator.share({ title: 'Kartu Anggota KKJ', text: `Halo, ini kartu anggota KKJ saya a.n ${userData.name}.`, files: [file] });
                     toast.dismiss(toastId);
-                } else { toast.error("Browser tidak support share.", { id: toastId }); }
+                } else { toast.error("browser tidak support share.", { id: toastId }); }
             });
-        } catch (err) { toast.error("Gagal membagikan kartu.", { id: toastId }); }
+        } catch (err) { toast.error("gagal membagikan kartu.", { id: toastId }); }
     };
 
-   const quickActions = [
+    const quickActions = [
         { label: 'Top Up', icon: PlusCircle, color: 'text-green-600', bg: 'bg-green-50', link: '/transaksi/topup' },
         { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
@@ -145,9 +165,9 @@ export const Home = () => {
     ];
 
     const featuredPrograms = [
-        { name: 'TAMASA', title: 'Tabungan Emas', desc: 'Investasi aman mulai Rp 10rb', icon: Coins, color: 'from-yellow-400 to-yellow-600', text: 'text-yellow-700', bg: 'bg-yellow-50', link: '/program/tamasa' },
-        { name: 'INFLIP', title: 'Investasi Properti', desc: 'Flipping properti profit tinggi', icon: Building, color: 'from-green-400 to-green-600', text: 'text-green-800', bg: 'bg-green-50', link: '/program/inflip' },
-        { name: 'PEGADAIAN', title: 'Gadai Emas Syariah', desc: 'Solusi dana cepat & berkah', icon: Wallet, color: 'from-[#136f42] to-[#0f5c35]', text: 'text-green-900', bg: 'bg-green-50', link: '/program/pegadaian' }
+        { name: 'tamasa', title: 'tabungan emas', desc: 'investasi aman mulai Rp 10rb', icon: Coins, color: 'from-yellow-400 to-yellow-600', text: 'text-yellow-700', bg: 'bg-yellow-50', link: '/program/tamasa' },
+        { name: 'inflip', title: 'investasi properti', desc: 'flipping properti profit tinggi', icon: Building, color: 'from-green-400 to-green-600', text: 'text-green-800', bg: 'bg-green-50', link: '/program/inflip' },
+        { name: 'pegadaian', title: 'gadai emas syariah', desc: 'solusi dana cepat & berkah', icon: Wallet, color: 'from-[#136f42] to-[#0f5c35]', text: 'text-green-900', bg: 'bg-green-50', link: '/program/pegadaian' }
     ];
 
     return (
@@ -197,25 +217,29 @@ export const Home = () => {
                 </div>
             </div>
 
-            {/* 2. TOTAL ASSETS OVERLAY */}
+            {/* 2. total simpanan overlay (Rp kapital & detail) */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-6 items-center">
-                    <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-6 cursor-pointer group p-2 rounded-lg">
-                        <div className="flex justify-between items-center mb-1">
-                            <div className="flex items-center gap-2 text-gray-500">
-                                <span className="text-xs font-bold tracking-wider uppercase group-hover:text-[#136f42] transition-colors">Total Aset (Non-Tapro)</span>
+                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-8 items-center text-left lowercase">
+                    <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-8 cursor-pointer group p-2 rounded-lg transition-all active:scale-[0.98]">
+                        <div className="flex justify-between items-center mb-1 text-slate-500 uppercase font-bold text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="group-hover:text-[#136f42]">total Aset</span>
                                 <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>{showBalance ? <Eye size={14} /> : <EyeOff size={14} />}</button>
                             </div>
-                            <div className="bg-green-50 text-[#136f42] text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">8 JENIS <ArrowRight size={10} /></div>
+                            {/* 🔥 detail indicator */}
+                            <div className="bg-green-50 text-[#136f42] text-[10px] px-2 py-0.5 rounded italic font-black uppercase">detail <ArrowRight size={10} className="inline ml-1" /></div>
                         </div>
-                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors">{showBalance ? formatRupiah(totalOtherAssets) : 'Rp ••••••••'}</div>
+                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors tracking-tighter">
+                            {/* 🔥 Rp kapital */}
+                            {showBalance ? formatRpUpper(otherSavings.reduce((acc, curr) => acc + curr.val, 0)) : 'Rp ••••••••••'}
+                        </div>
                     </div>
                     <div className="w-full md:w-7/12">
                         <div className="grid grid-cols-5 gap-3">
                             {quickActions.map((action) => (
                                 <Link key={action.label} to={action.link} className="flex flex-col items-center gap-2 group">
                                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm border border-gray-50", action.bg)}><action.icon className={cn("w-6 h-6", action.color)} /></div>
-                                    <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#136f42] text-center leading-tight">{action.label}</span>
+                                    <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#136f42] text-center leading-tight uppercase font-bold">{action.label}</span>
                                 </Link>
                             ))}
                         </div>
@@ -223,15 +247,13 @@ export const Home = () => {
                 </div>
             </div>
 
-            {/* 3. MAIN CONTENT */}
-            <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
+            {/* 3. main content (news, programs, shop) */}
+           <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
                 <NewsCarousel />
-                
-                {/* PROGRAM UNGGULAN */}
                 <div>
-                    <div className="flex justify-between items-end mb-4">
-                        <h3 className="text-lg font-bold text-gray-900">Program Unggulan</h3>
-                        <button className="text-xs font-medium text-[#136f42] hover:underline flex items-center gap-1">Lihat Semua <ArrowRight size={14} /></button>
+                    <div className="flex justify-between items-end mb-4 px-2 uppercase font-bold">
+                        <h3 className="text-lg text-gray-900">program unggulan</h3>
+                        <button className="text-xs text-[#136f42] hover:underline flex items-center gap-1">lihat semua <ArrowRight size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {featuredPrograms.map((program, idx) => (
@@ -241,79 +263,37 @@ export const Home = () => {
                                     <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}><program.icon className={program.text} size={20} /></div>
                                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#136f42] group-hover:text-white transition-colors"><ArrowUpRight size={16} /></div>
                                 </div>
-                                <h4 className="text-base font-bold text-gray-900 mb-0.5">{program.name}</h4>
-                                <p className="text-xs font-medium text-gray-600 mb-1">{program.title}</p>
+                                <h4 className="text-base font-bold text-gray-900 mb-0.5 uppercase">{program.name}</h4>
+                                <p className="text-xs font-medium text-gray-600 mb-1 italic">{program.title}</p>
                                 <p className="text-[10px] text-gray-400">{program.desc}</p>
                             </Link>
                         ))}
                     </div>
                 </div>
 
-                {/* 4. KATALOG BELANJA */}
                 <div id="shop-section" className="pt-4 pb-12 space-y-6">
                     <div className="flex justify-between items-center px-2">
                         <div className="flex items-center gap-3">
-                            <div className="p-3 bg-[#136f42] rounded-2xl text-white shadow-xl shadow-green-900/20">
-                                <ShoppingBag size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900 tracking-tight leading-none">Katalog Belanja</h3>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Self-Pickup & Tapro Pay</p>
-                            </div>
+                            <div className="p-3 bg-[#136f42] rounded-2xl text-white shadow-xl shadow-green-900/20"><ShoppingBag size={24} /></div>
+                            <div><h3 className="text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">katalog belanja</h3><p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">self-pickup & tapro pay</p></div>
                         </div>
-                        <button 
-                            onClick={() => setIsCartOpen(true)} 
-                            className="relative p-4 bg-amber-500 rounded-2xl shadow-xl shadow-amber-600/30 active:scale-95 transition-all text-white group"
-                        >
+                        <button onClick={() => setIsCartOpen(true)} className="relative p-4 bg-amber-500 rounded-2xl shadow-xl transition-all text-white group shadow-amber-600/30 active:scale-95">
                             <ShoppingCart size={24} className="group-hover:rotate-12 transition-transform" />
-                            {cart.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-white text-[#136f42] text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg animate-bounce border-2 border-amber-500">
-                                    {cart.length}
-                                </span>
-                            )}
+                            {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-white text-[#136f42] text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-amber-500 animate-bounce">{cart.length}</span>}
                         </button>
-                    </div>
-
-                    <div className="relative group mx-2">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                        <input 
-                            type="text" 
-                            placeholder="Cari kebutuhan Anda..." 
-                            value={searchTerm} 
-                            onChange={(e) => setSearchTerm(e.target.value)} 
-                            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-bold outline-none focus:border-[#136f42] transition-all shadow-sm" 
-                        />
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-5 px-2">
                         {loadingShop ? [1,2,3,4].map(i => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse border border-slate-50 shadow-sm" />) : filteredProducts.map((product) => (
                             <div key={product.id} className="bg-white rounded-[1.8rem] p-3 border border-slate-100 shadow-sm flex flex-col group hover:shadow-xl transition-all duration-300">
                                 <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-3 border border-slate-50">
-                                    {product.image_url ? (
-                                        <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-200"><ShoppingBag size={48} /></div>
-                                    )}
-                                    <div className={cn(
-                                        "absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm backdrop-blur-md transition-all",
-                                        product.stock > 0 ? "bg-white/90 text-[#136f42] border border-green-100" : "bg-rose-500 text-white"
-                                    )}>
-                                        {product.stock > 0 ? `Stok: ${product.stock}` : 'Habis'}
-                                    </div>
+                                    <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className={cn("absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm backdrop-blur-md transition-all", product.stock > 0 ? "bg-white/90 text-[#136f42] border border-green-100" : "bg-rose-500 text-white")}>{product.stock > 0 ? `stok: ${product.stock}` : 'habis'}</div>
                                 </div>
-                                <div className="flex-1 flex flex-col">
+                                <div className="flex-1 flex flex-col text-left font-bold uppercase">
                                     <span className="text-[8px] font-bold text-[#136f42] bg-green-50 px-2 py-0.5 rounded uppercase w-fit mb-1">{product.category}</span>
                                     <h3 className="text-[13px] font-bold text-slate-800 leading-tight line-clamp-2 mb-2">{product.name}</h3>
-                                    <div className="mt-auto">
-                                        <p className="text-sm font-bold text-[#136f42] mb-3">{formatRupiah(product.price)}</p>
-                                        <button 
-                                            onClick={() => addToCart(product)} 
-                                            disabled={product.stock === 0} 
-                                            className="w-full py-2.5 bg-[#136f42] hover:bg-[#0f5c35] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg shadow-green-900/20 active:scale-95 flex items-center justify-center gap-1.5"
-                                        >
-                                            <Plus size={14} strokeWidth={3} /> Keranjang
-                                        </button>
-                                    </div>
+                                    <div className="mt-auto"><p className="text-sm font-bold text-[#136f42] mb-3 lowercase">{formatRpUpper(product.price)}</p><button onClick={() => addToCart(product)} disabled={product.stock === 0} className="w-full py-2.5 bg-[#136f42] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-1.5 uppercase font-black">tambah</button></div>
                                 </div>
                             </div>
                         ))}
@@ -321,58 +301,58 @@ export const Home = () => {
                 </div>
             </div>
 
-            {/* MODAL CART (SLIDE UP) */}
-            {isCartOpen && (
-                <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-full duration-500">
-                        <div className="flex justify-between items-center mb-8 border-b border-slate-50 pb-4">
-                            <h2 className="text-2xl font-bold text-[#136f42] uppercase tracking-tighter leading-none">Keranjang Belanja</h2>
-                            <button onClick={() => setIsCartOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={24} /></button>
+            {/* 4. modal rincian aset (multi-select) */}
+            {showDetailAssets && (
+                <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowDetailAssets(false); setSelectedIds([]); }}></div>
+                    <div className="relative bg-white w-full max-w-sm sm:max-w-2xl rounded-t-3xl sm:rounded-3xl p-8 shadow-2xl flex flex-col max-h-[85vh] text-left animate-in slide-in-from-bottom duration-300">
+                        <div className="flex justify-between items-center mb-8 shrink-0 border-b border-gray-100 pb-4 px-2 uppercase font-bold text-gray-900">
+                            <div><h3 className="text-xl uppercase tracking-tight leading-none">rincian simpanan</h3><p className="text-[10px] text-gray-400 mt-2 tracking-widest lowercase">pilih simpanan untuk dijumlahkan</p></div>
+                            <button onClick={() => { setShowDetailAssets(false); setSelectedIds([]); }} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20} className="text-gray-600" /></button>
                         </div>
-                        {cart.length === 0 ? <div className="py-20 text-center space-y-4"><div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto text-slate-200"><ShoppingBag size={40} /></div><p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Keranjang Anda Kosong</p></div> : (
-                            <div className="space-y-6">
-                                {cart.map(item => (
-                                    <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
-                                        <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md"><img src={item.product.image_url} className="w-full h-full object-cover" /></div>
-                                        <div className="flex-1"><h4 className="font-bold text-slate-900 text-sm uppercase tracking-tighter leading-tight">{item.product.name}</h4><p className="text-xs font-bold text-[#136f42] mt-1">{formatRupiah(item.product.price)} x {item.quantity}</p></div>
-                                        <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><X size={18} /></button>
+                        <div className="overflow-y-auto pr-2 flex-1 custom-scrollbar">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {otherSavings.map((item, idx) => (
+                                    <div key={idx} onClick={() => toggleSelection(item.id)} className={cn("flex justify-between items-center p-5 rounded-2xl border transition-all cursor-pointer active:scale-95", selectedIds.includes(item.id) ? "bg-green-600 border-green-600 text-white shadow-lg scale-[1.02]" : "bg-gray-50 border-gray-100 text-slate-900 hover:bg-green-50")}>
+                                        <span className={cn("text-xs font-bold uppercase", selectedIds.includes(item.id) ? "text-green-50" : "text-gray-600")}>{item.name}</span>
+                                        <span className="text-base font-bold font-mono tracking-tight">{formatRpUpper(item.val)}</span>
                                     </div>
                                 ))}
-                                <div className="pt-6 border-t border-slate-200 space-y-4">
-                                    <div className="flex justify-between items-center px-2"><span className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Total Estimasi</span><span className="text-2xl font-bold text-[#136f42] tracking-tighter">{formatRupiah(totalBayar)}</span></div>
-                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#136f42] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">Checkout <ChevronRight size={18} /></button>
-                                </div>
                             </div>
-                        )}
+                        </div>
+                        <div className="mt-8 pt-6 border-t border-gray-100 shrink-0">
+                            <div className={cn("flex justify-between items-center p-6 rounded-2xl shadow-xl border transition-all duration-500 uppercase font-bold", selectedIds.length > 0 ? "bg-[#136f42] border-green-400" : "bg-gray-100 border-gray-200")}>
+                                <span className={cn("font-bold uppercase text-[10px] tracking-widest", selectedIds.length > 0 ? "text-green-200" : "text-gray-500")}>{selectedIds.length > 0 ? `total ${selectedIds.length} terpilih` : 'total keseluruhan'}</span>
+                                <span className={cn("font-bold text-xl", selectedIds.length > 0 ? "text-white" : "text-[#136f42]")}>{formatRpUpper(totalAssetsDisplay)}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* MODAL RINCIAN ASET */}
-            {showDetailAssets && (
-                <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDetailAssets(false)}></div>
-                    <div className="relative bg-white w-full max-w-sm sm:max-w-2xl rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
-                        <div className="flex justify-between items-center mb-6 shrink-0 border-b border-gray-100 pb-4">
-                            <h3 className="font-bold text-xl text-gray-900 uppercase tracking-tight">Rincian Aset Koperasi</h3>
-                            <button onClick={() => setShowDetailAssets(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"><X size={20} className="text-gray-600" /></button>
+            {/* 5. modal belanja (ke checkout) */}
+            {isCartOpen && (
+                <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-full duration-500 text-left">
+                        <div className="flex justify-between items-center mb-8 border-b border-slate-50 pb-4 uppercase font-bold text-[#136f42]">
+                            <h2 className="text-2xl tracking-tighter">keranjang belanja</h2>
+                            <button onClick={() => setIsCartOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={24} /></button>
                         </div>
-                        <div className="overflow-y-auto pr-2 flex-1">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {otherSavings.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm">
-                                        <span className="text-sm font-medium text-gray-600">{item.name}</span>
-                                        <span className="text-base font-bold text-gray-900 font-mono">{formatRupiah(item.val)}</span>
+                        {cart.length === 0 ? <p className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">keranjang kosong</p> : (
+                            <div className="space-y-6">
+                                {cart.map(item => (
+                                    <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md"><img src={item.product.image_url} className="w-full h-full object-cover" /></div>
+                                        <div className="flex-1 uppercase font-bold"><h4 className="text-slate-900 text-sm tracking-tighter">{item.product.name}</h4><p className="text-xs text-[#136f42] mt-1">{formatRpUpper(item.product.price)} x {item.quantity}</p></div>
+                                        <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-rose-500"><X size={18} /></button>
                                     </div>
                                 ))}
+                                <div className="pt-6 border-t border-slate-200 space-y-4">
+                                    <div className="flex justify-between items-center px-2 uppercase font-black"><span className="text-slate-400 text-[10px] tracking-[0.2em]">total</span><span className="text-2xl text-[#136f42] tracking-tighter">{formatRpUpper(totalBayar)}</span></div>
+                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#136f42] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">checkout sekarang <ChevronRight size={18} /></button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="mt-6 pt-4 border-t border-gray-100 shrink-0">
-                            <div className="flex justify-between items-center bg-green-50 p-4 rounded-2xl border border-green-100 shadow-inner">
-                                <span className="font-bold text-[#136f42] uppercase text-xs tracking-wider">Total Aset Lain</span>
-                                <span className="font-bold text-xl text-[#136f42]">{formatRupiah(totalOtherAssets)}</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
