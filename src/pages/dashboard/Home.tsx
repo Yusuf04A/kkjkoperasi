@@ -173,49 +173,79 @@ export const Home = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-10 font-sans">
             {/* 1. HERO SECTION (HIJAU HUTAN) */}
-            <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+            {/* 1. HERO SECTION (HIJAU KKJ DENGAN GRADASI PREMIUM) */}
+    <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
+        {/* Dekorasi Background agar tidak polos */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white opacity-5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
+        
+        <div className="max-w-xl mx-auto px-4 relative z-10 flex flex-col items-center">
+            {/* KARTU ANGGOTA (UKURAN DIPERBAIKI & DESAIN PREMIUM) */}
+            <div 
+                id="id-card-render"
+                ref={cardRef} 
+                style={{ width: '632px', height: '400px', transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-55px' }}
+                className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[32px] shadow-2xl overflow-hidden border border-white/10 flex flex-col justify-between relative"
+            >
+                {/* Pola halus di dalam kartu agar tidak polos */}
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-                
-                <div className="max-w-xl mx-auto px-4 relative z-10">
-                    {/* KARTU ANGGOTA (HIJAU GRADIENT) */}
-                    <div ref={cardRef} className="w-full bg-gradient-to-br from-[#136f42] to-[#0f5c35] rounded-xl shadow-2xl overflow-hidden border border-yellow-500/40 relative aspect-[1.58/1] flex flex-col justify-between">
-                        <div className="flex items-center gap-3 p-4 md:p-6 border-b border-yellow-500/30 bg-black/10 backdrop-blur-sm">
-                            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-yellow-500/50 shrink-0">
-                                <ShieldCheck className="text-[#136f42]" size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-white font-bold text-sm md:text-lg uppercase tracking-wider">KOPERASI KARYA KITA JAYA</h2>
-                                <p className="text-[#aeea00] text-[10px] md:text-xs italic font-medium">Berkoperasi Demi Wujud Kesejahteraan Bersama</p>
-                            </div>
-                        </div>
-                        <div className="px-5 py-2 flex justify-between items-center flex-1 gap-4">
-                            <div className="space-y-2 flex-1 min-w-0">
-                                <h1 className="text-white font-bold text-xl md:text-3xl uppercase truncate tracking-tight">{userData.name}</h1>
-                                <div className="space-y-1 text-xs md:text-sm">
-                                    <p className="text-white"><span className="text-[#aeea00] font-semibold w-12 inline-block">NIAK</span> : {userData.memberId}</p>
-                                    <p className="text-white"><span className="text-[#aeea00] font-semibold w-12 inline-block">STATUS</span> : <span className="text-white font-bold bg-[#4caf50] px-2 rounded text-[10px] tracking-wider">AKTIF</span></p>
-                                </div>
-                                <div className="pt-2">
-                                    <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest">Saldo Tapro</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-white font-mono tracking-tight">{showBalance ? formatRupiah(userData.taproBalance) : 'Rp •••••••'}</p>
-                                </div>
-                            </div>
-                            <div className="w-24 h-32 md:w-28 md:h-36 bg-gray-200 rounded-md border-[3px] border-white shadow-lg overflow-hidden shrink-0">
-                                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=200`} className="w-full h-full object-cover" crossOrigin="anonymous" />
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-8 md:h-10 flex items-center justify-between px-5 text-[10px] md:text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner">
-                            <span>Sejak: {userData.joinDate}</span>
-                            <span>Valid: {userData.validUntil}</span>
-                        </div>
+
+                {/* Header Kartu - Glassmorphism style */}
+                <div className="flex items-center gap-4 p-8 border-b border-white/5 bg-black/10 backdrop-blur-sm relative z-10">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-yellow-500/40 shrink-0 shadow-lg">
+                        <ShieldCheck className="text-[#136f42]" size={36} />
                     </div>
-                    <div className="flex justify-end gap-3 mt-3 px-2">
-                        <button onClick={handleDownloadCard} className="flex items-center gap-2 bg-white/10 text-green-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20"><Download size={14} /> Simpan</button>
-                        <button onClick={handleShare} className="flex items-center gap-2 bg-white/10 text-green-50 border border-white/20 px-4 py-2 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20"><Share2 size={14} /> Bagikan</button>
+                    <div className="text-left">
+                        <h2 className="text-white font-bold text-lg uppercase tracking-wider leading-none">koperasi karya kita jaya</h2>
+                        <p className="text-[#aeea00] text-[10px] italic font-medium mt-1">berkoperasi demi wujud kesejahteraan bersama</p>
                     </div>
                 </div>
+
+                {/* Body Kartu */}
+                <div className="px-10 py-2 flex justify-between items-center flex-1 gap-6 text-left relative z-10">
+                    <div className="space-y-3 flex-1 min-w-0">
+                        <h1 className="text-white font-bold text-3xl uppercase truncate tracking-tight">{userData.name}</h1>
+                        <div className="space-y-1 text-sm text-white/90 font-medium">
+                            <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">niak</span> : {userData.memberId}</p>
+                            <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">status</span> : <span className="text-white font-bold bg-[#4caf50] px-2 rounded text-[10px] tracking-wider uppercase">aktif</span></p>
+                        </div>
+                        <div className="pt-2">
+                            <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest lowercase">saldo utama (tapro)</p>
+                            {/* Format Saldo menggunakan Rp Kapital */}
+                            <p className="text-3xl font-bold text-white font-mono tracking-tight">
+                                {showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Bingkai Foto Elegan */}
+                    <div className="w-28 h-36 bg-gray-200 rounded-[24px] border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2 transition-transform hover:rotate-0 duration-500">
+                        <img 
+                            src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`} 
+                            className="w-full h-full object-cover" 
+                            crossOrigin="anonymous" 
+                        />
+                    </div>
+                </div>
+
+                {/* Footer Kartu */}
+                <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-11 flex items-center justify-between px-10 text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner relative z-10">
+                    <span>sejak: {userData.joinDate}</span>
+                    <span>valid: {userData.validUntil}</span>
+                </div>
             </div>
+
+            {/* Tombol Aksi di Bawah Kartu */}
+            <div className="flex justify-center gap-3 mt-4 w-full px-2 max-w-sm uppercase font-bold">
+                <button onClick={handleDownloadCard} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                    <Download size={16} /> simpan
+                </button>
+                <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                    <Share2 size={16} /> bagikan
+                </button>
+            </div>
+        </div>
+    </div>
 
             {/* 2. total simpanan overlay (Rp kapital & detail) */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
