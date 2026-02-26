@@ -13,15 +13,15 @@ export const AdminVerification = () => {
     // STATE TAB: 'pending' (Verifikasi) atau 'active' (Daftar Anggota)
     const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // REF UNTUK INPUT FILE IMPORT
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // 🔥 STATE UNTUK CUSTOM POPUP CONFIRMATION 🔥
-    const [confirmModal, setConfirmModal] = useState<{ 
-        isOpen: boolean; 
-        type: 'verify' | 'reject' | 'reset_pin' | 'delete' | null; 
-        userId: string; 
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        type: 'verify' | 'reject' | 'reset_pin' | 'delete' | null;
+        userId: string;
         userName: string;
         userData?: any; // Simpan data user lengkap untuk validasi saldo
     }>({
@@ -68,14 +68,31 @@ export const AdminVerification = () => {
         setIsProcessing(true);
         const toastId = toast.loading('Memproses...');
         try {
-            const { error } = await supabase.from('profiles').update({ status: 'active' }).eq('id', userId);
+            // Generate NIAK: KKJ-YYMMNNNN (hanya menghitung anggota aktif)
+            const { count } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'active')
+                .not('member_id', 'is', null);
+
+            const seq = (count || 0) + 1;
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const nnak = String(seq).padStart(4, '0');
+            const memberId = `KKJ-${yy}${mm}${nnak}`;
+
+            const { error } = await supabase
+                .from('profiles')
+                .update({ status: 'active', member_id: memberId })
+                .eq('id', userId);
             if (error) throw error;
 
             // Buat notifikasi selamat datang
             await supabase.from('notifications').insert({
                 user_id: userId,
                 title: 'Selamat Bergabung!',
-                message: 'Akun Anda telah diverifikasi. Silakan lengkapi profil dan atur PIN transaksi.',
+                message: `Akun Anda telah diverifikasi. NIAK Anda: ${memberId}. Silakan lengkapi profil dan atur PIN transaksi.`,
                 type: 'info'
             });
 
@@ -151,14 +168,14 @@ export const AdminVerification = () => {
 
             // 2. Eksekusi hapus jika saldo sudah benar-benar nol
             const { error } = await supabase.from('profiles').delete().eq('id', userId);
-            
+
             if (error) {
                 if (error.code === '23503') {
                     throw new Error("Gagal: Anggota memiliki data terkait di tabel lain. Hubungi IT untuk penghapusan paksa.");
                 }
                 throw error;
             }
-            
+
             toast.success('Akun berhasil dihapus!', { id: toastId });
             setConfirmModal({ ...confirmModal, isOpen: false });
             fetchUsers();
@@ -296,17 +313,17 @@ export const AdminVerification = () => {
             {confirmModal.isOpen && (
                 <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20 text-center">
-                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner", 
-                            confirmModal.type === 'verify' ? 'bg-green-50 text-[#136f42]' : 
-                            confirmModal.type === 'reset_pin' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner",
+                            confirmModal.type === 'verify' ? 'bg-green-50 text-[#136f42]' :
+                                confirmModal.type === 'reset_pin' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
                         )}>
                             {confirmModal.type === 'verify' ? <Check size={32} /> : confirmModal.type === 'reset_pin' ? <KeyRound size={32} /> : <Trash2 size={32} />}
                         </div>
-                        
+
                         <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
                             {confirmModal.type === 'verify' ? 'Verifikasi Anggota?' : confirmModal.type === 'reset_pin' ? 'Reset PIN Transaksi?' : 'Hapus Anggota?'}
                         </h3>
-                        
+
                         <p className="text-[11px] text-slate-500 font-medium leading-relaxed mb-8 px-2 uppercase">
                             {confirmModal.type === 'verify' && `setujui pendaftaran ${confirmModal.userName}?`}
                             {confirmModal.type === 'reset_pin' && `pin milik ${confirmModal.userName} akan di-nol-kan kembali.`}
@@ -315,17 +332,17 @@ export const AdminVerification = () => {
 
                         <div className="grid grid-cols-2 gap-3">
                             <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3.5 bg-slate-100 text-slate-400 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">batal</button>
-                            <button 
+                            <button
                                 onClick={() => {
                                     if (confirmModal.type === 'verify') executeVerify();
                                     else if (confirmModal.type === 'reject') executeReject();
                                     else if (confirmModal.type === 'reset_pin') executeResetPin();
                                     else if (confirmModal.type === 'delete') executeDeleteUser();
-                                }} 
-                                disabled={isProcessing} 
-                                className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all", 
-                                    confirmModal.type === 'verify' ? 'bg-[#136f42] shadow-green-900/20' : 
-                                    confirmModal.type === 'reset_pin' ? 'bg-amber-500 shadow-amber-900/20' : 'bg-rose-600 shadow-rose-900/20'
+                                }}
+                                disabled={isProcessing}
+                                className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-all",
+                                    confirmModal.type === 'verify' ? 'bg-[#136f42] shadow-green-900/20' :
+                                        confirmModal.type === 'reset_pin' ? 'bg-amber-500 shadow-amber-900/20' : 'bg-rose-600 shadow-rose-900/20'
                                 )}
                             >
                                 {isProcessing ? 'proses...' : 'lanjutkan'}

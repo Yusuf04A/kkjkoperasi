@@ -160,7 +160,7 @@ export const SubmissionForm = () => {
                         vendor_note: "Pengajuan Penambahan Katalog Baru"
                     };
                     finalAmount = 0;
-                    finalDuration = 0; 
+                    finalDuration = 0;
                 }
             } else if (type === 'Modal Usaha') {
                 detailData = { business_type: formData.jenisUsaha, business_name: formData.namaUsaha, purpose: formData.peruntukan };
@@ -170,11 +170,29 @@ export const SubmissionForm = () => {
                 detailData = { child_name: formData.namaAnak, school_name: formData.namaSekolah, purpose: formData.peruntukan };
             }
 
+            // Generate loan code
+            let loanCode: string | null = null;
+            const prefixMap: Record<string, string> = {
+                'Kredit Barang': 'KB',
+                'Modal Usaha': 'PMU',
+                'Biaya Pelatihan': 'PK',
+            };
+            const prefix = prefixMap[type];
+            if (prefix) {
+                const { count } = await supabase
+                    .from('loans')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('type', type);
+                const seq = (count || 0) + 1;
+                loanCode = `${prefix}-${seq}`;
+            }
+
             const { error } = await supabase.from('loans').insert({
                 user_id: user?.id,
                 amount: finalAmount,
                 duration: finalDuration,
                 type: type,
+                loan_code: loanCode,
                 margin_rate: 10,
                 monthly_payment: simulation.angsuran, // Jika kustom, ini nilainya 0
                 details: detailData,

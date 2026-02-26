@@ -113,7 +113,7 @@ Terima kasih. 🙏
 
     // Hitung total yang sudah dibayar secara nominal
     const totalPaidNominal = paidInstallments.reduce((sum, item) => sum + Number(item.amount), 0);
-    
+
     // Sisa Pokok = Total Pinjaman - Total yang sudah dibayar
     // Jika loan.remaining_amount ada di DB gunakan itu, jika tidak hitung manual
     const sisaPokok = loan.status === 'paid' ? 0 : (loan.amount - totalPaidNominal);
@@ -129,13 +129,12 @@ Terima kasih. 🙏
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Detail Pinjaman</h1>
-                        <p className="text-sm text-gray-500">{loan.type} • ID: {loan.id.slice(0, 8).toUpperCase()}</p>
+                        <p className="text-sm text-gray-500">{loan.type} {loan.loan_code && <span className="font-mono font-bold text-[#136f42]">• {loan.loan_code}</span>} • ID: {loan.id.slice(0, 8).toUpperCase()}</p>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border shadow-sm ${
-                        loan.status === 'active' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                        loan.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
-                        'bg-gray-100 text-gray-600 border-gray-200'
-                    }`}>
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border shadow-sm ${loan.status === 'active' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                            loan.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                'bg-gray-100 text-gray-600 border-gray-200'
+                        }`}>
                         {loan.status === 'active' ? '● AKTIF' : loan.status === 'paid' ? '● LUNAS' : loan.status}
                     </span>
                 </div>
@@ -176,7 +175,7 @@ Terima kasih. 🙏
                             <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">Sisa Pokok Pinjaman</p>
                             <p className="text-3xl font-black text-[#136f42] tracking-tighter">{formatRupiah(sisaPokok)}</p>
                             <div className="flex items-center gap-1.5 mt-2 text-gray-400 text-xs font-medium">
-                                <Info size={12}/> dari total {formatRupiah(loan.amount)}
+                                <Info size={12} /> dari total {formatRupiah(loan.amount)}
                             </div>
                         </div>
 
@@ -197,8 +196,8 @@ Terima kasih. 🙏
                                 <span>{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-2.5 p-0.5 border border-gray-50">
-                                <div 
-                                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out shadow-sm" 
+                                <div
+                                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
                                     style={{ width: `${progress}%` }}
                                 ></div>
                             </div>

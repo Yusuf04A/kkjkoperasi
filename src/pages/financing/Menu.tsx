@@ -4,13 +4,13 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Plus, ArrowRight, FileText, Calendar, Wallet, Info, CheckCircle, Clock, AlertCircle, History, RefreshCw, ChevronRight } from 'lucide-react';
 import { formatRupiah, cn } from '../../lib/utils';
-import { SuccessModal } from '../../components/SuccessModal'; 
+import { SuccessModal } from '../../components/SuccessModal';
 
 export const FinancingMenu = () => {
     const { user } = useAuthStore();
     const navigate = useNavigate();
-    const location = useLocation(); 
-    
+    const location = useLocation();
+
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'verifikasi' | 'berjalan' | 'riwayat'>('berjalan');
@@ -104,7 +104,7 @@ export const FinancingMenu = () => {
             <div className="flex justify-center px-1">
                 <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-1 w-full max-w-xl text-left">
                     {countPending > 0 && (
-                        <button 
+                        <button
                             onClick={() => setActiveTab('verifikasi')}
                             className={cn(
                                 "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -114,8 +114,8 @@ export const FinancingMenu = () => {
                             <Clock size={14} /> Verifikasi
                         </button>
                     )}
-                    
-                    <button 
+
+                    <button
                         onClick={() => setActiveTab('berjalan')}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -125,7 +125,7 @@ export const FinancingMenu = () => {
                         <RefreshCw size={14} /> Berjalan
                     </button>
 
-                    <button 
+                    <button
                         onClick={() => setActiveTab('riwayat')}
                         className={cn(
                             "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
@@ -140,8 +140,8 @@ export const FinancingMenu = () => {
             {/* --- LIST CONTENT --- */}
             <div className="flex items-center gap-3 px-1 text-left">
                 <h2 className="font-bold text-slate-800 text-base tracking-tight capitalize">
-                    {activeTab === 'verifikasi' ? 'Menunggu Konfirmasi Admin' : 
-                     activeTab === 'berjalan' ? 'Pembiayaan Aktif' : 'Riwayat Pengajuan'}
+                    {activeTab === 'verifikasi' ? 'Menunggu Konfirmasi Admin' :
+                        activeTab === 'berjalan' ? 'Pembiayaan Aktif' : 'Riwayat Pengajuan'}
                 </h2>
                 <div className="h-px flex-1 bg-slate-200 rounded-full" />
             </div>
@@ -172,6 +172,11 @@ export const FinancingMenu = () => {
                                     <div className="space-y-0.5 max-w-[70%] text-left">
                                         <div className="flex flex-wrap items-center gap-2 mb-1">
                                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{loan.type}</p>
+                                            {loan.loan_code && (
+                                                <span className="text-[9px] font-black text-[#136f42] bg-green-50 border border-green-200 px-2 py-0.5 rounded-md font-mono tracking-wider">
+                                                    {loan.loan_code}
+                                                </span>
+                                            )}
                                             {itemName && (
                                                 <span className="text-[9px] font-bold text-[#136f42] uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded border border-green-100 truncate">
                                                     - {itemName}
@@ -209,7 +214,7 @@ export const FinancingMenu = () => {
                                                     {loan.reason}
                                                 </p>
                                             </div>
-                                            <button 
+                                            <button
                                                 onClick={() => navigate('/pembiayaan/ajukan')}
                                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                                             >
@@ -242,7 +247,7 @@ export const FinancingMenu = () => {
                 © 2026 Koperasi Pemasaran Karya Kita Jaya
             </p>
 
-            <SuccessModal 
+            <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => setShowSuccessModal(false)}
                 title="PENGAJUAN TERKIRIM!"

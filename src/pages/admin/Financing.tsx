@@ -17,11 +17,11 @@ export const AdminFinancing = () => {
 
     // --- STATE UNTUK MODAL KUSTOM ---
     const [approvalModal, setApprovalModal] = useState<{ isOpen: boolean, loan: any }>({ isOpen: false, loan: null });
-    
-    const [confirmModal, setConfirmModal] = useState<{ 
-        isOpen: boolean, 
-        type: 'approve' | 'reject', 
-        loan: any 
+
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean,
+        type: 'approve' | 'reject',
+        loan: any
     }>({
         isOpen: false,
         type: 'approve',
@@ -103,11 +103,11 @@ export const AdminFinancing = () => {
         setIsProcessing(true);
         const toastId = toast.loading('Menolak pengajuan...');
         try {
-            const { error } = await supabase.from('loans').update({ 
-                status: 'rejected', 
-                reason: rejectReason 
+            const { error } = await supabase.from('loans').update({
+                status: 'rejected',
+                reason: rejectReason
             }).eq('id', loanId);
-            
+
             if (error) throw error;
             toast.success('Pengajuan ditolak', { id: toastId });
             setConfirmModal({ isOpen: false, type: 'reject', loan: null });
@@ -167,11 +167,11 @@ export const AdminFinancing = () => {
         }
 
         const headers = ['Member ID', 'Nama Anggota', 'Tipe Pembiayaan', 'Nominal', 'Tenor', 'Status', 'Tanggal Pengajuan'];
-        
+
         const tableRows = loans.map(loan => {
             let detailType = loan.type;
             if (loan.type === 'Kredit Barang' && loan.details?.is_custom) detailType += ' (Kustom)';
-            
+
             return `
             <tr>
                 <td style="border: 1px solid #ddd; padding: 4px;">${loan.profiles?.member_id || '-'}</td>
@@ -212,7 +212,7 @@ export const AdminFinancing = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         toast.success("Excel berhasil diunduh!");
     };
 
@@ -275,6 +275,7 @@ export const AdminFinancing = () => {
                                         <div className="flex items-center gap-2 mb-0.5">
                                             <h3 className="font-bold text-slate-900 truncate text-sm md:text-base">{loan.profiles?.full_name}</h3>
                                             <p className="text-[10px] font-mono text-slate-400">{loan.profiles?.member_id}</p>
+                                            {loan.loan_code && <span className="text-[10px] font-mono font-bold bg-green-50 text-[#136f42] border border-green-200 px-1.5 py-0.5 rounded-md">{loan.loan_code}</span>}
                                         </div>
                                         <div className="flex flex-wrap items-center gap-x-2 text-[11px] font-medium text-slate-500">
                                             <span className="text-[#136f42] font-bold">{loan.type}</span>
@@ -299,7 +300,7 @@ export const AdminFinancing = () => {
                                                 <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', loan })} className="px-4 py-2 bg-white text-rose-600 border border-rose-100 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95">Tolak</button>
                                             </>
                                         ) : (
-                                            <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 hover:bg-slate-100 transition-all">Detail <ChevronRight size={14}/></Link>
+                                            <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1 hover:bg-slate-100 transition-all">Detail <ChevronRight size={14} /></Link>
                                         )}
                                     </div>
                                 </div>
@@ -327,8 +328,8 @@ export const AdminFinancing = () => {
                             )}
                         </p>
                         {confirmModal.type === 'reject' && (
-                            <textarea 
-                                value={rejectReason} 
+                            <textarea
+                                value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="Contoh: Dokumen jaminan tidak lengkap..."
                                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-medium outline-none focus:border-rose-500 transition-all h-24 mb-6 resize-none"

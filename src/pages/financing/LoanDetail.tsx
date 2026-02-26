@@ -26,8 +26,8 @@ export const LoanDetail = () => {
 
     // State untuk Pembayaran PIN & Success Modal
     const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false); 
-    const [selectedInstallment, setSelectedInstallment] = useState<{id: string, amount: number} | null>(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [selectedInstallment, setSelectedInstallment] = useState<{ id: string, amount: number } | null>(null);
 
     // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
     const playSuccessSound = () => {
@@ -67,15 +67,15 @@ export const LoanDetail = () => {
         if (!selectedInstallment) return;
 
         try {
-            const { error } = await supabase.rpc('pay_installment', { 
-                installment_id_param: selectedInstallment.id 
+            const { error } = await supabase.rpc('pay_installment', {
+                installment_id_param: selectedInstallment.id
             });
-            
+
             if (error) throw error;
-            
+
             // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
             playSuccessSound();
-            setShowSuccessModal(true); 
+            setShowSuccessModal(true);
 
             fetchData();
             checkSession();
@@ -110,8 +110,8 @@ export const LoanDetail = () => {
         else {
             playSuccessSound();
             toast.success("pengajuan dikirim ke admin", { id: toastId });
-            setShowModal(false); 
-            fetchData(); 
+            setShowModal(false);
+            fetchData();
         }
     };
 
@@ -120,7 +120,7 @@ export const LoanDetail = () => {
             <Loader2 className="w-10 h-10 text-[#136f42] animate-spin mb-4" />
         </div>
     );
-    
+
     if (!loan) return <div className="min-h-screen flex items-center justify-center text-rose-500 lowercase">data tidak ditemukan</div>;
 
     const paidCount = installments.filter(i => i.status === 'paid').length;
@@ -138,9 +138,16 @@ export const LoanDetail = () => {
                     </button>
                     <div>
                         <h1 className="text-base font-medium text-gray-900 leading-tight tracking-tight first-letter:uppercase">detail pinjaman</h1>
-                        <p className="text-[10px] font-bold text-[#136f42] tracking-wider uppercase">
-                            {loan.type} {itemName && `- ${itemName}`}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                            <p className="text-[10px] font-bold text-[#136f42] tracking-wider uppercase">
+                                {loan.type} {itemName && `- ${itemName}`}
+                            </p>
+                            {loan.loan_code && (
+                                <span className="text-[9px] font-black bg-green-100 text-[#136f42] border border-green-200 px-2 py-0.5 rounded-md font-mono tracking-widest">
+                                    {loan.loan_code}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -151,7 +158,7 @@ export const LoanDetail = () => {
                 <div className="bg-[#136f42] p-6 rounded-[2rem] shadow-xl relative overflow-hidden text-white uppercase">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] z-0" />
                     <div className="absolute right-0 top-0 w-32 h-32 bg-[#aeea00]/10 rounded-full blur-3xl -mr-10 -mt-10" />
-                    
+
                     <div className="relative z-10">
                         <div className="flex justify-between items-start">
                             <div>
@@ -172,9 +179,9 @@ export const LoanDetail = () => {
                                 <span>{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-black/20 rounded-full h-2 shadow-inner">
-                                <div 
-                                    className="bg-[#aeea00] h-2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(174,234,0,0.5)]" 
-                                    style={{ width: `${progress}%` }} 
+                                <div
+                                    className="bg-[#aeea00] h-2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(174,234,0,0.5)]"
+                                    style={{ width: `${progress}%` }}
                                 />
                             </div>
                             <p className="text-[10px] text-right text-green-100/50 font-medium italic lowercase">
@@ -236,8 +243,8 @@ export const LoanDetail = () => {
                             return (
                                 <div key={item.id} className={cn(
                                     "p-4 rounded-2xl border flex justify-between items-center transition-all",
-                                    isPaid 
-                                        ? "bg-white border-green-100 opacity-80" 
+                                    isPaid
+                                        ? "bg-white border-green-100 opacity-80"
                                         : "bg-white border-gray-100 hover:border-[#136f42] shadow-sm"
                                 )}>
                                     <div className="flex items-center gap-4">
@@ -287,7 +294,7 @@ export const LoanDetail = () => {
             />
 
             {/* SUCCESS MODAL POPUP DI TENGAH */}
-            <SuccessModal 
+            <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => {
                     setShowSuccessModal(false);
