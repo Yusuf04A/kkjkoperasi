@@ -78,15 +78,18 @@ export const Home = () => {
         return formatRupiah(amount).replace('rp', 'Rp');
     };
 
+    // 🔥 DAFTAR 10 JENIS SESUAI URUTAN PERMINTAAN
     const otherSavings = [
-        { id: 'simpok', name: 'simpanan pokok', val: user?.simpok_balance || 0 },
-        { id: 'simwa', name: 'simpanan wajib', val: user?.simwa_balance || 0 },
-        { id: 'simade', name: 'simpanan masa depan', val: user?.simade_balance || 0 },
-        { id: 'sipena', name: 'simpanan pendidikan', val: user?.sipena_balance || 0 },
-        { id: 'sihara', name: 'simpanan hari raya', val: user?.sihara_balance || 0 },
-        { id: 'siqurma', name: 'simpanan qurban', val: user?.siqurma_balance || 0 },
-        { id: 'siuji', name: 'simpanan haji/umroh', val: user?.siuji_balance || 0 },
-        { id: 'siwalima', name: 'simpanan walimah', val: user?.siwalima_balance || 0 },
+        { id: 'simpok', name: 'S. Pokok', val: user?.simpok_balance || 0 },
+        { id: 'simwa', name: 'S. Wajib', val: user?.simwa_balance || 0 },
+        { id: 'simade', name: 'S. Masa Depan', val: user?.simade_balance || 0 },
+        { id: 'sipena', name: 'S. Pendidikan', val: user?.sipena_balance || 0 },
+        { id: 'siwalima', name: 'S. Walimah', val: user?.siwalima_balance || 0 },
+        { id: 'siuji', name: 'S. Umroh & Haji', val: user?.siuji_balance || 0 },
+        { id: 'siqurma', name: 'S. Qurban', val: user?.siqurma_balance || 0 },
+        { id: 'sihara', name: 'S. Hari Raya', val: user?.sihara_balance || 0 },
+        { id: 'tamasa', name: 'Tamasa (Emas)', val: user?.tamasa_balance || 0 },
+        { id: 'inflip', name: 'Inflip (Properti)', val: user?.inflip_balance || 0 },
     ];
 
     // --- logika penjumlahan kumulatif ---
@@ -256,8 +259,8 @@ export const Home = () => {
                                 <span className="group-hover:text-[#136f42]">total Aset</span>
                                 <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>{showBalance ? <Eye size={14} /> : <EyeOff size={14} />}</button>
                             </div>
-                            {/* 🔥 detail indicator */}
-                            <div className="bg-green-50 text-[#136f42] text-[10px] px-2 py-0.5 rounded italic font-black uppercase">detail <ArrowRight size={10} className="inline ml-1" /></div>
+                            {/* 🔥 detail indicator changed from '8 Jenis' to 'Detail' */}
+                            <div className="bg-green-50 text-[#136f42] text-[10px] px-2 py-0.5 rounded italic font-black uppercase">Detail <ArrowRight size={10} className="inline ml-1" /></div>
                         </div>
                         <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors tracking-tighter">
                             {/* 🔥 Rp kapital */}
@@ -344,8 +347,8 @@ export const Home = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {otherSavings.map((item, idx) => (
                                     <div key={idx} onClick={() => toggleSelection(item.id)} className={cn("flex justify-between items-center p-5 rounded-2xl border transition-all cursor-pointer active:scale-95", selectedIds.includes(item.id) ? "bg-green-600 border-green-600 text-white shadow-lg scale-[1.02]" : "bg-gray-50 border-gray-100 text-slate-900 hover:bg-green-50")}>
-                                        <span className={cn("text-xs font-bold uppercase", selectedIds.includes(item.id) ? "text-green-50" : "text-gray-600")}>{item.name}</span>
-                                        <span className="text-base font-bold font-mono tracking-tight">{formatRpUpper(item.val)}</span>
+                                        <span className={cn("text-xs font-black uppercase", selectedIds.includes(item.id) ? "text-green-50" : "text-gray-600")}>{item.name}</span>
+                                        <span className="text-base font-black font-mono tracking-tighter">{formatRpUpper(item.val)}</span>
                                     </div>
                                 ))}
                             </div>
