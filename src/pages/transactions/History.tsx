@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
@@ -6,12 +6,14 @@ import {
   ArrowRightLeft, Coins, TrendingUp, Filter,
   ShoppingBag, ChevronDown, ChevronUp, Package, X,
   Building, Scale, Wallet, Landmark, Calendar,
-  FileText, Info, Hash, Tag
+  FileText, Info, Hash, Tag, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatRupiah, cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
+import html2canvas from 'html2canvas';
+import toast from 'react-hot-toast';
 
 export const TransactionHistory = () => {
   const { user, checkSession } = useAuthStore();
@@ -22,6 +24,10 @@ export const TransactionHistory = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // --- STATE UNTUK UNDUH STRUK ---
+  const [selectedTx, setSelectedTx] = useState<any>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -56,6 +62,12 @@ export const TransactionHistory = () => {
                 return { ...tx, order_details: relatedOrder.shop_order_items };
             }
         }
+        
+        // Parsing metadata untuk jabarkan rincian setoran simpanan
+        if ((tx.type === 'deposit' || tx.type === 'transfer_out') && tx.metadata) {
+            return { ...tx, deposit_details: tx.metadata };
+        }
+
         return tx;
       });
 
@@ -65,6 +77,28 @@ export const TransactionHistory = () => {
 
     fetchHistory();
   }, [user, checkSession]);
+
+  // --- FUNGSI UNDUH STRUK ---
+  const handleDownloadReceipt = async (tx: any) => {
+    setSelectedTx(tx);
+    const toastId = toast.loading("Menyiapkan struk...");
+    
+    // Beri sedikit delay agar React merender template struk yang dipilih
+    setTimeout(async () => {
+      if (!receiptRef.current) return;
+      try {
+        const canvas = await html2canvas(receiptRef.current, { scale: 2 });
+        const link = document.createElement('a');
+        link.download = `KKJ-STRUK-${tx.id.substring(0,8)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        toast.success("Struk berhasil diunduh!", { id: toastId });
+        setSelectedTx(null);
+      } catch (err) {
+        toast.error("Gagal mengunduh struk", { id: toastId });
+      }
+    }, 500);
+  };
 
   const categories = [
     { id: 'all', label: 'Semua', icon: <Clock size={12}/> },
@@ -96,7 +130,7 @@ export const TransactionHistory = () => {
     const styles: any = {
       topup: { icon: <ArrowDownLeft />, bg: 'bg-emerald-50', text: 'text-emerald-600', name: 'Isi saldo' },
       withdraw: { icon: <ArrowUpRight />, bg: 'bg-rose-50', text: 'text-rose-600', name: 'Tarik tunai' },
-      transfer_out: { icon: <ArrowUpRight />, bg: 'bg-blue-50', text: 'text-blue-600', name: 'Kirim saldo' },
+      transfer_out: { icon: <ArrowUpRight />, bg: 'bg-blue-50', text: 'text-blue-600', name: 'Setoran Simpanan' },
       transfer_in: { icon: <ArrowDownLeft />, bg: 'bg-emerald-50', text: 'text-emerald-600', name: 'Terima saldo' },
       shop_payment: { icon: <ShoppingBag />, bg: 'bg-indigo-50', text: 'text-indigo-600', name: 'Belanja koperasi' },
       loan_payment: { icon: <Calendar />, bg: 'bg-amber-50', text: 'text-amber-600', name: 'Angsuran pinjaman' },
@@ -118,7 +152,7 @@ export const TransactionHistory = () => {
             <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600 shrink-0">
               <ArrowLeft size={20} strokeWidth={2.5} />
             </button>
-            <h1 className="text-lg font-bold tracking-tight text-slate-800">
+            <h1 className="text-lg font-bold tracking-tight text-slate-800 lowercase">
               Riwayat transaksi
             </h1>
           </div>
@@ -144,7 +178,6 @@ export const TransactionHistory = () => {
           </div>
         </div>
 
-        {/* HORIZONTAL CHIP FILTER */}
         {showFilter && (
             <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-300">
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -168,20 +201,10 @@ export const TransactionHistory = () => {
       </div>
 
       <div className="max-w-xl mx-auto p-4 space-y-3">
-        {/* PETUNJUK KATEGORI AKTIF */}
-        {activeFilter !== 'all' && !loading && (
-            <div className="flex items-center gap-2 px-1 mb-2 animate-in fade-in slide-in-from-left-2">
-                <div className="h-4 w-1 bg-[#136f42] rounded-full"></div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    Kategori: <span className="text-[#136f42]">{categories.find(c => c.id === activeFilter)?.label}</span>
-                </p>
-            </div>
-        )}
-
         {loading ? (
           <div className="text-center py-24 flex flex-col items-center gap-4 text-slate-400">
             <div className="w-8 h-8 border-2 border-slate-200 border-t-[#136f42] rounded-full animate-spin"></div>
-            <p className="text-xs font-medium uppercase tracking-widest">Sinkronisasi data...</p>
+            <p className="text-xs font-medium uppercase tracking-widest lowercase">Sinkronisasi data...</p>
           </div>
         ) : filteredTransactions.length === 0 ? (
           <div className="text-center py-24 flex flex-col items-center bg-white rounded-[2rem] border border-slate-100 shadow-sm mx-4">
@@ -195,7 +218,6 @@ export const TransactionHistory = () => {
           filteredTransactions.map((tx) => {
             const style = getTransactionStyle(tx);
             const isIncome = ['topup', 'transfer_in', 'lhu'].includes(tx.type);
-            const isShopOrder = tx.type === 'shop_payment';
             const isExpanded = expandedId === tx.id;
 
             return (
@@ -208,12 +230,12 @@ export const TransactionHistory = () => {
                         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0", style.bg, style.text)}>
                             {React.cloneElement(style.icon as React.ReactElement, { size: 22 })}
                         </div>
-                        <div>
+                        <div className="text-left">
                             <p className="font-bold text-slate-800 text-sm tracking-tight flex items-center gap-1.5 capitalize">
                                 {style.name}
                                 {isExpanded ? <ChevronUp size={14} className="text-[#136f42]" /> : <ChevronDown size={14} className="text-slate-400" />}
                             </p>
-                            <p className="text-[10px] font-medium text-slate-400 mt-0.5">
+                            <p className="text-[10px] font-medium text-slate-400 mt-0.5 lowercase">
                                 {format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
                             </p>
                         </div>
@@ -225,7 +247,7 @@ export const TransactionHistory = () => {
                         </p>
                         <div className="flex justify-end mt-0.5">
                             <span className={cn(
-                                "text-[9px] font-bold px-2 py-0.5 rounded-lg border",
+                                "text-[9px] font-bold px-2 py-0.5 rounded-lg border lowercase",
                                 tx.status === 'success' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                                 tx.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
                                 "bg-rose-50 text-rose-700 border-rose-100"
@@ -238,15 +260,50 @@ export const TransactionHistory = () => {
 
                 {isExpanded && (
                     <div className="bg-slate-50 border-t border-slate-100 p-4 animate-in slide-in-from-top-2 duration-200">
-                        {isShopOrder && tx.order_details ? (
+                        {/* JABARKAN RINCIAN SETORAN SIMPANAN */}
+                        {tx.deposit_details ? (
+                             <div className="space-y-4">
+                                <div className="flex justify-between items-center px-1">
+                                     <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest">
+                                        <Coins size={12} /> Rincian Simpanan disetor
+                                    </p>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDownloadReceipt(tx); }}
+                                        className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-blue-100 transition-all active:scale-95"
+                                    >
+                                        <Download size={12} /> Unduh Struk
+                                    </button>
+                                </div>
+                                <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-sm space-y-2">
+                                    {Object.entries(tx.deposit_details).map(([key, val]: any) => val > 0 && (
+                                        <div key={key} className="flex justify-between items-center text-xs">
+                                            <span className="text-slate-500 font-medium uppercase tracking-tight">{key.replace('sim', 'Simpanan ')}</span>
+                                            <span className="font-mono font-bold text-slate-700">{formatRupiah(val)}</span>
+                                        </div>
+                                    ))}
+                                    <div className="pt-2 border-t border-dashed border-slate-100 flex justify-between items-center">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Bayar</span>
+                                        <span className="text-sm font-black text-[#136f42]">{formatRupiah(tx.amount)}</span>
+                                    </div>
+                                </div>
+                             </div>
+                        ) : tx.order_details ? (
                             <>
-                                <p className="text-[10px] font-bold text-slate-400 mb-3 flex items-center gap-2 uppercase tracking-widest">
-                                    <Package size={12} /> Daftar Barang Belanja
-                                </p>
+                                <div className="flex justify-between items-center mb-3">
+                                    <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest px-1">
+                                        <Package size={12} /> Daftar Barang Belanja
+                                    </p>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDownloadReceipt(tx); }}
+                                        className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-blue-100 transition-all active:scale-95"
+                                    >
+                                        <Download size={12} /> Unduh Struk
+                                    </button>
+                                </div>
                                 <div className="space-y-2">
                                     {tx.order_details.map((item: any, idx: number) => (
                                         <div key={idx} className="flex justify-between items-center text-xs">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 text-left">
                                                 <span className="font-bold text-[#136f42] bg-white border border-slate-100 px-2 py-1 rounded text-[10px]">{item.quantity}x</span>
                                                 <span className="font-medium text-slate-700 capitalize">{item.shop_products?.name || 'Item'}</span>
                                             </div>
@@ -260,16 +317,19 @@ export const TransactionHistory = () => {
                         ) : (
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest">
+                                    <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 uppercase tracking-widest px-1">
                                         <FileText size={12} /> Rincian transaksi
                                     </p>
-                                    <span className="text-[9px] font-black text-[#136f42] bg-green-50 px-2 py-1 rounded border border-green-100 uppercase tracking-tighter flex items-center gap-1">
-                                        <Tag size={10}/> {style.name}
-                                    </span>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDownloadReceipt(tx); }}
+                                        className="flex items-center gap-1.5 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-blue-100 transition-all active:scale-95"
+                                    >
+                                        <Download size={12} /> Unduh Struk
+                                    </button>
                                 </div>
                                 
-                                <div className="bg-white border border-slate-100 p-3 rounded-xl shadow-sm">
-                                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                                <div className="bg-white border border-slate-100 p-3 rounded-xl shadow-sm text-left">
+                                    <p className="text-xs text-slate-600 leading-relaxed font-medium lowercase">
                                         {tx.description || `Transaksi ${style.name} via Saldo Tapro.`}
                                     </p>
                                     <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
@@ -280,13 +340,6 @@ export const TransactionHistory = () => {
                                         <span className="text-[9px] text-slate-400 font-mono font-bold uppercase">{tx.id.slice(0, 18)}</span>
                                     </div>
                                 </div>
-
-                                <div className="flex items-center gap-2 bg-blue-50 p-2.5 rounded-xl border border-blue-100">
-                                    <Info size={12} className="text-blue-600 shrink-0" />
-                                    <p className="text-[10px] text-blue-800 font-medium leading-tight italic">
-                                        Data tercatat otomatis di sistem Koperasi KKJ.
-                                    </p>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -296,6 +349,58 @@ export const TransactionHistory = () => {
           })
         )}
       </div>
+
+      {/* --- HIDDEN TEMPLATE UNTUK STRUK --- */}
+      {selectedTx && (
+        <div className="fixed -left-[9999px] top-0">
+          <div ref={receiptRef} className="w-[450px] p-10 bg-white text-slate-900 font-mono text-sm border-4 border-double border-slate-800 text-left">
+            <div className="text-center border-b-2 border-dashed border-slate-300 pb-4 mb-4">
+              <h2 className="font-black text-xl uppercase tracking-tighter">Koperasi Karya Kita Jaya</h2>
+              <p className="text-[10px] uppercase">Gedung Pusat Layanan Digital</p>
+              <p className="text-[10px] italic">Bukti Transaksi (Salinan Sah)</p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between uppercase text-[10px]"><span>Anggota :</span> <span className="font-bold">{user?.full_name}</span></div>
+              <div className="flex justify-between uppercase text-[10px]"><span>Tanggal :</span> <span>{new Date(selectedTx.created_at).toLocaleString('id-ID')}</span></div>
+              <div className="flex justify-between uppercase text-[10px]"><span>Status  :</span> <span className="text-emerald-600 font-bold">BERHASIL</span></div>
+              
+              <div className="mt-4 border-y border-dashed border-slate-300 py-4 space-y-2">
+                {/* JIKA SETORAN SIMPANAN (MULTI) */}
+                {selectedTx.deposit_details ? (
+                  Object.entries(selectedTx.deposit_details).map(([key, val]: any) => val > 0 && (
+                    <div key={key} className="flex justify-between text-[11px] uppercase">
+                      <span>{key.replace('sim', 'SIMPANAN ')}</span>
+                      <span>{val.toLocaleString('id-ID')}</span>
+                    </div>
+                  ))
+                ) : selectedTx.order_details ? (
+                  selectedTx.order_details.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-[11px] uppercase">
+                      <span>{item.quantity}X {item.shop_products?.name}</span>
+                      <span>{(item.price_at_purchase * item.quantity).toLocaleString('id-ID')}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-between text-[11px] uppercase">
+                    <span>{selectedTx.description}</span>
+                    <span>{selectedTx.amount.toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between font-black text-lg pt-2">
+                <span>TOTAL</span>
+                <span>Rp {selectedTx.amount.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+            <div className="mt-10 pt-4 border-t border-slate-100 text-center lowercase text-slate-400">
+              <p className="text-[8px] font-bold break-all mb-2 uppercase">Ref-ID: {selectedTx.id}</p>
+              <p className="text-[9px] italic leading-tight">struk ini adalah salinan digital resmi dari sistem kkj mobile.</p>
+              <p className="text-[10px] font-bold mt-4 uppercase tracking-[0.3em]">Terima Kasih</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

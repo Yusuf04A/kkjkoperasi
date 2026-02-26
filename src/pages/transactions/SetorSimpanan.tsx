@@ -1,38 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
-import { formatRupiah } from '../../lib/utils';
-import {
-    ArrowLeft, Wallet, CheckCircle, Save,
-    PiggyBank, School, Heart, Plane, Gift,
-    Loader2, AlertCircle
-} from 'lucide-react';
+import { formatRupiah, cn } from '../../lib/utils';
+import { ArrowLeft, Wallet, Loader2, Download, Coins } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PinModal } from '../../components/PinModal';
-import { SuccessModal } from '../../components/SuccessModal'; // 🔥 Import SuccessModal
+import { SuccessModal } from '../../components/SuccessModal';
+import html2canvas from 'html2canvas';
 
 export const SetorSimpanan = () => {
     const navigate = useNavigate();
     const { user, checkSession } = useAuthStore();
     const [loading, setLoading] = useState(true);
+    const receiptRef = useRef<HTMLDivElement>(null);
 
-    const [selectedSimpanan, setSelectedSimpanan] = useState<any>(null);
-    const [amount, setAmount] = useState<string>('');
     const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false); // 🔥 State Modal Sukses
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const simpananOptions = [
-        { id: 'simwa', name: 'Simpanan Wajib', col: 'simwa_balance', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', desc: 'Kewajiban rutin anggota' },
-        { id: 'simpok', name: 'Simpanan Pokok', col: 'simpok_balance', icon: Save, color: 'text-indigo-600', bg: 'bg-indigo-50', desc: 'Simpanan dasar keanggotaan' },
-        { id: 'simade', name: 'Masa Depan', col: 'simade_balance', icon: PiggyBank, color: 'text-emerald-600', bg: 'bg-emerald-50', desc: 'Tabungan jangka panjang' },
-        { id: 'sipena', name: 'Pendidikan', col: 'sipena_balance', icon: School, color: 'text-orange-600', bg: 'bg-orange-50', desc: 'Persiapan biaya sekolah' },
-        { id: 'sihara', name: 'Hari Raya', col: 'sihara_balance', icon: Gift, color: 'text-purple-600', bg: 'bg-purple-50', desc: 'Tunjangan hari raya mandiri' },
-        { id: 'siqurma', name: 'Qurban', col: 'siqurma_balance', icon: Heart, color: 'text-red-600', bg: 'bg-red-50', desc: 'Tabungan ibadah qurban' },
-        { id: 'siuji', name: 'Haji / Umroh', col: 'siuji_balance', icon: Plane, color: 'text-teal-600', bg: 'bg-teal-50', desc: 'Simpanan tanah suci' },
-        { id: 'siwalima', name: 'Walimah', col: 'siwalima_balance', icon: Heart, color: 'text-pink-600', bg: 'bg-pink-50', desc: 'Persiapan biaya pernikahan' },
-    ];
+    const [depositForm, setDepositForm] = useState({
+        simpok: 250000, 
+        simwa: 50000,   
+        donasi: 10000,  
+        simade: 0,
+        sipena: 0,
+        sihara: 0,
+        siqurma: 0,
+        siuji: 0,
+        siwalima: 0
+    });
+
+    const isSimwaLunas = (user?.simwa_balance || 0) >= 1200000; 
 
     useEffect(() => {
         const init = async () => {
@@ -42,56 +41,61 @@ export const SetorSimpanan = () => {
         init();
     }, []);
 
-    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const raw = e.target.value.replace(/\D/g, '');
-        setAmount(raw ? parseInt(raw).toLocaleString('id-ID') : '');
+    const handleInputChange = (name: string, value: string) => {
+        const numValue = parseInt(value.replace(/\D/g, '')) || 0;
+        setDepositForm(prev => ({ ...prev, [name]: numValue }));
+    };
+
+    const totalSetoran = Object.values(depositForm).reduce((a, b) => a + b, 0);
+
+    const generateDescription = () => {
+        const activeItems = Object.entries(depositForm)
+            .filter(([_, val]) => val > 0)
+            .map(([key, val]) => {
+                const label = key.replace('sim', 'Simpanan ').replace('simade', 'Masa Depan');
+                return `${label}: ${val.toLocaleString('id-ID')}`;
+            });
+        return activeItems.join(', ');
     };
 
     const handleInitialSubmit = () => {
-        const cleanAmount = amount ? parseInt(amount.replace(/\./g, '')) : 0;
-        if (!selectedSimpanan) return toast.error("Pilih jenis simpanan tujuan dulu");
-        if (cleanAmount < 10000) return toast.error("Minimal setor Rp 10.000");
-        if (cleanAmount > (user?.tapro_balance || 0)) return toast.error("Saldo Tapro tidak mencukupi!");
+        if (totalSetoran > (user?.tapro_balance || 0)) return toast.error("Saldo Tapro tidak mencukupi!");
+        if (depositForm.simwa > 0 && depositForm.simwa % 50000 !== 0) return toast.error("Simpanan Wajib harus kelipatan Rp 50.000");
+        if (depositForm.donasi < 10000 && depositForm.donasi > 0) return toast.error("Minimal Donasi Rp 10.000");
         setShowPinModal(true);
     };
 
-    const executeTransfer = async () => {
+    const executeDeposit = async () => {
         setIsSubmitting(true);
-        const toastId = toast.loading("Memproses pemindahan saldo...");
-        const cleanAmount = parseInt(amount.replace(/\./g, ''));
-
+        const toastId = toast.loading("Memproses...");
         try {
-            // 1. Potong Saldo Tapro
-            const { error: errTapro } = await supabase.from('profiles').update({ tapro_balance: (user?.tapro_balance || 0) - cleanAmount }).eq('id', user?.id);
-            if (errTapro) throw errTapro;
+            const { error: errUpdate } = await supabase.from('profiles').update({
+                tapro_balance: (user?.tapro_balance || 0) - totalSetoran,
+                simpok_balance: (user?.simpok_balance || 0) + depositForm.simpok,
+                simwa_balance: (user?.simwa_balance || 0) + depositForm.simwa,
+                simade_balance: (user?.simade_balance || 0) + depositForm.simade,
+                sipena_balance: (user?.sipena_balance || 0) + depositForm.sipena,
+                sihara_balance: (user?.sihara_balance || 0) + depositForm.sihara,
+                siqurma_balance: (user?.siqurma_balance || 0) + depositForm.siqurma,
+                siuji_balance: (user?.siuji_balance || 0) + depositForm.siuji,
+                siwalima_balance: (user?.siwalima_balance || 0) + depositForm.siwalima,
+            }).eq('id', user?.id);
 
-            // 2. Ambil saldo tujuan saat ini
-            const { data: currentProfile } = await supabase.from('profiles').select(selectedSimpanan.col).eq('id', user?.id).single();
-            const currentDestBalance = currentProfile ? currentProfile[selectedSimpanan.col] : 0;
+            if (errUpdate) throw errUpdate;
 
-            // 3. Tambah Saldo Tujuan
-            const { error: errDest } = await supabase.from('profiles').update({ [selectedSimpanan.col]: (Number(currentDestBalance) || 0) + cleanAmount }).eq('id', user?.id);
-            if (errDest) throw errDest;
-
-            // 4. Catat Transaksi
             await supabase.from('transactions').insert({
-                user_id: user?.id, 
-                type: 'transfer_out', 
-                amount: cleanAmount, 
-                status: 'success', 
-                description: `Setor ke ${selectedSimpanan.name}`
+                user_id: user?.id,
+                type: 'deposit',
+                amount: totalSetoran,
+                status: 'success',
+                description: generateDescription(),
+                metadata: depositForm
             });
 
-            // 5. SELESAI: Tutup Modal PIN & Tampilkan Modal Sukses Tengah
+            await checkSession(); 
             toast.dismiss(toastId);
             setShowPinModal(false);
-            
-            // Beri sedikit delay agar transisi modal PIN ke Modal Sukses mulus
-            setTimeout(() => {
-                setShowSuccessModal(true);
-            }, 100);
-            
-            await checkSession();
+            setTimeout(() => { setShowSuccessModal(true); }, 200);
         } catch (err: any) {
             toast.error("Gagal: " + err.message, { id: toastId });
         } finally {
@@ -99,136 +103,113 @@ export const SetorSimpanan = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <Loader2 className="animate-spin text-[#136f42]" size={32} />
-            </div>
-        );
-    }
+    const handleDownloadReceipt = async () => {
+        if (!receiptRef.current) return;
+        const canvas = await html2canvas(receiptRef.current, { scale: 2 });
+        const link = document.createElement('a');
+        link.download = `STRUK-SETOR-${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    };
+
+    const formatRpUpper = (amount: number) => formatRupiah(amount).replace('rp', 'RP');
+
+    if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><Loader2 className="animate-spin text-[#136f42]" size={32} /></div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 font-sans text-slate-900">
-            
-            {/* HEADER */}
-            <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
-                <div className="px-4 py-4 flex items-center gap-3">
-                    <button 
-                        onClick={() => navigate(-1)} 
-                        className="p-2 rounded-full hover:bg-green-50 text-[#136f42] transition-colors"
-                    >
-                        <ArrowLeft size={20} strokeWidth={2.5} />
-                    </button>
-                    <h1 className="text-lg font-bold text-gray-900 leading-none lowercase">
-                        Setor simpanan
-                    </h1>
+        <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900">
+            {/* HEADER - MENGIKUTI STYLE DETAIL PINJAMAN */}
+            <div className="sticky top-0 z-30 bg-white border-b border-slate-100 shadow-sm px-4 py-5 flex items-center gap-4">
+                <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors"><ArrowLeft size={24} strokeWidth={2.5} /></button>
+                <div className="text-left">
+                    <h1 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Setor Simpanan Multi</h1>
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Layanan Keuangan Anggota</p>
                 </div>
             </div>
 
-            <div className="max-w-xl mx-auto p-4 space-y-6">
-                
-                {/* SUMBER DANA */}
-                <div className="bg-[#136f42] rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden">
-                    <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#167d4a] to-[#0f5c35] opacity-90 z-0"></div>
-                    
+            <div className="max-w-2xl mx-auto p-4 space-y-6">
+                {/* KARTU SALDO - MENGIKUTI STYLE TOTAL PINJAMAN */}
+                <div className="bg-[#136f42] rounded-[2rem] p-8 text-white shadow-xl relative overflow-hidden text-left border border-white/10">
                     <div className="relative z-10">
-                        <p className="text-green-100/70 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Sumber Dana Utama</p>
-                        <div className="flex items-center gap-2 mb-3">
-                            <Wallet size={18} className="text-[#aeea00]" />
-                            <span className="font-bold text-sm">Saldo Tapro</span>
-                        </div>
-                        <h2 className="text-3xl font-black font-mono tracking-tighter">
-                            {user ? formatRupiah(user.tapro_balance) : 'Rp 0'}
-                        </h2>
+                        <p className="text-white/60 text-xs font-bold uppercase tracking-[0.2em] mb-2">Saldo Tersedia</p>
+                        <h2 className="text-4xl font-black tracking-tight">{formatRpUpper(user?.tapro_balance || 0)}</h2>
                     </div>
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10"><Wallet size={120} /></div>
                 </div>
 
-                {/* PILIH TUJUAN */}
-                <div>
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4 px-1 lowercase">Pilih tujuan simpanan</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        {simpananOptions.map((item) => (
-                            <button 
-                                key={item.id} 
-                                onClick={() => setSelectedSimpanan(item)} 
-                                className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-                                    selectedSimpanan?.id === item.id 
-                                    ? 'border-[#136f42] bg-green-50/50 ring-1 ring-[#136f42] shadow-md' 
-                                    : 'border-gray-100 bg-white hover:border-green-200 shadow-sm'
-                                }`}
-                            >
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 shadow-sm ${item.bg} ${item.color}`}>
-                                    <item.icon size={20} />
+                {/* FORM CONTAINER */}
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-8 text-left">
+                    {/* INPUT UTAMA */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Simpanan Pokok</label>
+                            <input type="text" value={depositForm.simpok.toLocaleString('id-ID')} onChange={(e) => handleInputChange('simpok', e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-bold text-xl text-slate-800 focus:border-[#136f42] focus:bg-white outline-none transition-all" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Simpanan Wajib</label>
+                            <input disabled={isSimwaLunas} type="text" value={isSimwaLunas ? "LUNAS" : depositForm.simwa.toLocaleString('id-ID')} onChange={(e) => handleInputChange('simwa', e.target.value)} className={cn("w-full border-2 rounded-2xl p-5 font-bold text-xl outline-none transition-all", isSimwaLunas ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 border-slate-100 text-slate-800 focus:border-[#136f42] focus:bg-white")} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-black uppercase text-orange-400 tracking-widest ml-1">Donasi Kebersamaan</label>
+                            <input type="text" value={depositForm.donasi.toLocaleString('id-ID')} onChange={(e) => handleInputChange('donasi', e.target.value)} className="w-full bg-orange-50/30 border-2 border-orange-100 rounded-2xl p-5 font-bold text-xl text-orange-700 focus:border-orange-400 focus:bg-white outline-none transition-all" />
+                        </div>
+                    </div>
+
+                    <div className="border-t border-dashed border-slate-200 pt-8">
+                        <h3 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-[0.2em]">Simpanan Sukarela Lainnya</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                            {[
+                                {id: 'simade', label: 'Masa Depan'}, {id: 'sipena', label: 'Pendidikan'},
+                                {id: 'sihara', label: 'Hari Raya'}, {id: 'siqurma', label: 'Qurban'},
+                                {id: 'siuji', label: 'Haji / Umroh'}, {id: 'siwalima', label: 'Walimah'}
+                            ].map((item) => (
+                                <div key={item.id} className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider ml-1">{item.label}</label>
+                                    <input type="text" placeholder="Rp 0" value={depositForm[item.id as keyof typeof depositForm] === 0 ? '' : depositForm[item.id as keyof typeof depositForm].toLocaleString('id-ID')} onChange={(e) => handleInputChange(item.id, e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 font-bold text-slate-700 focus:border-[#136f42] outline-none transition-all" />
                                 </div>
-                                <h4 className={`font-bold text-sm mb-1 tracking-tight ${selectedSimpanan?.id === item.id ? 'text-[#136f42]' : 'text-gray-800'}`}>
-                                    {item.name}
-                                </h4>
-                                <p className="text-[10px] text-gray-400 leading-tight font-medium line-clamp-2">{item.desc}</p>
-                                
-                                {selectedSimpanan?.id === item.id && (
-                                    <div className="absolute top-3 right-3 text-[#136f42] animate-in zoom-in-50">
-                                        <CheckCircle size={18} fill="currentColor" className="text-white shadow-sm" />
-                                    </div>
-                                )}
-                            </button>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* INPUT NOMINAL */}
-                {selectedSimpanan && (
-                    <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-green-50 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center justify-between mb-5">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest lowercase">Nominal setoran</span>
-                            <span className="text-[10px] font-black text-[#136f42] bg-green-50 px-3 py-1 rounded-full border border-green-100 uppercase tracking-tighter">
-                                Ke: {selectedSimpanan.name}
-                            </span>
+                    {/* TOTAL & SUBMIT */}
+                    <div className="pt-8 border-t border-slate-100">
+                        <div className="flex justify-between items-center mb-8 px-2 font-black uppercase">
+                            <span className="text-slate-400 text-sm tracking-widest">Total Setoran</span>
+                            <span className="text-3xl text-[#136f42] tracking-tighter">{formatRpUpper(totalSetoran)}</span>
                         </div>
-                        
-                        <div className="relative group mb-6">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-300 group-focus-within:text-[#136f42] transition-colors text-xl">Rp</span>
-                            <input 
-                                type="text" 
-                                value={amount} 
-                                onChange={handleAmountChange} 
-                                placeholder="0" 
-                                className="w-full pl-14 pr-4 py-5 bg-gray-50 border border-gray-100 rounded-2xl font-black text-3xl text-gray-900 focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all placeholder:text-gray-200" 
-                                autoFocus 
-                            />
-                        </div>
-
-                        <button 
-                            onClick={handleInitialSubmit} 
-                            disabled={isSubmitting} 
-                            className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-lg hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3 uppercase tracking-widest"
-                        >
-                            {isSubmitting ? <Loader2 className="animate-spin" /> : "Lanjut konfirmasi"}
+                        <button onClick={handleInitialSubmit} className="w-full bg-[#136f42] text-white py-6 rounded-3xl font-bold text-xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">
+                            {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : "Konfirmasi Setoran"}
                         </button>
                     </div>
-                )}
+                </div>
             </div>
 
-            {/* MODAL PIN */}
-            <PinModal 
-                isOpen={showPinModal} 
-                onClose={() => setShowPinModal(false)} 
-                onSuccess={executeTransfer} 
-                title="Konfirmasi setoran" 
-            />
+            <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeDeposit} title="Verifikasi Transaksi" />
+            <SuccessModal isOpen={showSuccessModal} onClose={() => navigate('/dashboard')} title="Berhasil Disetor!" message={`Setoran sejumlah ${formatRpUpper(totalSetoran)} telah berhasil masuk ke rincian simpanan Anda.`} actionLabel="Unduh Struk" onAction={handleDownloadReceipt} />
 
-            {/* 🔥 SUCCESS MODAL POPUP DI TENGAH 🔥 */}
-            <SuccessModal 
-                isOpen={showSuccessModal}
-                onClose={() => {
-                    setShowSuccessModal(false);
-                    setAmount('');
-                    setSelectedSimpanan(null);
-                    navigate('/dashboard'); // Arahkan kembali setelah ditutup
-                }}
-                title="SETORAN BERHASIL!"
-                message={`Saldo Tapro Anda telah berhasil dipindahkan ke ${selectedSimpanan?.name}. Silakan cek riwayat simpanan Anda secara berkala.`}
-            />
+            {/* HIDDEN RECEIPT */}
+            <div className="fixed -left-[9999px] top-0">
+                <div ref={receiptRef} className="w-[500px] p-12 bg-white text-slate-900 font-mono text-base border-8 border-double border-slate-800">
+                    <div className="text-center border-b-4 border-dashed border-slate-300 pb-6 mb-8">
+                        <h2 className="font-black text-2xl uppercase">Koperasi KKJ</h2>
+                        <p className="text-xs uppercase mt-1">Bukti Transaksi (Salinan Sah)</p>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex justify-between uppercase"><span>Anggota :</span> <span className="font-bold">{user?.full_name}</span></div>
+                        <div className="flex justify-between uppercase"><span>Tanggal :</span> <span>{new Date().toLocaleString('id-ID')}</span></div>
+                        <div className="border-y border-slate-200 py-6 my-6 space-y-2">
+                            {Object.entries(depositForm).map(([key, val]) => val > 0 && (
+                                <div key={key} className="flex justify-between uppercase text-sm">
+                                    <span>{key.replace('sim', 'SIMPANAN ').replace('simade', 'MASA DEPAN')}:</span>
+                                    <span className="font-bold">{val.toLocaleString('id-ID')}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex justify-between font-black text-2xl pt-4 border-t-4 border-slate-900"><span>TOTAL</span><span>{formatRpUpper(totalSetoran)}</span></div>
+                    </div>
+                    <div className="mt-12 text-center opacity-50 text-[10px]">ID: {user?.id?.substring(0,12)}-{Date.now()}</div>
+                </div>
+            </div>
         </div>
     );
 };

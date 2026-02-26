@@ -1,14 +1,16 @@
 import React from 'react';
-import { CheckCircle, X, XCircle } from 'lucide-react'; // 🔥 Tambah XCircle
+import { CheckCircle, X, XCircle, Download } from 'lucide-react'; 
 import { Button } from './ui/Button';
-import { cn } from '../lib/utils'; // 🔥 Pastikan import cn untuk manajemen class
+import { cn } from '../lib/utils';
 
 interface SuccessModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
     message: string;
-    type?: 'success' | 'error'; // 🔥 Tambahkan prop type
+    type?: 'success' | 'error';
+    actionLabel?: string; // 🔥 Label untuk tombol unduh struk
+    onAction?: () => void; // 🔥 Fungsi untuk eksekusi unduh struk
 }
 
 export const SuccessModal: React.FC<SuccessModalProps> = ({ 
@@ -16,7 +18,9 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
     onClose, 
     title, 
     message, 
-    type = 'success' // 🔥 Default sebagai success
+    type = 'success',
+    actionLabel,
+    onAction
 }) => {
     if (!isOpen) return null;
 
@@ -39,7 +43,7 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
                     <X size={20} />
                 </button>
 
-                {/* 🔥 ICON BERUBAH BERDASARKAN TYPE 🔥 */}
+                {/* ICON BERDASARKAN TYPE */}
                 <div className={cn(
                     "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner",
                     isError ? "bg-rose-50 text-rose-500" : "bg-green-50 text-[#136f42]"
@@ -62,18 +66,31 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
                     {message}
                 </p>
 
-                {/* 🔥 TOMBOL BERUBAH WARNA BERDASARKAN TYPE 🔥 */}
-                <Button
-                    onClick={onClose}
-                    className={cn(
-                        "w-full text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase text-xs tracking-widest",
-                        isError 
-                            ? "bg-rose-600 shadow-rose-900/20 hover:bg-rose-700" 
-                            : "bg-[#136f42] shadow-green-900/20 hover:bg-[#0f5c35]"
+                <div className="space-y-3">
+                    {/* 🔥 TOMBOL UNDUH STRUK (HANYA MUNCUL JIKA ADA PROPS) */}
+                    {!isError && actionLabel && onAction && (
+                        <Button
+                            onClick={onAction}
+                            className="w-full bg-blue-50 text-blue-600 font-bold py-4 rounded-2xl hover:bg-blue-100 active:scale-95 transition-all uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2"
+                        >
+                            <Download size={16} />
+                            {actionLabel}
+                        </Button>
                     )}
-                >
-                    Tutup
-                </Button>
+
+                    {/* TOMBOL TUTUP */}
+                    <Button
+                        onClick={onClose}
+                        className={cn(
+                            "w-full text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase text-xs tracking-widest",
+                            isError 
+                                ? "bg-rose-600 shadow-rose-900/20 hover:bg-rose-700" 
+                                : "bg-[#136f42] shadow-green-900/20 hover:bg-[#0f5c35]"
+                        )}
+                    >
+                        {isError ? "Coba Lagi" : "Selesai"}
+                    </Button>
+                </div>
             </div>
         </div>
     );

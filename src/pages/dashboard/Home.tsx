@@ -172,7 +172,7 @@ export const Home = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-10 font-sans">
-            {/* 1. HERO SECTION (HIJAU HUTAN) */}
+    
             {/* 1. HERO SECTION (HIJAU KKJ DENGAN GRADASI PREMIUM) */}
     <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
         {/* Dekorasi Background agar tidak polos */}
