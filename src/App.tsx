@@ -46,6 +46,8 @@ import { AdminLHU } from './pages/admin/AdminLHU';
 import { AdminLabaRugi } from './pages/admin/AdminLabaRugi';
 import { CreditWarehouse } from './pages/admin/CreditWarehouse';
 import { AdminSimpanan } from './pages/admin/AdminSimpanan';
+import { AdminTarikSimpanan } from './pages/admin/AdminTarikSimpanan';
+import { AdminTaproTransaksi } from './pages/admin/AdminTaproTransaksi';
 
 // PROGRAM & LAINNYA
 import { Tamasa } from './pages/program/Tamasa';
@@ -82,7 +84,7 @@ function App() {
           <Route path="/admin/pembiayaan" element={<AdminFinancing />} />
           <Route path="/admin/pembiayaan/:id" element={<AdminLoanDetail />} />
           <Route path="/admin/laporan" element={<AdminFinancialReport />} />
-          
+
           {/* Program Admin Routes */}
           <Route path="/admin/tamasa" element={<AdminTamasa />} />
           <Route path="/admin/inflip" element={<AdminInflip />} /> {/* 🔥 ROUTE BARU */}
@@ -90,7 +92,9 @@ function App() {
           <Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
           <Route path="/admin/simpanan" element={<AdminSimpanan />} />
-          
+          <Route path="/admin/tarik-simpanan" element={<AdminTarikSimpanan />} />
+          <Route path="/admin/tapro-anggota" element={<AdminTaproTransaksi />} />
+
           {/* Admin Tools Routes */}
           <Route path="/admin/lhu" element={<AdminLHU />} />
           <Route path="/admin/labarugi" element={<AdminLabaRugi />} />

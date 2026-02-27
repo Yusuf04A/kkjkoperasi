@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale,
-    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet
+    ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet,
+    ArrowUpRight, CreditCard
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -10,7 +11,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 
 // --- 1. IMPORT LOGO DI SINI ---
-import logoKKJ from '../../assets/Logo-kkj.png'; 
+import logoKKJ from '../../assets/Logo-kkj.png';
 
 export const AdminDashboard = () => {
     const { logout, user } = useAuthStore();
@@ -26,7 +27,7 @@ export const AdminDashboard = () => {
         pendingOrders: 0,
         pendingLHU: 0,
         activeInflip: 0,
-        pendingWithdrawals: 0, 
+        pendingWithdrawals: 0,
     });
 
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
@@ -88,15 +89,15 @@ export const AdminDashboard = () => {
         const channel = supabase.channel('admin-dashboard-updates');
 
         const tablesToWatch = [
-            'profiles', 'transactions', 'loans', 'tamasa_transactions', 
-            'pawn_transactions', 'shop_orders', 'lhu_distributions', 
+            'profiles', 'transactions', 'loans', 'tamasa_transactions',
+            'pawn_transactions', 'shop_orders', 'lhu_distributions',
             'inflip_projects', 'savings_withdrawals'
         ];
 
         tablesToWatch.forEach((table) => {
             channel.on(
-                'postgres_changes', 
-                { event: '*', schema: 'public', table: table }, 
+                'postgres_changes',
+                { event: '*', schema: 'public', table: table },
                 () => {
                     // Setiap ada perubahan INSERT/UPDATE/DELETE di salah satu tabel ini, data direfresh instan
                     fetchStats();
@@ -110,8 +111,8 @@ export const AdminDashboard = () => {
             }
         });
 
-        return () => { 
-            supabase.removeChannel(channel); 
+        return () => {
+            supabase.removeChannel(channel);
         };
     }, []);
 
@@ -127,14 +128,14 @@ export const AdminDashboard = () => {
             {/* TOP BAR - HIJAU KONSISTEN */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm">
                 <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-                    
+
                     {/* LOGO & JUDUL */}
                     <div className="flex items-center gap-3">
                         <div className="bg-white border border-green-50 p-1.5 rounded-xl shadow-sm h-11 w-11 flex items-center justify-center">
-                            <img 
-                                src={logoKKJ} 
-                                alt="Logo KKJ" 
-                                className="w-full h-full object-contain" 
+                            <img
+                                src={logoKKJ}
+                                alt="Logo KKJ"
+                                className="w-full h-full object-contain"
                             />
                         </div>
                         <div className="flex flex-col">
@@ -151,8 +152,8 @@ export const AdminDashboard = () => {
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Active</span>
                         </div>
                         {/* TOMBOL LOGOUT DENGAN TULISAN */}
-                        <button 
-                            onClick={handleLogout} 
+                        <button
+                            onClick={handleLogout}
                             className="flex items-center gap-2 px-4 py-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all border border-transparent hover:border-rose-100 group"
                         >
                             <span className="text-[10px] font-black uppercase tracking-widest hidden sm:block">Logout</span>
@@ -186,12 +187,12 @@ export const AdminDashboard = () => {
                         {stats.pendingWithdrawals > 0 && <AlertCard to="/admin/simpanan" title={`${stats.pendingWithdrawals} Request Tarik Tunai`} type="danger" />}
                         {stats.pendingLoans > 0 && <AlertCard to="/admin/pembiayaan" title={`${stats.pendingLoans} Pengajuan Pinjaman`} type="danger" />}
                         {stats.pendingRestructures > 0 && <AlertCard to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
-                        
+
                         {/* Menambahkan Indikator Notif Tamasa, Gadai, Transaksi jika ada antrean */}
                         {stats.pendingTamasa > 0 && <AlertCard to="/admin/tamasa" title={`${stats.pendingTamasa} Request Tamasa`} type="warning" />}
                         {stats.pendingPawn > 0 && <AlertCard to="/admin/pegadaian" title={`${stats.pendingPawn} Pengajuan Gadai`} type="warning" />}
                         {stats.pendingTx > 0 && <AlertCard to="/admin/transaksi" title={`${stats.pendingTx} Transaksi Finance`} type="warning" />}
-                        
+
                         {stats.pendingUsers > 0 && <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />}
                         {stats.pendingLHU > 0 && <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />}
                         {stats.pendingOrders > 0 && <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />}
@@ -207,16 +208,19 @@ export const AdminDashboard = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                         <DashboardCard to="/admin/verifikasi" icon={<Users size={24} />} title="Anggota" color="green" count={stats.pendingUsers} />
                         <DashboardCard to="/admin/transaksi" icon={<ArrowRightLeft size={24} />} title="Finance" color="emerald" count={stats.pendingTx} />
-                        
+
                         <DashboardCard to="/admin/simpanan" icon={<Wallet size={24} />} title="Tarik Simpanan" color="rose" count={stats.pendingWithdrawals} />
 
                         <DashboardCard to="/admin/tamasa" icon={<ShieldCheck size={24} />} title="Tamasa" color="amber" count={stats.pendingTamasa} />
                         <DashboardCard to="/admin/pegadaian" icon={<Scale size={24} />} title="Gadai" color="blue" count={stats.pendingPawn} />
-                        
+
                         <DashboardCard to="/admin/pembiayaan" icon={<Banknote size={24} />} title="Pinjaman" color="rose" count={stats.pendingLoans} />
 
                         <DashboardCard to="/admin/inflip" icon={<Building size={24} />} title="Properti (INFLIP)" color="sky" count={stats.activeInflip} />
                         <DashboardCard to="/admin/gudang-kredit" icon={<Warehouse size={24} />} title="Gudang Kredit" color="cyan" count={0} />
+
+                        <DashboardCard to="/admin/tarik-simpanan" icon={<ArrowUpRight size={24} />} title="Tarik Semua Simpanan" color="amber" count={0} />
+                        <DashboardCard to="/admin/tapro-anggota" icon={<CreditCard size={24} />} title="TaPro Anggota" color="indigo" count={0} />
 
                         <DashboardCard to="/admin/toko" icon={<ShoppingBag size={24} />} title="Toko" color="violet" count={stats.pendingOrders} />
                         <DashboardCard to="/admin/lhu" icon={<TrendingUp size={24} />} title="LHU" color="teal" count={stats.pendingLHU} />
@@ -250,6 +254,7 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
         brown: "bg-orange-50/80 text-orange-800 group-hover:bg-orange-700 group-hover:text-white border-orange-100",
         cyan: "bg-cyan-50/80 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white border-cyan-100",
         sky: "bg-sky-50/80 text-sky-600 group-hover:bg-sky-600 group-hover:text-white border-sky-100",
+        indigo: "bg-indigo-50/80 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white border-indigo-100",
     };
 
     const activeStyle = styles[color] || styles.slate;
