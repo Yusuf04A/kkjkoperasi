@@ -130,7 +130,6 @@ export const Home = () => {
     const handleDownloadCard = async () => {
         const toastId = toast.loading('mencetak kartu...');
         try {
-            // Buat elemen kartu sementara untuk render bersih tanpa clipping
             const cardEl = document.createElement('div');
             cardEl.style.cssText = [
                 'position:fixed',
@@ -147,9 +146,7 @@ export const Home = () => {
                 'justify-content:space-between',
             ].join(';');
 
-            // Helper: escape HTML
             const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
             const nameFontSize = userData.name.length > 22 ? '26px' : userData.name.length > 16 ? '32px' : '38px';
             const avatarUrl = user?.avatar_url
                 ? user.avatar_url
@@ -158,8 +155,6 @@ export const Home = () => {
 
             cardEl.innerHTML = `
                 <div style="position:absolute;inset:0;background-image:url('https://www.transparenttextures.com/patterns/cubes.png');opacity:0.1;pointer-events:none"></div>
-
-                <!-- Header -->
                 <div style="display:flex;align-items:center;gap:20px;padding:28px 36px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.12);position:relative;z-index:1">
                     <div style="width:56px;height:56px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid rgba(253,216,53,0.5)">
                         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#136f42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
@@ -169,8 +164,6 @@ export const Home = () => {
                         <div style="color:#aeea00;font-size:11px;font-style:italic;font-weight:500;margin-top:4px">berkoperasi demi wujud kesejahteraan bersama</div>
                     </div>
                 </div>
-
-                <!-- Body -->
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 36px 16px;flex:1;gap:24px;position:relative;z-index:1">
                     <div style="flex:1;min-width:0">
                         <div style="color:white;font-weight:700;font-size:${nameFontSize};text-transform:uppercase;letter-spacing:1px;line-height:1.2;word-break:break-word;white-space:normal;overflow:visible;margin-bottom:16px">${esc(userData.name)}</div>
@@ -193,8 +186,6 @@ export const Home = () => {
                         <img src="${avatarUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover" />
                     </div>
                 </div>
-
-                <!-- Footer -->
                 <div style="background:linear-gradient(90deg,#f9a825,#fbc02d,#f9a825);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:relative;z-index:1">
                     <span style="color:#1b5e20;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:2px">SEJAK: ${esc(userData.joinDate)}</span>
                     <span style="color:#1b5e20;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:2px">VALID: ${esc(userData.validUntil)}</span>
@@ -241,8 +232,8 @@ export const Home = () => {
     };
 
     const quickActions = [
-        { label: 'Top Up', icon: PlusCircle, color: 'text-green-600', bg: 'bg-green-50', link: '/transaksi/topup' },
-        { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
+        { label: 'Top Up', icon: PlusCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '/transaksi/topup' },
+        { label: 'Tarik', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
         { label: 'Riwayat', icon: History, color: 'text-purple-600', bg: 'bg-purple-50', link: '/transaksi/riwayat' },
     ];
@@ -256,108 +247,98 @@ export const Home = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-10 font-sans">
 
-            {/* 1. HERO SECTION (HIJAU KKJ DENGAN GRADASI PREMIUM) */}
-            <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
-                {/* Dekorasi Background agar tidak polos */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white opacity-5 rounded-full blur-[120px] pointer-events-none"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-
+            {/* 1. HERO SECTION */}
+            <div className="w-full bg-[#0d4d2d] relative pb-16 pt-8 lg:pt-12 lg:rounded-b-[4rem] shadow-2xl overflow-hidden min-h-[380px]">
+                <div className="absolute inset-0 bg-[#136f42]"></div>
+                <div className="absolute -top-[10%] -left-[10%] w-[60%] h-[70%] bg-[#1b8a53] rounded-full blur-[100px] opacity-60"></div>
+                <div className="absolute top-0 right-0 w-[40%] h-[50%] bg-[#aeea00] rounded-full blur-[120px] opacity-10"></div>
+                <div className="absolute bottom-0 left-0 w-full h-[40%] bg-gradient-to-t from-black/40 to-transparent"></div>
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
+                     style={{ backgroundImage: `linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff)`, backgroundSize: '40px 70px' }}>
+                </div>
                 <div className="max-w-xl mx-auto px-4 relative z-10 flex flex-col items-center">
-                    {/* KARTU ANGGOTA (UKURAN DIPERBAIKI & DESAIN PREMIUM) */}
-                    <div
-                        id="id-card-render"
-                        ref={cardRef}
-                        style={{ width: '632px', height: '400px', transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-55px' }}
-                        className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[32px] shadow-2xl overflow-hidden border border-white/10 flex flex-col justify-between relative"
-                    >
-                        {/* Pola halus di dalam kartu agar tidak polos */}
+                    <div id="id-card-render" ref={cardRef} className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[24px] sm:rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden border border-white/20 flex flex-col justify-between relative w-full max-w-[632px] aspect-[1.58/1] backdrop-blur-sm">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-
-                        {/* Header Kartu - Glassmorphism style */}
-                        <div className="flex items-center gap-4 p-8 border-b border-white/5 bg-black/10 backdrop-blur-sm relative z-10">
-                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-yellow-500/40 shrink-0 shadow-lg">
-                                <ShieldCheck className="text-[#136f42]" size={36} />
+                        <div className="flex items-center gap-2 sm:gap-4 p-4 sm:p-8 border-b border-white/5 bg-black/20 backdrop-blur-md relative z-10">
+                            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center border border-yellow-500/40 shrink-0 shadow-lg">
+                                <ShieldCheck className="text-[#136f42] w-6 h-6 sm:w-9 sm:h-9" />
                             </div>
-                            <div className="text-left">
-                                <h2 className="text-white font-bold text-lg uppercase tracking-wider leading-none">koperasi karya kita jaya</h2>
-                                <p className="text-[#aeea00] text-[10px] italic font-medium mt-1">berkoperasi demi wujud kesejahteraan bersama</p>
+                            <div className="text-left text-white">
+                                <h2 className="font-bold text-[12px] sm:text-lg uppercase tracking-wider leading-none">koperasi karya kita jaya</h2>
+                                <p className="text-[#aeea00] text-[8px] sm:text-[10px] italic font-medium mt-1">berkoperasi demi wujud kesejahteraan bersama</p>
                             </div>
                         </div>
-
-                        {/* Body Kartu */}
-                        <div className="px-10 py-2 flex justify-between items-center flex-1 gap-6 text-left relative z-10">
-                            <div className="space-y-3 flex-1 min-w-0">
-                                <h1 className={`text-white font-bold uppercase tracking-tight leading-tight break-words ${userData.name.length > 22 ? 'text-xl' : userData.name.length > 16 ? 'text-2xl' : 'text-3xl'
-                                    }`}>{userData.name}</h1>
-                                <div className="space-y-1.5 text-sm text-white/90 font-medium">
-                                    <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">niak</span> : {userData.memberId}</p>
+                        <div className="px-5 sm:px-10 py-1 sm:py-2 flex justify-between items-center flex-1 gap-4 sm:gap-6 text-left relative z-10">
+                            <div className="space-y-2 sm:space-y-3 flex-1 min-w-0">
+                                <h1 className={`text-white font-bold uppercase tracking-tight leading-tight break-words ${userData.name.length > 22 ? 'text-sm sm:text-xl' : userData.name.length > 16 ? 'text-lg sm:text-2xl' : 'text-xl sm:text-3xl'}`}>
+                                    {userData.name}
+                                </h1>
+                                <div className="space-y-1 text-[10px] sm:text-sm text-white/90 font-medium">
+                                    <p><span className="text-[#aeea00] font-semibold w-10 sm:w-14 inline-block uppercase">niak</span> : {userData.memberId}</p>
                                     <div className="flex items-center gap-1 flex-wrap">
                                         <span className="text-[#aeea00] font-semibold uppercase">status</span>
                                         <span className="text-white/90">:</span>
-                                        <span className="text-white font-bold bg-[#4caf50] px-2 py-0.5 rounded text-[10px] tracking-wider uppercase whitespace-nowrap">aktif</span>
+                                        <span className="text-white font-bold bg-[#4caf50] px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] tracking-wider uppercase whitespace-nowrap">aktif</span>
                                     </div>
                                 </div>
-                                <div className="pt-2">
-                                    <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest lowercase">saldo utama (tapro)</p>
-                                    {/* Format Saldo menggunakan Rp Kapital */}
-                                    <p className="text-3xl font-bold text-white font-mono tracking-tight">
-                                        {showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}
-                                    </p>
+                                <div className="pt-1 sm:pt-2">
+                                    <p className="text-[#aeea00]/80 text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">saldo utama (tapro)</p>
+                                    <p className="text-lg sm:text-3xl font-bold text-white font-mono tracking-tight">{showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}</p>
                                 </div>
                             </div>
-
-                            {/* Bingkai Foto Elegan */}
-                            <div className="w-28 h-36 bg-gray-200 rounded-[24px] border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2 transition-transform hover:rotate-0 duration-500">
-                                <img
-                                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`}
-                                    className="w-full h-full object-cover"
-                                    crossOrigin="anonymous"
-                                />
+                            <div className="w-16 h-20 sm:w-28 sm:h-36 bg-gray-200 rounded-xl sm:rounded-[24px] border-[2px] sm:border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2">
+                                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`} className="w-full h-full object-cover" crossOrigin="anonymous" />
                             </div>
                         </div>
-
-                        {/* Footer Kartu */}
-                        <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-11 flex items-center justify-between px-10 text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner relative z-10">
+                        <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-8 sm:h-11 flex items-center justify-between px-5 sm:px-10 text-[8px] sm:text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner relative z-10">
                             <span>sejak: {userData.joinDate}</span>
                             <span>valid: {userData.validUntil}</span>
                         </div>
                     </div>
-
-                    {/* Tombol Aksi di Bawah Kartu */}
-                    <div className="flex justify-center gap-3 mt-4 w-full px-2 max-w-sm uppercase font-bold">
-                        <button onClick={handleDownloadCard} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                    <div className="flex justify-center gap-3 mt-6 w-full px-2 max-w-sm uppercase font-bold relative z-20">
+                        <button onClick={handleDownloadCard} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-md shadow-lg">
                             <Download size={16} /> simpan
                         </button>
-                        <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                        <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-md shadow-lg">
                             <Share2 size={16} /> bagikan
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* 2. total simpanan overlay (Rp kapital & detail) */}
+            {/* 2. TOTAL SIMPANAN OVERLAY & QUICK ACTIONS */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
                 <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-8 items-center text-left lowercase">
+                    {/* Aset Section */}
                     <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-8 cursor-pointer group p-2 rounded-lg transition-all active:scale-[0.98]">
                         <div className="flex justify-between items-center mb-1 text-slate-500 uppercase font-bold text-xs">
                             <div className="flex items-center gap-2">
                                 <span className="group-hover:text-[#136f42]">total Aset</span>
                                 <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>{showBalance ? <Eye size={14} /> : <EyeOff size={14} />}</button>
                             </div>
-                            {/* 🔥 detail indicator changed from '8 Jenis' to 'Detail' */}
                             <div className="bg-green-50 text-[#136f42] text-[10px] px-2 py-0.5 rounded italic font-black uppercase">Detail <ArrowRight size={10} className="inline ml-1" /></div>
                         </div>
                         <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors tracking-tighter">
-                            {/* 🔥 Rp kapital */}
                             {showBalance ? formatRpUpper(otherSavings.reduce((acc, curr) => acc + curr.val, 0)) : 'Rp ••••••••••'}
                         </div>
                     </div>
+                    
+                    {/* Quick Actions Grid (Refined) */}
                     <div className="w-full md:w-7/12">
-                        <div className="grid grid-cols-5 gap-3">
+                        <div className="grid grid-cols-4 gap-4">
                             {quickActions.map((action) => (
-                                <Link key={action.label} to={action.link} className="flex flex-col items-center gap-2 group">
-                                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-sm border border-gray-50", action.bg)}><action.icon className={cn("w-6 h-6", action.color)} /></div>
-                                    <span className="text-[10px] font-medium text-gray-600 group-hover:text-[#136f42] text-center leading-tight uppercase font-bold">{action.label}</span>
+                                <Link key={action.label} to={action.link} className="flex flex-col items-center group">
+                                    <div className={cn(
+                                        "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-2",
+                                        "transition-all duration-200 shadow-sm border border-white",
+                                        "group-active:scale-90 group-hover:shadow-md",
+                                        action.bg
+                                    )}>
+                                        <action.icon className={cn("w-6 h-6", action.color)} />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#136f42] text-center leading-tight uppercase tracking-tighter transition-colors">
+                                        {action.label}
+                                    </span>
                                 </Link>
                             ))}
                         </div>
@@ -365,7 +346,7 @@ export const Home = () => {
                 </div>
             </div>
 
-            {/* 3. main content (news, programs, shop) */}
+            {/* 3. MAIN CONTENT */}
             <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
                 <NewsCarousel />
                 <div>
@@ -419,7 +400,7 @@ export const Home = () => {
                 </div>
             </div>
 
-            {/* 4. modal rincian aset (multi-select) */}
+            {/* 4. MODAL RINCIAN ASET */}
             {showDetailAssets && (
                 <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowDetailAssets(false); setSelectedIds([]); }}></div>
@@ -448,7 +429,7 @@ export const Home = () => {
                 </div>
             )}
 
-            {/* 5. modal belanja (ke checkout) */}
+            {/* 5. MODAL BELANJA */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-full duration-500 text-left">
