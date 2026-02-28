@@ -20,9 +20,9 @@ export const SetorSimpanan = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [depositForm, setDepositForm] = useState({
-        simpok: 250000, 
-        simwa: 50000,   
-        donasi: 10000,  
+        simpok: 250000,
+        simwa: 50000,
+        donasi: 10000,
         simade: 0,
         sipena: 0,
         sihara: 0,
@@ -31,7 +31,7 @@ export const SetorSimpanan = () => {
         siwalima: 0
     });
 
-    const isSimwaLunas = (user?.simwa_balance || 0) >= 1200000; 
+    const isSimwaLunas = (user?.simwa_balance || 0) >= 1200000;
 
     useEffect(() => {
         const init = async () => {
@@ -83,16 +83,16 @@ export const SetorSimpanan = () => {
 
             if (errUpdate) throw errUpdate;
 
-            await supabase.from('transactions').insert({
+            const { error: errTx } = await supabase.from('transactions').insert({
                 user_id: user?.id,
-                type: 'deposit',
+                type: 'topup',
                 amount: totalSetoran,
                 status: 'success',
-                description: generateDescription(),
-                metadata: depositForm
+                description: `[SETOR SIMPANAN] ${generateDescription()}`,
             });
+            if (errTx) console.warn('Catat transaksi gagal:', errTx.message);
 
-            await checkSession(); 
+            await checkSession();
             toast.dismiss(toastId);
             setShowPinModal(false);
             setTimeout(() => { setShowSuccessModal(true); }, 200);
@@ -159,9 +159,9 @@ export const SetorSimpanan = () => {
                         <h3 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-[0.2em]">Simpanan Sukarela Lainnya</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
                             {[
-                                {id: 'simade', label: 'Masa Depan'}, {id: 'sipena', label: 'Pendidikan'},
-                                {id: 'sihara', label: 'Hari Raya'}, {id: 'siqurma', label: 'Qurban'},
-                                {id: 'siuji', label: 'Haji / Umroh'}, {id: 'siwalima', label: 'Walimah'}
+                                { id: 'simade', label: 'Masa Depan' }, { id: 'sipena', label: 'Pendidikan' },
+                                { id: 'sihara', label: 'Hari Raya' }, { id: 'siqurma', label: 'Qurban' },
+                                { id: 'siuji', label: 'Haji / Umroh' }, { id: 'siwalima', label: 'Walimah' }
                             ].map((item) => (
                                 <div key={item.id} className="space-y-2">
                                     <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider ml-1">{item.label}</label>
@@ -207,7 +207,7 @@ export const SetorSimpanan = () => {
                         </div>
                         <div className="flex justify-between font-black text-2xl pt-4 border-t-4 border-slate-900"><span>TOTAL</span><span>{formatRpUpper(totalSetoran)}</span></div>
                     </div>
-                    <div className="mt-12 text-center opacity-50 text-[10px]">ID: {user?.id?.substring(0,12)}-{Date.now()}</div>
+                    <div className="mt-12 text-center opacity-50 text-[10px]">ID: {user?.id?.substring(0, 12)}-{Date.now()}</div>
                 </div>
             </div>
         </div>

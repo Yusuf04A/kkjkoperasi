@@ -67,36 +67,139 @@ export const AdminDashboard = () => {
             const today = new Date(now.setHours(0, 0, 0, 0)).toISOString();
             const firstDayMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-            const types = [
-                { key: 'topup', label: 'Top Up Saldo' },
-                { key: 'withdraw', label: 'Penarikan' },
-                { key: 'loan', label: 'Pinjaman' },
-                { key: 'simpanan_pokok', label: 'Simp. Pokok' },
-                { key: 'simpanan_wajib', label: 'Simp. Wajib' },
-                { key: 'simpanan_sukarela', label: 'Simp. Sukarela' }
+            // Helper: jumlahkan amount dari array
+            const sum = (arr: any[], amountKey = 'amount') =>
+                arr?.reduce((acc, curr) => acc + (curr[amountKey] || 0), 0) || 0;
+
+            // --- 1. TRANSAKSI DARI TABEL `transactions` (hanya status 'success') ---
+            // Setor Simpanan: type='topup' dengan prefix [SETOR SIMPANAN] di description
+            const txTypes = [
+                { key: 'topup', label: 'Top Up TaPro', descFilter: null },
+                { key: 'withdraw', label: 'Penarikan TaPro', descFilter: null },
+                { key: 'payment', label: 'Bayar Cicilan', descFilter: null },
             ];
 
-            const tableData = await Promise.all(types.map(async (item) => {
-                const { data: all } = await supabase.from('transactions').select('amount, status').eq('type', item.key);
-                const { data: day } = await supabase.from('transactions').select('amount').eq('type', item.key).gte('created_at', today);
-                const { data: month } = await supabase.from('transactions').select('amount').eq('type', item.key).gte('created_at', firstDayMonth);
-
-                const sum = (arr: any[]) => arr?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
+            const txRows = await Promise.all(txTypes.map(async (item) => {
+                const { data: allAny } = await supabase
+                    .from('transactions').select('amount, status')
+                    .eq('type', item.key).not('description', 'ilike', '%SETOR SIMPANAN%');
+                const { data: allOk } = await supabase
+                    .from('transactions').select('amount')
+                    .eq('type', item.key).eq('status', 'success')
+                    .not('description', 'ilike', '%SETOR SIMPANAN%');
+                const { data: dayOk } = await supabase
+                    .from('transactions').select('amount')
+                    .eq('type', item.key).eq('status', 'success')
+                    .not('description', 'ilike', '%SETOR SIMPANAN%')
+                    .gte('created_at', today);
+                const { data: monthOk } = await supabase
+                    .from('transactions').select('amount')
+                    .eq('type', item.key).eq('status', 'success')
+                    .not('description', 'ilike', '%SETOR SIMPANAN%')
+                    .gte('created_at', firstDayMonth);
 
                 return {
                     label: item.label,
-                    todayCount: day?.length || 0,
-                    todaySum: sum(day || []),
-                    monthCount: month?.length || 0,
-                    monthSum: sum(month || []),
-                    totalCount: all?.length || 0,
-                    totalSum: sum(all || []),
-                    approved: all?.filter(x => x.status === 'approved').length || 0,
-                    rejected: all?.filter(x => x.status === 'rejected').length || 0,
-                    pending: all?.filter(x => x.status === 'pending').length || 0,
+                    todayCount: dayOk?.length || 0, todaySum: sum(dayOk || []),
+                    monthCount: monthOk?.length || 0, monthSum: sum(monthOk || []),
+                    totalCount: allOk?.length || 0, totalSum: sum(allOk || []),
+                    approved: allAny?.filter(x => x.status === 'success').length || 0,
+                    pending: allAny?.filter(x => x.status === 'pending').length || 0,
+                    rejected: allAny?.filter(x => x.status === 'failed').length || 0,
                 };
             }));
-            setTransactionStats(tableData);
+
+            // Setor Simpanan — topup + description [SETOR SIMPANAN]
+            const { data: ssAny } = await supabase.from('transactions').select('amount, status').eq('type', 'topup').ilike('description', '%SETOR SIMPANAN%');
+            const { data: ssOk } = await supabase.from('transactions').select('amount').eq('type', 'topup').eq('status', 'success').ilike('description', '%SETOR SIMPANAN%');
+            const { data: ssDay } = await supabase.from('transactions').select('amount').eq('type', 'topup').eq('status', 'success').ilike('description', '%SETOR SIMPANAN%').gte('created_at', today);
+            const { data: ssMonth } = await supabase.from('transactions').select('amount').eq('type', 'topup').eq('status', 'success').ilike('description', '%SETOR SIMPANAN%').gte('created_at', firstDayMonth);
+            const ssRow = {
+                label: 'Setor Simpanan',
+                todayCount: ssDay?.length || 0, todaySum: sum(ssDay || []),
+                monthCount: ssMonth?.length || 0, monthSum: sum(ssMonth || []),
+                totalCount: ssOk?.length || 0, totalSum: sum(ssOk || []),
+                approved: ssAny?.filter(x => x.status === 'success').length || 0,
+                pending: ssAny?.filter(x => x.status === 'pending').length || 0,
+                rejected: ssAny?.filter(x => x.status === 'failed').length || 0,
+            };
+
+            // --- 2. PENARIKAN SIMPANAN (savings_withdrawals, status='approved') ---
+            const { data: swAll } = await supabase.from('savings_withdrawals').select('amount, status');
+            const { data: swDay } = await supabase.from('savings_withdrawals').select('amount').eq('status', 'approved').gte('created_at', today);
+            const { data: swMonth } = await supabase.from('savings_withdrawals').select('amount').eq('status', 'approved').gte('created_at', firstDayMonth);
+            const { data: swOk } = await supabase.from('savings_withdrawals').select('amount').eq('status', 'approved');
+            const swRow = {
+                label: 'Tarik Simpanan',
+                todayCount: swDay?.length || 0, todaySum: sum(swDay || []),
+                monthCount: swMonth?.length || 0, monthSum: sum(swMonth || []),
+                totalCount: swOk?.length || 0, totalSum: sum(swOk || []),
+                approved: swAll?.filter(x => x.status === 'approved').length || 0,
+                pending: swAll?.filter(x => x.status === 'pending').length || 0,
+                rejected: swAll?.filter(x => x.status === 'rejected').length || 0,
+            };
+
+            // --- 3. TAMASA (tamasa_transactions, kolom nominal = 'setoran', status='approved') ---
+            const { data: taAll } = await supabase.from('tamasa_transactions').select('setoran, status');
+            const { data: taDay } = await supabase.from('tamasa_transactions').select('setoran').eq('status', 'approved').gte('created_at', today);
+            const { data: taMonth } = await supabase.from('tamasa_transactions').select('setoran').eq('status', 'approved').gte('created_at', firstDayMonth);
+            const { data: taOk } = await supabase.from('tamasa_transactions').select('setoran').eq('status', 'approved');
+            const taRow = {
+                label: 'Tamasa (Emas)',
+                todayCount: taDay?.length || 0, todaySum: sum(taDay || [], 'setoran'),
+                monthCount: taMonth?.length || 0, monthSum: sum(taMonth || [], 'setoran'),
+                totalCount: taOk?.length || 0, totalSum: sum(taOk || [], 'setoran'),
+                approved: taAll?.filter(x => x.status === 'approved').length || 0,
+                pending: taAll?.filter(x => x.status === 'pending').length || 0,
+                rejected: taAll?.filter(x => x.status === 'rejected').length || 0,
+            };
+
+            // --- 4. GADAI (pawn_transactions, kolom nominal = 'loan_amount', status='approved') ---
+            const { data: paAll } = await supabase.from('pawn_transactions').select('loan_amount, status');
+            const { data: paDay } = await supabase.from('pawn_transactions').select('loan_amount').eq('status', 'approved').gte('created_at', today);
+            const { data: paMonth } = await supabase.from('pawn_transactions').select('loan_amount').eq('status', 'approved').gte('created_at', firstDayMonth);
+            const { data: paOk } = await supabase.from('pawn_transactions').select('loan_amount').eq('status', 'approved');
+            const paRow = {
+                label: 'Gadai Syariah',
+                todayCount: paDay?.length || 0, todaySum: sum(paDay || [], 'loan_amount'),
+                monthCount: paMonth?.length || 0, monthSum: sum(paMonth || [], 'loan_amount'),
+                totalCount: paOk?.length || 0, totalSum: sum(paOk || [], 'loan_amount'),
+                approved: paAll?.filter(x => x.status === 'approved').length || 0,
+                pending: paAll?.filter(x => x.status === 'pending').length || 0,
+                rejected: paAll?.filter(x => x.status === 'rejected').length || 0,
+            };
+
+            // --- 5. PINJAMAN/LOANS (loans, status='approved' atau 'active') ---
+            const { data: loAll } = await supabase.from('loans').select('amount, status');
+            const { data: loDay } = await supabase.from('loans').select('amount').in('status', ['approved', 'active']).gte('created_at', today);
+            const { data: loMonth } = await supabase.from('loans').select('amount').in('status', ['approved', 'active']).gte('created_at', firstDayMonth);
+            const { data: loOk } = await supabase.from('loans').select('amount').in('status', ['approved', 'active']);
+            const loRow = {
+                label: 'Pinjaman',
+                todayCount: loDay?.length || 0, todaySum: sum(loAll ? loDay || [] : []),
+                monthCount: loMonth?.length || 0, monthSum: sum(loMonth || []),
+                totalCount: loOk?.length || 0, totalSum: sum(loOk || []),
+                approved: loAll?.filter(x => ['approved', 'active', 'lunas'].includes(x.status)).length || 0,
+                pending: loAll?.filter(x => x.status === 'pending').length || 0,
+                rejected: loAll?.filter(x => x.status === 'rejected').length || 0,
+            };
+
+            // --- 6. ORDER TOKO (shop_orders, kolom nominal = 'total_amount', status='siap_diambil') ---
+            const { data: soAll } = await supabase.from('shop_orders').select('total_amount, status');
+            const { data: soDay } = await supabase.from('shop_orders').select('total_amount').eq('status', 'siap_diambil').gte('created_at', today);
+            const { data: soMonth } = await supabase.from('shop_orders').select('total_amount').eq('status', 'siap_diambil').gte('created_at', firstDayMonth);
+            const { data: soOk } = await supabase.from('shop_orders').select('total_amount').eq('status', 'siap_diambil');
+            const soRow = {
+                label: 'Order Toko',
+                todayCount: soDay?.length || 0, todaySum: sum(soDay || [], 'total_amount'),
+                monthCount: soMonth?.length || 0, monthSum: sum(soMonth || [], 'total_amount'),
+                totalCount: soOk?.length || 0, totalSum: sum(soOk || [], 'total_amount'),
+                approved: soAll?.filter(x => x.status === 'siap_diambil').length || 0,
+                pending: soAll?.filter(x => x.status === 'diproses').length || 0,
+                rejected: soAll?.filter(x => x.status === 'ditolak').length || 0,
+            };
+
+            setTransactionStats([...txRows, ssRow, swRow, taRow, paRow, loRow, soRow]);
         } catch (error) { console.error(error); } finally { setLoadingStats(false); }
     };
 
@@ -291,10 +394,10 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
 };
 
 const AlertCard = ({ to, title, type }: any) => (
-    <Link to={to} className={cn("px-4 py-3 rounded-2xl flex items-center justify-between group transition-all border border-transparent hover:scale-[1.02] shadow-sm", 
-        type === 'danger' ? "bg-rose-50 text-rose-700 hover:bg-rose-100" : 
-        type === 'warning' ? "bg-amber-50 text-amber-700 hover:bg-amber-100" : 
-        "bg-green-50 text-[#136f42] hover:bg-green-100")}>
+    <Link to={to} className={cn("px-4 py-3 rounded-2xl flex items-center justify-between group transition-all border border-transparent hover:scale-[1.02] shadow-sm",
+        type === 'danger' ? "bg-rose-50 text-rose-700 hover:bg-rose-100" :
+            type === 'warning' ? "bg-amber-50 text-amber-700 hover:bg-amber-100" :
+                "bg-green-50 text-[#136f42] hover:bg-green-100")}>
         <div className="flex items-center gap-3">
             <div className="bg-white/60 p-1.5 rounded-lg shadow-sm text-current"><AlertTriangle size={14} /></div>
             <h4 className="text-[10px] font-black uppercase tracking-widest leading-none">{title}</h4>
