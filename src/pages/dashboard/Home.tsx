@@ -5,7 +5,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
-    Download, Share2, X, ShoppingBag, 
+    Download, Share2, X, ShoppingBag,
     Search, ShoppingCart, ChevronRight, Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -39,7 +39,7 @@ export const Home = () => {
     const [loadingShop, setLoadingShop] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Semua');
-    const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
+    const [cart, setCart] = useState<{ product: Product, quantity: number }[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     useEffect(() => {
@@ -93,12 +93,12 @@ export const Home = () => {
     ];
 
     // --- logika penjumlahan kumulatif ---
-    const totalAssetsDisplay = selectedIds.length > 0 
+    const totalAssetsDisplay = selectedIds.length > 0
         ? otherSavings.filter(s => selectedIds.includes(s.id)).reduce((acc, curr) => acc + curr.val, 0)
         : otherSavings.reduce((acc, curr) => acc + curr.val, 0);
 
     const toggleSelection = (id: string) => {
-        setSelectedIds(prev => 
+        setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
@@ -121,21 +121,101 @@ export const Home = () => {
 
     const totalBayar = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-    const filteredProducts = products.filter(p => 
+    const filteredProducts = products.filter(p =>
         (selectedCategory === 'Semua' || p.category === selectedCategory) &&
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // --- handlers kartu ---
     const handleDownloadCard = async () => {
-        if (!cardRef.current) return;
         const toastId = toast.loading('mencetak kartu...');
         try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const canvas = await html2canvas(cardRef.current, { 
-                backgroundColor: null, scale: 3, useCORS: true,
-                width: 632, height: 400
+            // Buat elemen kartu sementara untuk render bersih tanpa clipping
+            const cardEl = document.createElement('div');
+            cardEl.style.cssText = [
+                'position:fixed',
+                'left:-9999px',
+                'top:-9999px',
+                'width:760px',
+                'height:480px',
+                'border-radius:32px',
+                'overflow:hidden',
+                'font-family:Inter,ui-sans-serif,system-ui,sans-serif',
+                'background:linear-gradient(135deg,#0f3d23 0%,#136f42 50%,#1b5e20 100%)',
+                'display:flex',
+                'flex-direction:column',
+                'justify-content:space-between',
+            ].join(';');
+
+            // Helper: escape HTML
+            const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            const nameFontSize = userData.name.length > 22 ? '26px' : userData.name.length > 16 ? '32px' : '38px';
+            const avatarUrl = user?.avatar_url
+                ? user.avatar_url
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=136f42&color=fff&size=300`;
+            const balanceText = showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••';
+
+            cardEl.innerHTML = `
+                <div style="position:absolute;inset:0;background-image:url('https://www.transparenttextures.com/patterns/cubes.png');opacity:0.1;pointer-events:none"></div>
+
+                <!-- Header -->
+                <div style="display:flex;align-items:center;gap:20px;padding:28px 36px;border-bottom:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.12);position:relative;z-index:1">
+                    <div style="width:56px;height:56px;background:white;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1.5px solid rgba(253,216,53,0.5)">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#136f42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg>
+                    </div>
+                    <div>
+                        <div style="color:white;font-weight:700;font-size:18px;letter-spacing:2px;text-transform:uppercase;line-height:1.2">KOPERASI KARYA KITA JAYA</div>
+                        <div style="color:#aeea00;font-size:11px;font-style:italic;font-weight:500;margin-top:4px">berkoperasi demi wujud kesejahteraan bersama</div>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 36px 16px;flex:1;gap:24px;position:relative;z-index:1">
+                    <div style="flex:1;min-width:0">
+                        <div style="color:white;font-weight:700;font-size:${nameFontSize};text-transform:uppercase;letter-spacing:1px;line-height:1.2;word-break:break-word;white-space:normal;overflow:visible;margin-bottom:16px">${esc(userData.name)}</div>
+                        <div style="margin-bottom:6px">
+                            <span style="color:#aeea00;font-weight:700;font-size:13px;text-transform:uppercase;margin-right:8px">NIAK</span>
+                            <span style="color:rgba(255,255,255,0.9);font-weight:600;font-size:13px">: ${esc(userData.memberId)}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                            <span style="color:#aeea00;font-weight:700;font-size:13px;text-transform:uppercase">STATUS</span>
+                            <span style="color:rgba(255,255,255,0.9);font-weight:600;font-size:13px">:</span>
+                            <span style="color:#4caf50;font-size:10px;line-height:1">&#9679;</span>
+                            <span style="color:#aeea00;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px">AKTIF</span>
+                        </div>
+                        <div>
+                            <div style="color:rgba(174,234,0,0.8);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">saldo utama (tapro)</div>
+                            <div style="color:white;font-weight:700;font-size:32px;font-family:monospace;letter-spacing:-0.5px">${esc(balanceText)}</div>
+                        </div>
+                    </div>
+                    <div style="width:110px;height:145px;border-radius:20px;border:4px solid white;overflow:hidden;flex-shrink:0;background:#e8e8e8">
+                        <img src="${avatarUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover" />
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div style="background:linear-gradient(90deg,#f9a825,#fbc02d,#f9a825);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;position:relative;z-index:1">
+                    <span style="color:#1b5e20;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:2px">SEJAK: ${esc(userData.joinDate)}</span>
+                    <span style="color:#1b5e20;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:2px">VALID: ${esc(userData.validUntil)}</span>
+                </div>
+            `;
+
+            document.body.appendChild(cardEl);
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            const canvas = await html2canvas(cardEl, {
+                backgroundColor: null,
+                scale: 2.5,
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                width: 760,
+                height: 480,
             });
+
+            document.body.removeChild(cardEl);
+
             const link = document.createElement('a');
             link.download = `KARTU-KKJ-${userData.name.replace(/\s+/g, '_')}.png`;
             link.href = canvas.toDataURL('image/png');
@@ -175,80 +255,85 @@ export const Home = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-10 font-sans">
-    
+
             {/* 1. HERO SECTION (HIJAU KKJ DENGAN GRADASI PREMIUM) */}
-    <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
-        {/* Dekorasi Background agar tidak polos */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white opacity-5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
-        
-        <div className="max-w-xl mx-auto px-4 relative z-10 flex flex-col items-center">
-            {/* KARTU ANGGOTA (UKURAN DIPERBAIKI & DESAIN PREMIUM) */}
-            <div 
-                id="id-card-render"
-                ref={cardRef} 
-                style={{ width: '632px', height: '400px', transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-55px' }}
-                className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[32px] shadow-2xl overflow-hidden border border-white/10 flex flex-col justify-between relative"
-            >
-                {/* Pola halus di dalam kartu agar tidak polos */}
+            <div className="w-full bg-[#136f42] relative pb-24 pt-8 lg:pt-12 lg:rounded-b-[3rem] shadow-xl overflow-hidden">
+                {/* Dekorasi Background agar tidak polos */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white opacity-5 rounded-full blur-[120px] pointer-events-none"></div>
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
 
-                {/* Header Kartu - Glassmorphism style */}
-                <div className="flex items-center gap-4 p-8 border-b border-white/5 bg-black/10 backdrop-blur-sm relative z-10">
-                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-yellow-500/40 shrink-0 shadow-lg">
-                        <ShieldCheck className="text-[#136f42]" size={36} />
-                    </div>
-                    <div className="text-left">
-                        <h2 className="text-white font-bold text-lg uppercase tracking-wider leading-none">koperasi karya kita jaya</h2>
-                        <p className="text-[#aeea00] text-[10px] italic font-medium mt-1">berkoperasi demi wujud kesejahteraan bersama</p>
-                    </div>
-                </div>
+                <div className="max-w-xl mx-auto px-4 relative z-10 flex flex-col items-center">
+                    {/* KARTU ANGGOTA (UKURAN DIPERBAIKI & DESAIN PREMIUM) */}
+                    <div
+                        id="id-card-render"
+                        ref={cardRef}
+                        style={{ width: '632px', height: '400px', transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-55px' }}
+                        className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[32px] shadow-2xl overflow-hidden border border-white/10 flex flex-col justify-between relative"
+                    >
+                        {/* Pola halus di dalam kartu agar tidak polos */}
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
 
-                {/* Body Kartu */}
-                <div className="px-10 py-2 flex justify-between items-center flex-1 gap-6 text-left relative z-10">
-                    <div className="space-y-3 flex-1 min-w-0">
-                        <h1 className="text-white font-bold text-3xl uppercase truncate tracking-tight">{userData.name}</h1>
-                        <div className="space-y-1 text-sm text-white/90 font-medium">
-                            <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">niak</span> : {userData.memberId}</p>
-                            <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">status</span> : <span className="text-white font-bold bg-[#4caf50] px-2 rounded text-[10px] tracking-wider uppercase">aktif</span></p>
+                        {/* Header Kartu - Glassmorphism style */}
+                        <div className="flex items-center gap-4 p-8 border-b border-white/5 bg-black/10 backdrop-blur-sm relative z-10">
+                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-yellow-500/40 shrink-0 shadow-lg">
+                                <ShieldCheck className="text-[#136f42]" size={36} />
+                            </div>
+                            <div className="text-left">
+                                <h2 className="text-white font-bold text-lg uppercase tracking-wider leading-none">koperasi karya kita jaya</h2>
+                                <p className="text-[#aeea00] text-[10px] italic font-medium mt-1">berkoperasi demi wujud kesejahteraan bersama</p>
+                            </div>
                         </div>
-                        <div className="pt-2">
-                            <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest lowercase">saldo utama (tapro)</p>
-                            {/* Format Saldo menggunakan Rp Kapital */}
-                            <p className="text-3xl font-bold text-white font-mono tracking-tight">
-                                {showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}
-                            </p>
+
+                        {/* Body Kartu */}
+                        <div className="px-10 py-2 flex justify-between items-center flex-1 gap-6 text-left relative z-10">
+                            <div className="space-y-3 flex-1 min-w-0">
+                                <h1 className={`text-white font-bold uppercase tracking-tight leading-tight break-words ${userData.name.length > 22 ? 'text-xl' : userData.name.length > 16 ? 'text-2xl' : 'text-3xl'
+                                    }`}>{userData.name}</h1>
+                                <div className="space-y-1.5 text-sm text-white/90 font-medium">
+                                    <p><span className="text-[#aeea00] font-semibold w-14 inline-block uppercase">niak</span> : {userData.memberId}</p>
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="text-[#aeea00] font-semibold uppercase">status</span>
+                                        <span className="text-white/90">:</span>
+                                        <span className="text-white font-bold bg-[#4caf50] px-2 py-0.5 rounded text-[10px] tracking-wider uppercase whitespace-nowrap">aktif</span>
+                                    </div>
+                                </div>
+                                <div className="pt-2">
+                                    <p className="text-[#aeea00]/80 text-[10px] font-bold uppercase tracking-widest lowercase">saldo utama (tapro)</p>
+                                    {/* Format Saldo menggunakan Rp Kapital */}
+                                    <p className="text-3xl font-bold text-white font-mono tracking-tight">
+                                        {showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Bingkai Foto Elegan */}
+                            <div className="w-28 h-36 bg-gray-200 rounded-[24px] border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2 transition-transform hover:rotate-0 duration-500">
+                                <img
+                                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`}
+                                    className="w-full h-full object-cover"
+                                    crossOrigin="anonymous"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer Kartu */}
+                        <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-11 flex items-center justify-between px-10 text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner relative z-10">
+                            <span>sejak: {userData.joinDate}</span>
+                            <span>valid: {userData.validUntil}</span>
                         </div>
                     </div>
 
-                    {/* Bingkai Foto Elegan */}
-                    <div className="w-28 h-36 bg-gray-200 rounded-[24px] border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2 transition-transform hover:rotate-0 duration-500">
-                        <img 
-                            src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`} 
-                            className="w-full h-full object-cover" 
-                            crossOrigin="anonymous" 
-                        />
+                    {/* Tombol Aksi di Bawah Kartu */}
+                    <div className="flex justify-center gap-3 mt-4 w-full px-2 max-w-sm uppercase font-bold">
+                        <button onClick={handleDownloadCard} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                            <Download size={16} /> simpan
+                        </button>
+                        <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
+                            <Share2 size={16} /> bagikan
+                        </button>
                     </div>
-                </div>
-
-                {/* Footer Kartu */}
-                <div className="bg-gradient-to-r from-[#f9a825] via-[#fbc02d] to-[#f9a825] h-11 flex items-center justify-between px-10 text-xs text-[#1b5e20] font-bold uppercase tracking-wider shadow-inner relative z-10">
-                    <span>sejak: {userData.joinDate}</span>
-                    <span>valid: {userData.validUntil}</span>
                 </div>
             </div>
-
-            {/* Tombol Aksi di Bawah Kartu */}
-            <div className="flex justify-center gap-3 mt-4 w-full px-2 max-w-sm uppercase font-bold">
-                <button onClick={handleDownloadCard} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
-                    <Download size={16} /> simpan
-                </button>
-                <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 py-2.5 rounded-full text-xs font-bold active:scale-95 transition-all hover:bg-white/20 backdrop-blur-sm shadow-lg">
-                    <Share2 size={16} /> bagikan
-                </button>
-            </div>
-        </div>
-    </div>
 
             {/* 2. total simpanan overlay (Rp kapital & detail) */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
@@ -281,7 +366,7 @@ export const Home = () => {
             </div>
 
             {/* 3. main content (news, programs, shop) */}
-           <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
+            <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
                 <NewsCarousel />
                 <div>
                     <div className="flex justify-between items-end mb-4 px-2 uppercase font-bold">
@@ -317,7 +402,7 @@ export const Home = () => {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-5 px-2">
-                        {loadingShop ? [1,2,3,4].map(i => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse border border-slate-50 shadow-sm" />) : filteredProducts.map((product) => (
+                        {loadingShop ? [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white rounded-3xl animate-pulse border border-slate-50 shadow-sm" />) : filteredProducts.map((product) => (
                             <div key={product.id} className="bg-white rounded-[1.8rem] p-3 border border-slate-100 shadow-sm flex flex-col group hover:shadow-xl transition-all duration-300">
                                 <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-3 border border-slate-50">
                                     <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
