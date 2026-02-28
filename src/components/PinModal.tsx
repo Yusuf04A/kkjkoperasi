@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'; 
+import { X, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ShieldAlert, Loader2 } from 'lucide-react'; 
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
+import { useNavigate } from 'react-router-dom'; 
 
 interface PinModalProps {
     isOpen: boolean;
@@ -12,15 +13,16 @@ interface PinModalProps {
 
 export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title = "Masukkan PIN Transaksi" }) => {
     const { user } = useAuthStore();
+    const navigate = useNavigate(); 
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPin, setShowPin] = useState(false);
 
-    // 🔥 STATE UNTUK KONTROL UI BERHASIL & GAGAL 🔥
     const [isSuccess, setIsSuccess] = useState(false);
     const [isError, setIsError] = useState(false);
+    // 🔥 STATE BARU: Deteksi jika PIN memang belum dibuat di database
+    const [isNotSet, setIsNotSet] = useState(false);
 
-    // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
     const playSuccessSound = () => {
         const audio = new Audio('/sounds/pop.mp3');
         audio.volume = 0.5;
@@ -34,6 +36,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
             setShowPin(false);
             setIsSuccess(false);
             setIsError(false);
+            setIsNotSet(false); 
             setLoading(false);
         }
     }, [isOpen]);
@@ -44,101 +47,133 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
         e.preventDefault();
         setLoading(true);
 
-        // TypeScript casting untuk menghindari error 'pin does not exist'
-        const userPin = (user as any)?.pin;
+        try {
+            // 🔥 PERBAIKAN UTAMA: Ambil data PIN terbaru langsung dari database
+            // Hal ini untuk menghindari error "PIN SALAH" saat data lokal belum tersinkronisasi
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('pin')
+                .eq('id', user?.id)
+                .single();
 
-        // 1. Cek keberadaan PIN
-        if (!userPin) {
-            onClose();
-            return;
-        }
+            if (error) throw error;
 
-        // 2. Validasi PIN
-        if (pin === userPin) {
-            // 🔥 Bunyi suara saat PIN BENAR
-            playSuccessSound();
-            setIsSuccess(true);
-            setIsError(false);
-            
-            // Beri jeda 1.5 detik agar user bisa melihat animasi centang hijau
-            setTimeout(() => {
-                onSuccess(); 
-                onClose();   
-            }, 1500);
+            const dbPin = profile?.pin;
 
-        } else {
-            // 🔥 Bunyi suara saat PIN SALAH
-            playSuccessSound();
-            
-            // Tampilkan popup merah di tengah
-            setIsError(true);
-            
-            // Tunggu 1.5 detik lalu kembalikan ke form input agar user bisa coba lagi
-            setTimeout(() => {
-                setIsError(false);
-                setPin('');
+            // 1. CEK APAKAH PIN BELUM DIATUR (NULL/KOSONG)
+            if (!dbPin || dbPin.trim() === '') {
+                playSuccessSound();
+                setIsNotSet(true); // Memunculkan UI "PIN BELUM DIATUR"
                 setLoading(false);
-            }, 1500);
+                return;
+            }
+
+            // 2. VALIDASI KECOCOKAN PIN JIKA SUDAH ADA
+            if (pin === dbPin) {
+                playSuccessSound();
+                setIsSuccess(true);
+                setIsError(false);
+                
+                setTimeout(() => {
+                    onSuccess(); 
+                    onClose();   
+                }, 1500);
+
+            } else {
+                playSuccessSound();
+                setIsError(true); // Popup merah "PIN SALAH!"
+                
+                setTimeout(() => {
+                    setIsError(false);
+                    setPin('');
+                    setLoading(false);
+                }, 1500);
+            }
+        } catch (err: any) {
+            console.error("Gagal verifikasi pin:", err.message);
+            setLoading(false);
         }
     };
 
     // =========================================================================
-    // 🔥 TAMPILAN JIKA PIN BENAR (CENTANG HIJAU)
+    // 🔥 TAMPILAN JIKA PIN BELUM DIATUR (MENGGANTIKAN POPUP PIN SALAH)
     // =========================================================================
+    if (isNotSet) {
+        return (
+            <div className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                <div className="bg-white w-full max-w-xs rounded-2xl p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-gray-100">
+                    <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 text-amber-500 shadow-inner">
+                        <ShieldAlert size={32} strokeWidth={2} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight mb-2">PIN BELUM DIATUR</h3>
+                    <p className="text-[11px] text-gray-500 font-normal leading-relaxed lowercase mb-6">
+                        segera atur pin untuk mengaktifkan fitur transfer dan penarikan saldo.
+                    </p>
+                    <button 
+                        onClick={() => {
+                            onClose();
+                            navigate('/profile'); // Arahkan ke halaman keamanan akun
+                        }}
+                        className="w-full bg-amber-500 text-white font-medium py-3.5 rounded-xl uppercase text-[10px] tracking-widest hover:bg-amber-600 transition-all active:scale-95 shadow-sm"
+                    >
+                        atur pin sekarang
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Tampilan Berhasil
     if (isSuccess) {
         return (
             <div className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-                <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-white/20">
-                    <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
-                        <CheckCircle size={56} strokeWidth={2.5} />
+                <div className="bg-white w-full max-w-xs rounded-2xl p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-gray-100">
+                    <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
+                        <CheckCircle size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">PIN BENAR</h3>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed">verifikasi keamanan berhasil...</p>
+                    <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight mb-2">PIN BENAR</h3>
+                    <p className="text-[11px] text-gray-500 font-normal leading-relaxed lowercase">verifikasi keamanan berhasil...</p>
                 </div>
             </div>
         );
     }
 
-    // =========================================================================
-    // 🔥 TAMPILAN JIKA PIN SALAH (PERINGATAN MERAH DI TENGAH)
-    // =========================================================================
+    // Tampilan PIN Salah
     if (isError) {
         return (
             <div className="fixed inset-0 z-[999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-                <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-white/20">
-                    <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6 text-rose-600 shadow-inner animate-bounce">
-                        <AlertCircle size={56} strokeWidth={2.5} />
+                <div className="bg-white w-full max-w-xs rounded-2xl p-8 shadow-2xl relative animate-in zoom-in-95 duration-300 text-center border border-gray-100">
+                    <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-500 shadow-inner animate-bounce">
+                        <AlertCircle size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 text-rose-600">PIN SALAH!</h3>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed lowercase">silakan masukkan pin yang benar.</p>
+                    <h3 className="text-lg font-semibold text-rose-600 uppercase tracking-tight mb-2">PIN SALAH!</h3>
+                    <p className="text-[11px] text-gray-500 font-normal leading-relaxed lowercase">silakan masukkan pin yang benar.</p>
                 </div>
             </div>
         );
     }
 
-    // =========================================================================
-    // 🔥 TAMPILAN NORMAL (FORM INPUT PIN)
-    // =========================================================================
+    // Form Input Normal
     return (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20">
+            <div className="bg-white w-full max-w-xs rounded-2xl p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-gray-100">
                 <button 
                     onClick={() => {
                         setPin('');
                         setShowPin(false);
                         onClose();
                     }} 
-                    className="absolute top-5 right-5 text-slate-300 hover:text-rose-500 transition-colors"
+                    className="absolute top-4 right-4 text-gray-400 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"
                 >
-                    <X size={20} />
+                    <X size={18} />
                 </button>
 
-                <div className="text-center mb-8">
-                    <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-sm">
-                        <Lock size={28} />
+                <div className="text-center mb-6 mt-2">
+                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-sm">
+                        <Lock size={20} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                    <p className="text-[11px] text-slate-400 font-medium mt-1 px-2 leading-relaxed text-center lowercase">
+                    <h3 className="text-base font-semibold text-gray-800 lowercase">{title}</h3>
+                    <p className="text-[10px] text-gray-400 font-normal mt-1 leading-relaxed text-center lowercase">
                         demi keamanan transaksi, masukkan 6 digit pin anda.
                     </p>
                 </div>
@@ -149,7 +184,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                             type={showPin ? "text" : "password"} 
                             inputMode="numeric"
                             maxLength={6}
-                            className="w-full text-center text-3xl tracking-[0.5em] font-black py-4 bg-slate-50 border-b-4 border-slate-100 focus:border-[#136f42] outline-none transition-all rounded-xl text-slate-700 shadow-inner"
+                            className="w-full text-center text-2xl tracking-[0.5em] font-semibold py-3.5 bg-gray-50 border border-gray-200 focus:border-[#136f42] outline-none transition-all rounded-xl text-gray-700 focus:ring-4 focus:ring-green-50"
                             placeholder="••••••"
                             value={pin}
                             onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
@@ -159,18 +194,18 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                         <button 
                             type="button"
                             onClick={() => setShowPin(!showPin)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#136f42] p-2 transition-colors"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#136f42] p-1.5 transition-colors bg-white rounded-lg shadow-sm border border-gray-100"
                         >
-                            {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading || pin.length < 6}
-                        className="w-full bg-[#136f42] text-white font-bold py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/20 active:scale-[0.98] uppercase text-xs tracking-widest"
+                        className="w-full bg-[#136f42] text-white font-medium py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#0f5c35] transition-all shadow-sm active:scale-95 uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
                     >
-                        {loading ? 'Memverifikasi...' : 'Konfirmasi pin'}
+                        {loading ? <Loader2 className="animate-spin" size={16} /> : 'konfirmasi pin'}
                     </button>
                 </form>
 

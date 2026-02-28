@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, UploadCloud, Copy, CheckCircle, Wallet, Lock, Eye, EyeOff, X, AlertCircle, Info, QrCode } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Copy, CheckCircle, Wallet, Lock, Eye, EyeOff, X, AlertCircle, QrCode, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SuccessModal } from '../../components/SuccessModal'; 
 import imageCompression from 'browser-image-compression'; 
@@ -19,16 +19,16 @@ export const TopUp = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    // --- STATE MODAL QRIS & PIN ---
     const [isQrModalOpen, setIsQrModalOpen] = useState(false); 
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
     const [pin, setPin] = useState('');
     const [showPin, setShowPin] = useState(false);
     const [isPinSuccess, setIsPinSuccess] = useState(false); 
     const [isPinError, setIsPinError] = useState(false); 
+    // 🔥 State Baru: Deteksi PIN belum diatur
+    const [isPinNotSet, setIsPinNotSet] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-    // DATA REKENING REVISI
     const bankAccounts = [
         { name: 'Bank Mandiri', number: '1360031033316', holder: 'Koperasi Karya Kita Jaya' },
         { name: 'Bank BRI', number: '032501003161306', holder: 'Koperasi Karya Kita Jaya' },
@@ -48,6 +48,7 @@ export const TopUp = () => {
             setShowPin(false);
             setIsPinSuccess(false);
             setIsPinError(false);
+            setIsPinNotSet(false);
         }
     }, [isPinModalOpen]);
 
@@ -92,19 +93,44 @@ export const TopUp = () => {
     };
 
     const handleFinalSubmit = async () => {
-        const userPin = (user as any)?.pin;
-        if (pin !== userPin) {
-            playSuccessSound(); 
-            setIsPinError(true);
-            setTimeout(() => { setIsPinError(false); setPin(''); }, 1500);
-            return;
-        }
-
-        playSuccessSound();
-        setIsPinSuccess(true);
         setIsLoading(true);
 
         try {
+            // 🔥 PERBAIKAN UTAMA: Fetch PIN terbaru langsung dari database
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('pin')
+                .eq('id', user?.id)
+                .single();
+
+            if (profileError) throw profileError;
+
+            const dbPin = profile?.pin;
+
+            // 1. Cek jika PIN memang belum dibuat
+            if (!dbPin || dbPin.trim() === '') {
+                playSuccessSound();
+                setIsPinNotSet(true);
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Validasi kecocokan PIN
+            if (pin !== dbPin) {
+                playSuccessSound(); 
+                setIsPinError(true);
+                setTimeout(() => { 
+                    setIsPinError(false); 
+                    setPin(''); 
+                    setIsLoading(false);
+                }, 1500);
+                return;
+            }
+
+            // 3. Proses Transaksi jika PIN Benar
+            playSuccessSound();
+            setIsPinSuccess(true);
+
             const fileName = `topup-${user?.id}-${Date.now()}.jpg`;
             if (proofFile) await supabase.storage.from('transaction-proofs').upload(fileName, proofFile);
             const { data: { publicUrl } } = supabase.storage.from('transaction-proofs').getPublicUrl(fileName);
@@ -122,6 +148,7 @@ export const TopUp = () => {
                 setIsPinModalOpen(false);
                 setIsSuccessModalOpen(true); 
             }, 1500);
+            
         } catch (error: any) {
             toast.error('Gagal: ' + error.message);
             setIsLoading(false);
@@ -137,7 +164,7 @@ export const TopUp = () => {
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-green-50 rounded-full transition uppercase">
                         <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-lg font-bold text-gray-900 first-letter:uppercase">Top Up Saldo TaPro</h1>
+                    <h1 className="text-lg font-bold text-gray-900 first-letter:uppercase lowercase">top up saldo tapro</h1>
                 </div>
             </div>
 
@@ -156,26 +183,20 @@ export const TopUp = () => {
                         </div>
                     ))}
                     
-                    {/* QRIS */}
                     <div className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm flex items-center gap-4">
                         <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner"><QrCode size={24}/></div>
                         <div className="flex-1">
                             <p className="text-[10px] font-black text-[#136f42] uppercase tracking-wide">QRIS</p>
                             <p className="text-xs font-bold text-gray-900">an. Top Up Saldo TaPro</p>
                         </div>
-                        <button 
-                            onClick={() => setIsQrModalOpen(true)}
-                            className="text-[10px] font-black uppercase text-white bg-[#136f42] px-4 py-2 rounded-lg hover:bg-[#0b4d2e] shadow-sm transition-all"
-                        >
-                            Buka QR
-                        </button>
+                        <button onClick={() => setIsQrModalOpen(true)} className="text-[10px] font-black uppercase text-white bg-[#136f42] px-4 py-2 rounded-lg hover:bg-[#0b4d2e] shadow-sm transition-all">Buka QR</button>
                     </div>
                 </div>
 
                 {/* FORM INPUT */}
                 <form onSubmit={handlePreSubmit} className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 first-letter:uppercase text-left">nominal top up</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2 text-left lowercase">nominal top up</label>
                         <div className="relative">
                             <span className="absolute left-4 top-3.5 text-[#136f42] font-bold uppercase">rp</span>
                             <Input
@@ -191,17 +212,16 @@ export const TopUp = () => {
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-sm font-bold text-gray-700 first-letter:uppercase text-left">upload bukti transfer</label>
+                            <label className="block text-sm font-bold text-gray-700 text-left lowercase">upload bukti transfer</label>
                             <span className="text-[9px] font-bold text-[#136f42] bg-green-50 px-2 py-0.5 rounded-full uppercase">Auto-Compress 1MB</span>
                         </div>
-                        
                         <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${previewUrl ? 'border-[#136f42] bg-green-50' : 'border-green-200 hover:bg-green-50'}`}>
                             {previewUrl ? (
                                 <img src={previewUrl} className="h-40 mx-auto rounded-lg object-contain shadow-md" alt="Preview" />
                             ) : (
                                 <div className="text-center text-gray-400 py-2">
                                     <UploadCloud size={24} className="mx-auto mb-3 text-[#136f42]" />
-                                    <p className="text-sm font-bold text-gray-600 first-letter:uppercase">upload foto / screenshot</p>
+                                    <p className="text-sm font-bold text-gray-600 lowercase">upload foto / screenshot</p>
                                 </div>
                             )}
                             <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -214,7 +234,7 @@ export const TopUp = () => {
                 </form>
             </div>
 
-            {/* --- MODAL QRIS --- */}
+            {/* MODAL QRIS */}
             {isQrModalOpen && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
                     <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 relative animate-in zoom-in-95">
@@ -227,17 +247,37 @@ export const TopUp = () => {
                             <div className="bg-gray-50 p-4 rounded-3xl border-2 border-dashed border-gray-200">
                                 <img src="/src/assets/qris-tapro.png" alt="QRIS KKJ" className="w-full aspect-square object-contain rounded-xl" />
                             </div>
-                            <p className="text-[10px] text-slate-400 leading-relaxed italic px-4">silakan screenshot dan scan menggunakan aplikasi bank atau dompet digital anda.</p>
+                            <p className="text-[10px] text-slate-400 leading-relaxed italic px-4 lowercase">silakan screenshot dan scan menggunakan aplikasi bank atau dompet digital anda.</p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL PIN --- */}
+            {/* MODAL PIN */}
             {isPinModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl space-y-6 border border-white/20 text-center">
-                        {isPinSuccess ? (
+                        
+                        {/* 🔥 TAMPILAN JIKA PIN BELUM DIATUR */}
+                        {isPinNotSet ? (
+                            <div className="py-4 space-y-6">
+                                <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500 shadow-inner">
+                                    <ShieldAlert size={32} />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-lg font-black text-slate-800 uppercase">PIN Belum Diatur</h3>
+                                    <p className="text-[11px] text-slate-400 font-medium px-4 leading-relaxed lowercase">
+                                        segera atur pin untuk mengaktifkan fitur transfer dan penarikan saldo.
+                                    </p>
+                                </div>
+                                <Button 
+                                    onClick={() => navigate('/profile')} 
+                                    className="w-full bg-amber-500 hover:bg-amber-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-lg"
+                                >
+                                    Atur PIN Sekarang
+                                </Button>
+                            </div>
+                        ) : isPinSuccess ? (
                             <div className="py-4"><CheckCircle size={48} className="mx-auto text-[#136f42] mb-4" /><h3 className="text-lg font-black text-slate-800 uppercase">pin benar</h3></div>
                         ) : isPinError ? (
                             <div className="py-4"><AlertCircle size={48} className="mx-auto text-rose-600 mb-4 animate-bounce" /><h3 className="text-lg font-black text-rose-600 uppercase">pin salah!</h3></div>
@@ -245,10 +285,9 @@ export const TopUp = () => {
                             <>
                                 <div className="flex justify-between items-center mb-6">
                                     <div className="flex items-center gap-3"><Lock size={20} className="text-[#136f42]"/><h2 className="text-lg font-black text-slate-800 uppercase">verifikasi pin</h2></div>
-                                    <button onClick={() => setIsPinModalOpen(false)} className="uppercase"><X size={20}/></button>
+                                    <button onClick={() => setIsPinModalOpen(false)}><X size={20}/></button>
                                 </div>
                                 
-                                {/* PERBAIKAN: Input PIN dengan Tombol Mata */}
                                 <div className="relative group">
                                     <input
                                         type={showPin ? "text" : "password"} 

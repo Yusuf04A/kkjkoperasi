@@ -39,7 +39,7 @@ import AdminKabarForm from './pages/admin/AdminKabarForm';
 import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 import { AdminTamasa } from './pages/admin/AdminTamasa';
-import { AdminInflip } from './pages/admin/AdminInflip'; // 🔥 IMPORT BARU
+import { AdminInflip } from './pages/admin/AdminInflip'; 
 import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 import { AdminLHU } from './pages/admin/AdminLHU';
@@ -87,7 +87,7 @@ function App() {
 
           {/* Program Admin Routes */}
           <Route path="/admin/tamasa" element={<AdminTamasa />} />
-          <Route path="/admin/inflip" element={<AdminInflip />} /> {/* 🔥 ROUTE BARU */}
+          <Route path="/admin/inflip" element={<AdminInflip />} /> 
           <Route path="/admin/toko" element={<AdminTokoKatalog />} />
           <Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
@@ -109,7 +109,11 @@ function App() {
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             {/* Dashboard & Profile */}
             <Route path="/" element={<Home />} />
+            
+            {/* 🔥 PERBAIKAN: Menambahkan rute /profile agar sinkron dengan PinModal */}
             <Route path="/profil" element={<Profile />} />
+            <Route path="/profile" element={<Profile />} />
+            
             <Route path="/notifikasi" element={<Notifications />} />
 
             {/* Menu Transaksi */}
