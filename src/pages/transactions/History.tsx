@@ -152,9 +152,9 @@ export const TransactionHistory = () => {
             <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600 shrink-0">
               <ArrowLeft size={20} strokeWidth={2.5} />
             </button>
-            <h1 className="text-lg font-bold tracking-tight text-slate-800 lowercase">
-              Riwayat transaksi
-            </h1>
+            <h1 className="text-lg font-bold tracking-tight text-slate-800 capitalize">
+  Riwayat transaksi
+</h1>
           </div>
           
           <div className="flex items-center gap-2">

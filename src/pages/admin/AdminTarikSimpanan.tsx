@@ -39,7 +39,7 @@ export const AdminTarikSimpanan = () => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Search anggota
+    // Logic Handlers (Search, Select, Execute)
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
         setIsSearching(true);
@@ -103,7 +103,6 @@ export const AdminTarikSimpanan = () => {
         const toastId = toast.loading('Memproses penarikan...');
 
         try {
-            // 1. Ambil saldo real-time untuk keamanan
             const { data: freshProfile, error: fetchError } = await supabase
                 .from('profiles')
                 .select(selectedSimpanan.col)
@@ -115,14 +114,12 @@ export const AdminTarikSimpanan = () => {
             const currentBalance: number = freshProfileData[selectedSimpanan.col] || 0;
             if (currentBalance < nominal) throw new Error('Saldo anggota tidak mencukupi!');
 
-            // 2. Kurangi saldo
             const { error: updateError } = await supabase
                 .from('profiles')
                 .update({ [selectedSimpanan.col]: currentBalance - nominal })
                 .eq('id', selectedMember.id);
             if (updateError) throw updateError;
 
-            // 3. Catat di savings_withdrawals (status langsung approved karena admin)
             await supabase.from('savings_withdrawals').insert({
                 user_id: selectedMember.id,
                 type: selectedSimpanan.id,
@@ -133,7 +130,6 @@ export const AdminTarikSimpanan = () => {
                 admin_note: keterangan,
             });
 
-            // 4. Catat di tabel transaksi utama
             await supabase.from('transactions').insert({
                 user_id: selectedMember.id,
                 type: 'withdraw',
@@ -145,7 +141,6 @@ export const AdminTarikSimpanan = () => {
             toast.success('Penarikan berhasil dieksekusi!', { id: toastId });
             setShowConfirm(false);
 
-            // Refresh data anggota
             const { data: updated } = await supabase
                 .from('profiles')
                 .select('id, full_name, member_id, simwa_balance, simpok_balance, simade_balance, sipena_balance, sihara_balance, siqurma_balance, siuji_balance, siwalima_balance, tapro_balance')
@@ -165,230 +160,268 @@ export const AdminTarikSimpanan = () => {
     };
 
     return (
-        <div className="p-6 max-w-4xl mx-auto min-h-screen bg-gray-50 font-sans text-slate-900">
-            {/* Header */}
+        <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
+            {/* --- HEADER KONSISTEN --- */}
             <div className="mb-8">
-                <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-[#136f42] mb-5 w-fit transition-colors text-sm font-bold">
-                    <ArrowLeft size={16} /> Kembali ke Dashboard
+                <Link 
+                    to="/admin/dashboard" 
+                    className="inline-flex items-center gap-2 text-slate-400 hover:text-[#136f42] mb-6 transition-all group"
+                >
+                    <div className="p-2 rounded-xl group-hover:bg-green-50 transition-colors">
+                        <ArrowLeft size={18} />
+                    </div>
+                    <span className="text-sm font-bold uppercase tracking-widest">Kembali</span>
                 </Link>
-                <div className="bg-[#136f42] rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl shadow-green-900/20">
-                    <div className="absolute right-0 top-0 w-60 h-60 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
-                                <Banknote size={20} />
+                
+                <div className="bg-[#136f42] rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-green-900/20">
+                    <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                    <div className="absolute left-1/3 bottom-0 w-40 h-40 bg-black/5 rounded-full blur-2xl -mb-10 pointer-events-none" />
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 md:w-16 md:h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner">
+                                <Banknote size={32} strokeWidth={2.5} className="text-white" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-black tracking-tight uppercase">Tarik Simpanan Anggota</h1>
-                                <p className="text-[10px] text-green-200/80 font-bold uppercase tracking-[0.2em]">Eksekusi Admin · Langsung Diproses</p>
+                                <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-none uppercase">
+                                    TARIK SIMPANAN
+                                </h1>
+                                <p className="text-[10px] md:text-xs text-green-200/80 font-bold uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                    Otoritas Admin • Eksekusi Instan
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* === STEP 1: CARI ANGGOTA === */}
-            <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Step 1 · Cari Anggota</h2>
-                <div className="flex gap-2">
-                    <div className="relative flex-1">
-                        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Cari nama atau NIAK anggota..."
-                            className="w-full pl-10 h-12 text-sm font-bold bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-[#136f42] focus:outline-none transition-all"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        />
-                    </div>
-                    <button
-                        onClick={handleSearch}
-                        disabled={isSearching}
-                        className="h-12 px-5 bg-[#136f42] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#0f5c35] transition-colors disabled:opacity-60 flex items-center gap-2"
-                    >
-                        {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-                        Cari
-                    </button>
-                </div>
-
-                {/* Hasil Pencarian */}
-                {searchResults.length > 0 && (
-                    <div className="mt-3 border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-50">
-                        {searchResults.map((m) => (
-                            <button
-                                key={m.id}
-                                onClick={() => handleSelectMember(m)}
-                                className="w-full flex items-center gap-4 p-4 hover:bg-green-50/50 transition-colors text-left"
-                            >
-                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
-                                    <User size={18} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-bold text-sm text-slate-900">{m.full_name}</p>
-                                    <p className="text-[10px] font-mono text-slate-400 uppercase">{m.member_id}</p>
-                                </div>
-                                <ChevronRight size={16} className="text-slate-300" />
-                            </button>
-                        ))}
-                    </div>
-                )}
-
-                {/* Anggota Terpilih */}
-                {selectedMember && (
-                    <div className="mt-4 bg-[#136f42]/5 border border-[#136f42]/20 rounded-2xl p-4 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-[#136f42]/10 rounded-2xl flex items-center justify-center text-[#136f42]">
-                            <User size={22} />
+            {/* --- BODY CONTENT --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* SISI KIRI: STEP 1 & 2 */}
+                <div className="lg:col-span-7 space-y-6">
+                    
+                    {/* STEP 1: CARI ANGGOTA */}
+                    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
+                                <Search size={18} strokeWidth={3} />
+                            </div>
+                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 1: Identifikasi Anggota</h2>
                         </div>
-                        <div className="flex-1">
-                            <p className="font-black text-slate-900">{selectedMember.full_name}</p>
-                            <p className="text-[10px] font-mono text-slate-400 uppercase">{selectedMember.member_id}</p>
-                        </div>
-                        <button
-                            onClick={() => { setSelectedMember(null); setSelectedSimpanan(null); }}
-                            className="p-2 rounded-xl hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-colors"
-                        >
-                            <X size={16} />
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* === STEP 2: PILIH SIMPANAN === */}
-            {selectedMember && (
-                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Step 2 · Pilih Jenis Simpanan</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {SIMPANAN_LIST.map((s) => {
-                            const balance = selectedMember[s.col] || 0;
-                            const Icon = s.icon;
-                            const isSelected = selectedSimpanan?.id === s.id;
-                            return (
-                                <button
-                                    key={s.id}
-                                    onClick={() => { setSelectedSimpanan(s); setAmount(''); setTarikSemua(false); }}
-                                    className={cn(
-                                        "flex items-center gap-3 p-4 rounded-2xl border transition-all text-left",
-                                        isSelected
-                                            ? "bg-[#136f42] border-[#136f42] shadow-lg shadow-green-900/15"
-                                            : "bg-gray-50/50 border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-                                    )}
-                                >
-                                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", isSelected ? "bg-white/20" : s.bg)}>
-                                        <Icon size={18} className={isSelected ? "text-white" : s.color} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={cn("text-xs font-black uppercase tracking-tight truncate", isSelected ? "text-white" : "text-slate-700")}>{s.label}</p>
-                                        <p className={cn("text-[11px] font-bold font-mono", isSelected ? "text-green-200" : "text-slate-400")}>{formatRupiah(balance)}</p>
-                                    </div>
-                                    {isSelected && <CheckCircle size={18} className="text-white shrink-0" />}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* === STEP 3: FORM PENARIKAN === */}
-            {selectedMember && selectedSimpanan && (
-                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Step 3 · Detail Penarikan</h2>
-
-                    {/* Info Saldo */}
-                    <div className="bg-slate-50 rounded-2xl p-4 mb-5 flex justify-between items-center border border-slate-100">
-                        <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo {selectedSimpanan.label}</p>
-                            <p className="text-2xl font-black text-slate-900">{formatRupiah(getBalanceForSelected())}</p>
-                        </div>
-                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", selectedSimpanan.bg)}>
-                            <selectedSimpanan.icon size={22} className={selectedSimpanan.color} />
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleOpenConfirm} className="space-y-4">
-                        {/* Nominal */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal Penarikan</label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
+                        
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="0"
-                                    className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:border-[#136f42] focus:outline-none transition-all disabled:opacity-50"
-                                    value={tarikSemua ? parseInt(getBalanceForSelected().toString()).toLocaleString('id-ID') : amount}
-                                    onChange={handleAmountChange}
-                                    disabled={tarikSemua}
+                                    placeholder="Cari nama atau NIAK..."
+                                    className="w-full pl-10 h-14 text-sm font-bold bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-[#136f42]/20 focus:bg-white transition-all"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
                             </div>
-                            {/* Checkbox Tarik Semua */}
-                            <label className="flex items-center gap-2 cursor-pointer w-fit px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={tarikSemua}
-                                    onChange={(e) => {
-                                        setTarikSemua(e.target.checked);
-                                        if (e.target.checked) setAmount('');
-                                    }}
-                                    className="w-4 h-4 accent-[#136f42]"
-                                />
-                                <span className="text-xs font-bold text-slate-600">Tarik seluruh saldo ({formatRupiah(getBalanceForSelected())})</span>
-                            </label>
+                            <button
+                                onClick={handleSearch}
+                                disabled={isSearching}
+                                className="h-14 px-6 bg-[#136f42] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#0f5c35] transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                {isSearching ? <Loader2 size={18} className="animate-spin" /> : "Cari"}
+                            </button>
                         </div>
 
-                        {/* Keterangan */}
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan / Alasan <span className="text-rose-500">*</span></label>
-                            <textarea
-                                placeholder="Contoh: Anggota meminta penarikan, Pelunasan tagihan anggota wafat..."
-                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm font-medium focus:bg-white focus:border-[#136f42] focus:outline-none transition-all resize-none h-24"
-                                value={keterangan}
-                                onChange={(e) => setKeterangan(e.target.value)}
-                                required
-                            />
-                        </div>
+                        {/* Search Results Dropdown-like */}
+                        {searchResults.length > 0 && (
+                            <div className="mt-4 border border-slate-100 rounded-[2rem] overflow-hidden divide-y divide-slate-50">
+                                {searchResults.map((m) => (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => handleSelectMember(m)}
+                                        className="w-full flex items-center gap-4 p-5 hover:bg-green-50/50 transition-colors text-left group"
+                                    >
+                                        <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-[#136f42] group-hover:text-white transition-all">
+                                            <User size={20} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-slate-900">{m.full_name}</p>
+                                            <p className="text-[10px] font-mono text-slate-400 uppercase">{m.member_id}</p>
+                                        </div>
+                                        <ChevronRight size={18} className="text-slate-300 group-hover:text-[#136f42] transition-colors" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
-                        <button
-                            type="submit"
-                            className="w-full h-14 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg shadow-green-900/15 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            <Banknote size={18} />
-                            Eksekusi Penarikan
-                        </button>
-                    </form>
+                        {selectedMember && (
+                            <div className="mt-6 bg-[#136f42]/5 border border-[#136f42]/10 rounded-[2rem] p-6 flex items-center gap-5">
+                                <div className="w-14 h-14 bg-[#136f42] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-green-900/20">
+                                    <User size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-black text-lg text-slate-900 leading-tight">{selectedMember.full_name}</p>
+                                    <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">{selectedMember.member_id}</p>
+                                </div>
+                                <button
+                                    onClick={() => { setSelectedMember(null); setSelectedSimpanan(null); }}
+                                    className="p-3 rounded-xl hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* STEP 2: PILIH SIMPANAN */}
+                    {selectedMember && (
+                        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
+                                    <Wallet size={18} strokeWidth={3} />
+                                </div>
+                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 2: Sumber Dana</h2>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {SIMPANAN_LIST.map((s) => {
+                                    const balance = selectedMember[s.col] || 0;
+                                    const Icon = s.icon;
+                                    const isSelected = selectedSimpanan?.id === s.id;
+                                    return (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => { setSelectedSimpanan(s); setAmount(''); setTarikSemua(false); }}
+                                            className={cn(
+                                                "flex items-center gap-4 p-5 rounded-3xl border transition-all text-left group",
+                                                isSelected
+                                                    ? "bg-[#136f42] border-[#136f42] shadow-xl shadow-green-900/20 scale-[1.02]"
+                                                    : "bg-slate-50/50 border-slate-100 hover:border-green-200 hover:bg-white"
+                                            )}
+                                        >
+                                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors", isSelected ? "bg-white/20" : s.bg)}>
+                                                <Icon size={20} className={isSelected ? "text-white" : s.color} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={cn("text-[10px] font-black uppercase tracking-widest", isSelected ? "text-green-100" : "text-slate-400")}>{s.label}</p>
+                                                <p className={cn("text-sm font-bold font-mono mt-0.5", isSelected ? "text-white" : "text-slate-900")}>{formatRupiah(balance)}</p>
+                                            </div>
+                                            {isSelected && <CheckCircle size={20} className="text-white animate-in zoom-in" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
 
-            {/* === MODAL KONFIRMASI === */}
+                {/* SISI KANAN: STEP 3 (EKSEKUSI) */}
+                <div className="lg:col-span-5">
+                    {selectedMember && selectedSimpanan ? (
+                        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-6 md:p-8 sticky top-8 animate-in fade-in slide-in-from-right-4">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
+                                    <Banknote size={18} strokeWidth={3} />
+                                </div>
+                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 3: Finalisasi</h2>
+                            </div>
+
+                            <form onSubmit={handleOpenConfirm} className="space-y-6">
+                                <div className="bg-slate-900 rounded-[2rem] p-6 text-white overflow-hidden relative">
+                                    <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/5 rounded-full -mb-10 -mr-10" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Saldo Tersedia</p>
+                                    <div className="flex items-end justify-between">
+                                        <h3 className="text-2xl font-black font-mono tracking-tight">{formatRupiah(getBalanceForSelected())}</h3>
+                                        <selectedSimpanan.icon size={24} className="text-slate-500" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-center block">Nominal Penarikan</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="0"
+                                            className="w-full h-20 text-center text-3xl font-black bg-slate-50 border-none rounded-[1.5rem] focus:ring-4 focus:ring-[#136f42]/10 focus:bg-white transition-all placeholder:text-slate-200"
+                                            value={tarikSemua ? parseInt(getBalanceForSelected().toString()).toLocaleString('id-ID') : amount}
+                                            onChange={handleAmountChange}
+                                            disabled={tarikSemua}
+                                        />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-black text-xl">Rp</div>
+                                    </div>
+                                    
+                                    <button
+                                        type="button"
+                                        onClick={() => { setTarikSemua(!tarikSemua); if(!tarikSemua) setAmount(''); }}
+                                        className={cn(
+                                            "w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                            tarikSemua 
+                                                ? "bg-green-50 border-green-200 text-[#136f42]" 
+                                                : "bg-white border-slate-100 text-slate-400 hover:bg-slate-50"
+                                        )}
+                                    >
+                                        Tarik Semua Saldo
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Keterangan Admin</label>
+                                    <textarea
+                                        placeholder="Alasan penarikan..."
+                                        className="w-full bg-slate-50 border-none rounded-[1.5rem] p-5 text-sm font-bold focus:ring-4 focus:ring-[#136f42]/10 focus:bg-white transition-all min-h-[120px] resize-none"
+                                        value={keterangan}
+                                        onChange={(e) => setKeterangan(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    className="w-full h-16 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-green-900/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                >
+                                    <Banknote size={20} />
+                                    Eksekusi Sekarang
+                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="h-full min-h-[300px] border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
+                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 mb-4 shadow-sm">
+                                <Banknote size={32} />
+                            </div>
+                            <p className="text-sm font-bold text-slate-400">Pilih anggota dan jenis simpanan<br/>untuk memulai penarikan</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* --- MODAL KONFIRMASI --- */}
             {showConfirm && selectedMember && selectedSimpanan && (
                 <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center animate-in zoom-in-95 duration-200">
-                        <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <AlertTriangle size={32} />
+                    <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <AlertTriangle size={40} strokeWidth={2.5} />
                         </div>
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Konfirmasi Penarikan</h3>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
-                            Anda akan menarik <b>{selectedSimpanan.label}</b> sebesar<br />
-                            <span className="text-2xl font-black text-[#136f42]">{formatRupiah(getNominalTarik())}</span><br />
-                            milik anggota <b>{selectedMember.full_name}</b>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Konfirmasi Akhir</h3>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8">
+                            Sistem akan memotong saldo <b>{selectedSimpanan.label}</b> sebesar:
+                            <span className="block text-3xl font-black text-[#136f42] my-3">{formatRupiah(getNominalTarik())}</span>
+                            Nama Anggota: <span className="font-bold text-slate-900">{selectedMember.full_name}</span>
                         </p>
-                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-6 text-left">
-                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1">Keterangan:</p>
-                            <p className="text-xs text-amber-900 font-medium">{keterangan}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        
+                        <div className="grid grid-cols-2 gap-4">
                             <button
                                 onClick={() => setShowConfirm(false)}
-                                className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-transform"
+                                className="h-14 bg-slate-100 text-slate-600 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
                             >
-                                Batal
+                                Batalkan
                             </button>
                             <button
                                 onClick={handleExecute}
                                 disabled={isProcessing}
-                                className="py-3 bg-[#136f42] text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1"
+                                className="h-14 bg-[#136f42] text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
-                                {isProcessing ? <Loader2 size={14} className="animate-spin" /> : null}
-                                Ya, Proses
+                                {isProcessing && <Loader2 size={16} className="animate-spin" />}
+                                Proses Sekarang
                             </button>
                         </div>
                     </div>
