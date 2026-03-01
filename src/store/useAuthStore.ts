@@ -48,7 +48,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // 🔥 BARU: Cek notifikasi setelah session ketemu
             get().fetchUnreadCount();
         } else {
-            set({ user: null, isLoading: false });
+            // Cek localStorage jika user login menggunakan OTP Fonnte
+            const localOtpSession = localStorage.getItem('kkj_otp_session');
+            if (localOtpSession) {
+                try {
+                    const parsedProfile = JSON.parse(localOtpSession);
+                    set({ user: parsedProfile, isLoading: false });
+                    get().fetchUnreadCount();
+                } catch (e) {
+                    set({ user: null, isLoading: false });
+                }
+            } else {
+                set({ user: null, isLoading: false });
+            }
         }
     },
 
@@ -100,6 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     logout: async () => {
         await supabase.auth.signOut();
+        localStorage.removeItem('kkj_otp_session'); // Hapus log sesi local jika pakai OTP
         set({ user: null, unreadCount: 0 }); // Reset notif jadi 0
     },
 

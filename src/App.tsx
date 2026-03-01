@@ -4,6 +4,9 @@ import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { useAuthStore } from './store/useAuthStore'; // Auth Store
 import { SilaChat } from './components/SilaChat'; // Chat AI
+import { supabase } from './lib/supabase';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 // AUTH PAGES
 import { Login } from './pages/auth/Login';
@@ -39,7 +42,7 @@ import AdminKabarForm from './pages/admin/AdminKabarForm';
 import { AdminFinancialReport } from './pages/admin/FinancialReport';
 import { AdminLoanDetail } from './pages/admin/LoanDetailAdmin';
 import { AdminTamasa } from './pages/admin/AdminTamasa';
-import { AdminInflip } from './pages/admin/AdminInflip'; 
+import { AdminInflip } from './pages/admin/AdminInflip';
 import { AdminTokoKatalog } from './pages/admin/AdminTokoKatalog';
 import { AdminPegadaian } from './pages/admin/AdminPegadaian';
 import { AdminLHU } from './pages/admin/AdminLHU';
@@ -59,16 +62,35 @@ import { PPOB } from './pages/ppob/PPOB';
 import { KabarDetail } from './pages/kabarkkj/KabarDetail';
 
 function App() {
-  const { user } = useAuthStore();
+  const { user, isLoading, checkSession } = useAuthStore();
+
+  useEffect(() => {
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkSession();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <div className="app-container font-sans text-gray-900 bg-gray-50 min-h-screen">
-      <BrowserRouter>
+    <BrowserRouter>
+      <div className="app-container font-sans text-gray-900 bg-gray-50 min-h-screen">
         {/* Notifikasi Toast Global */}
         <Toaster position="top-center" reverseOrder={false} />
 
         {/* Chatbot AI (Hanya Muncul Jika User Login) */}
-        {user && <SilaChat />}
+        {user && !isLoading && <SilaChat />}
+
+        {isLoading && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-50/70 backdrop-blur-sm">
+            <Loader2 className="animate-spin text-[#136f42]" size={48} />
+          </div>
+        )}
 
         <Routes>
           {/* === PUBLIC ROUTES === */}
@@ -87,7 +109,7 @@ function App() {
 
           {/* Program Admin Routes */}
           <Route path="/admin/tamasa" element={<AdminTamasa />} />
-          <Route path="/admin/inflip" element={<AdminInflip />} /> 
+          <Route path="/admin/inflip" element={<AdminInflip />} />
           <Route path="/admin/toko" element={<AdminTokoKatalog />} />
           <Route path="/admin/toko/katalog" element={<AdminTokoKatalog />} />
           <Route path="/admin/pegadaian" element={<AdminPegadaian />} />
@@ -109,11 +131,12 @@ function App() {
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             {/* Dashboard & Profile */}
             <Route path="/" element={<Home />} />
-            
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
             {/* 🔥 PERBAIKAN: Menambahkan rute /profile agar sinkron dengan PinModal */}
             <Route path="/profil" element={<Profile />} />
             <Route path="/profile" element={<Profile />} />
-            
+
             <Route path="/notifikasi" element={<Notifications />} />
 
             {/* Menu Transaksi */}
@@ -144,8 +167,8 @@ function App() {
           {/* Fallback Route */}
           <Route path="*" element={<Navigate to="/welcome" replace />} />
         </Routes>
-      </BrowserRouter>
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 

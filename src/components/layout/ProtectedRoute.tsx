@@ -1,19 +1,14 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    const { user, isLoading, checkSession } = useAuthStore();
-
-    useEffect(() => {
-        checkSession();
-    }, []);
+    const { user, isLoading } = useAuthStore();
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 className="animate-spin text-kkj-blue" size={40} />
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-50/70 backdrop-blur-sm">
+                <Loader2 className="animate-spin text-[#136f42]" size={48} />
             </div>
         );
     }
