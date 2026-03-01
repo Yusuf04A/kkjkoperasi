@@ -3,12 +3,13 @@ import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale,
     ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet,
-    ArrowUpRight, CreditCard, RefreshCcw
+    ArrowUpRight, CreditCard, RefreshCcw, X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
+import { motion, AnimatePresence } from 'framer-motion'; // Tambahkan Framer Motion
 
 // --- IMPORT LOGO ---
 import logoKKJ from '../../assets/Logo-kkj.png';
@@ -26,6 +27,9 @@ export const AdminDashboard = () => {
     const [transactionStats, setTransactionStats] = useState<any[]>([]);
     const [loadingStats, setLoadingStats] = useState(false);
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
+    
+    // --- STATE UNTUK POPUP LOGOUT ---
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const formatIDR = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n || 0);
 
@@ -199,11 +203,58 @@ export const AdminDashboard = () => {
         return () => { supabase.removeChannel(channel); };
     }, []);
 
-    const handleLogout = async () => { if (window.confirm("Akhiri sesi admin?")) { await logout(); navigate('/login'); } };
+    // --- LOGIC LOGOUT ---
+    const confirmLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-12 font-sans overflow-x-hidden">
-            {/* TOP BAR - Responsive Padding */}
+            
+            {/* MODAL LOGOUT ANTI GRAVITY */}
+            <AnimatePresence>
+                {showLogoutModal && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowLogoutModal(false)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-slate-100 text-center"
+                        >
+                            <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-rose-500">
+                                <LogOut size={40} />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Konfirmasi Logout</h3>
+                            <p className="text-slate-500 font-medium mt-2 leading-relaxed">Apakah Anda yakin ingin mengakhiri sesi Administrator KKJ?</p>
+                            
+                            <div className="grid grid-cols-2 gap-3 mt-8">
+                                <button 
+                                    onClick={() => setShowLogoutModal(false)}
+                                    className="py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all"
+                                >
+                                    Batal
+                                </button>
+                                <button 
+                                    onClick={confirmLogout}
+                                    className="py-4 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-rose-200 transition-all"
+                                >
+                                    Ya, Logout
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* TOP BAR */}
             <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 md:px-6 py-3 md:py-4 shadow-sm">
                 <div className="max-w-[1400px] mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-2 md:gap-3">
@@ -217,7 +268,11 @@ export const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
                         <button onClick={() => { fetchStats(); fetchTransactionTableStats(); }} className="p-2 text-slate-400 hover:text-[#136f42] transition-colors"><RefreshCcw size={16} className={loadingStats ? "animate-spin" : ""} /></button>
-                        <button onClick={handleLogout} className="flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-rose-50/50 hover:bg-rose-50 text-rose-600 rounded-lg md:rounded-xl transition-all border border-rose-100 uppercase text-[9px] md:text-[10px] font-black tracking-widest">
+                        {/* TRIGGER MODAL DI SINI */}
+                        <button 
+                            onClick={() => setShowLogoutModal(true)} 
+                            className="flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-rose-50/50 hover:bg-rose-50 text-rose-600 rounded-lg md:rounded-xl transition-all border border-rose-100 uppercase text-[9px] md:text-[10px] font-black tracking-widest"
+                        >
                             <span>Logout</span> <LogOut size={16} />
                         </button>
                     </div>
@@ -225,7 +280,7 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 pt-6 md:pt-8 space-y-6 md:space-y-8">
-                {/* 1. HERO SECTION - Responsive Text */}
+                {/* 1. HERO SECTION */}
                 <div className="relative bg-[#136f42] rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-8 overflow-hidden shadow-2xl">
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 text-white text-center md:text-left">
                         <div className="space-y-1">
@@ -236,7 +291,6 @@ export const AdminDashboard = () => {
                             <PieChart size={14} /> Keuangan Real-time
                         </Link>
                     </div>
-                    {/* Decorative element for mobile */}
                     <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
                 </div>
 
@@ -260,7 +314,7 @@ export const AdminDashboard = () => {
                     </div>
                 )}
 
-                {/* 3. TABEL STATISTIK LENGKAP - Fixed Mobile Table */}
+                {/* 3. TABEL STATISTIK LENGKAP */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between border-l-4 border-[#136f42] pl-4">
                         <h2 className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em] md:tracking-[0.4em]">Arus Kas Transaksi</h2>
@@ -315,7 +369,7 @@ export const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* 4. LAYANAN UTAMA - Responsive Grid */}
+                {/* 4. LAYANAN UTAMA */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 border-l-4 border-[#136f42] pl-4">
                         <h2 className="text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em] md:tracking-[0.4em]">Layanan Utama</h2>
@@ -346,8 +400,7 @@ export const AdminDashboard = () => {
     );
 };
 
-// --- HELPER COMPONENTS ---
-
+// --- HELPER COMPONENTS SAMA SEPERTI SEBELUMNYA ---
 const StatusBadge = ({ count, label, color }: any) => (
     <div className="flex flex-col items-center">
         <div className={cn("px-1.5 md:px-2 py-0.5 text-white rounded text-[8px] md:text-[9px] font-black min-w-[20px] md:min-w-[22px] text-center", color)}>
