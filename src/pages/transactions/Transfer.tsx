@@ -110,7 +110,7 @@ export const Transfer = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left lowercase">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left capitalize">
             
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
@@ -118,7 +118,7 @@ export const Transfer = () => {
                     <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-green-50 transition shrink-0 uppercase">
                         <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-lg font-bold text-gray-900 first-letter:uppercase">kirim saldo</h1>
+                    <h1 className="text-lg font-bold text-gray-900 capitalize">Kirim Saldo</h1>
                 </div>
             </div>
 
@@ -128,7 +128,7 @@ export const Transfer = () => {
                 <div className="bg-gradient-to-r from-[#136f42] to-[#0f5c35] p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                     <div className="relative z-10">
-                        <p className="text-sm font-medium text-green-100 mb-1 tracking-wide first-letter:uppercase">saldo anda</p>
+                        <p className="text-sm font-medium text-green-100 mb-1 tracking-wide capitalize">saldo Anda</p>
                         <h2 className="text-3xl font-black font-mono tracking-tight uppercase">
                             {formatRupiah(user?.tapro_balance || 0)}
                         </h2>
@@ -140,7 +140,7 @@ export const Transfer = () => {
                     
                     {/* NOMOR TUJUAN */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">nomor whatsapp tujuan</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">Nomor WhatsApp tujuan</label>
                         <div className="flex gap-2">
                             <div className="relative flex-1">
                                 <Phone className="absolute left-4 top-3.5 text-gray-400" size={18} />
@@ -167,14 +167,14 @@ export const Transfer = () => {
                         </div>
                         {recipientName && (
                             <div className="mt-3 bg-green-50 text-[#136f42] p-3 rounded-xl flex items-center gap-2 text-sm font-bold border border-green-100 animate-in slide-in-from-top-2">
-                                <UserCheck size={18} /> penerima: {recipientName.toLowerCase()}
+                                <UserCheck size={18} /> Penerima: {recipientName.toLowerCase()}
                             </div>
                         )}
                     </div>
 
                     {/* NOMINAL */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">nominal transfer</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">Nominal transfer</label>
                         <div className="relative">
                             <span className="absolute left-4 top-3.5 text-[#136f42] font-bold uppercase">rp</span>
                             <Input
@@ -186,7 +186,7 @@ export const Transfer = () => {
                                 required
                             />
                         </div>
-                        <p className="text-xs text-gray-400 mt-2 ml-1 font-medium">*minimal rp 10.000</p>
+                        <p className="text-xs text-gray-400 mt-2 ml-1 font-medium capitalize">*Minimal rp 10.000</p>
                     </div>
 
                     <Button
@@ -195,7 +195,7 @@ export const Transfer = () => {
                         disabled={!recipientName || isLoading}
                         className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-6 text-lg rounded-xl shadow-lg shadow-green-900/20 font-bold active:scale-95 transition-all uppercase"
                     >
-                        <Send className="mr-2" size={18} /> kirim sekarang
+                        <Send className="mr-2" size={18} /> Kirim sekarang
                     </Button>
                 </form>
             </div>
@@ -205,7 +205,7 @@ export const Transfer = () => {
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}
                 onSuccess={executeTransfer}
-                title="konfirmasi transfer"
+                title="Konfirmasi transfer"
             />
 
             {/* SUCCESS MODAL POPUP */}
@@ -216,7 +216,7 @@ export const Transfer = () => {
                     navigate('/transaksi/riwayat');
                 }}
                 title="Transfer Berhasil!"
-                message={`saldo sebesar rp ${amount} telah berhasil dikirim kepada ${recipientName?.toLowerCase()}.`}
+                message={`Saldo sebesar rp ${amount} telah berhasil dikirim kepada ${recipientName?.toLowerCase()}.`}
             />
         </div>
     );

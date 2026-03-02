@@ -108,12 +108,12 @@ export default function AdminKabar() {
               className="flex items-center gap-2 text-gray-400 hover:text-[#136f42] transition-all group w-fit"
             >
               <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-bold lowercase">kembali</span>
+              <span className="text-sm">Kembali</span>
             </Link>
 
             <div className="flex flex-col mt-1">
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Kabar KKJ</h1>
-                <p className="text-xs font-bold text-slate-500 tracking-widest">kelola pengumuman dan berita terbaru untuk anggota</p>
+                <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola pengumuman dan berita terbaru untuk anggota</p>
             </div>
           </div>
 

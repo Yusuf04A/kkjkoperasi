@@ -213,7 +213,6 @@ export const AdminBuatAkun = () => {
 
                         <div className="flex flex-col mt-1">
                             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Buat Akun Anggota</h1>
-                            <p className="text-xs font-bold text-slate-500 tracking-widest">Super Admin Tools</p>
                         </div>
                     </div>
                 </div>

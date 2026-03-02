@@ -268,9 +268,9 @@ export const Home = () => {
     ];
 
     const featuredPrograms = [
-        { name: 'tamasa', title: 'tabungan emas', desc: 'investasi aman mulai Rp 10rb', icon: Coins, color: 'from-yellow-400 to-yellow-600', text: 'text-yellow-700', bg: 'bg-yellow-50', link: '/program/tamasa' },
-        { name: 'inflip', title: 'investasi properti', desc: 'flipping properti profit tinggi', icon: Building, color: 'from-green-400 to-green-600', text: 'text-green-800', bg: 'bg-green-50', link: '/program/inflip' },
-        { name: 'pegadaian', title: 'gadai emas syariah', desc: 'solusi dana cepat & berkah', icon: Wallet, color: 'from-[#136f42] to-[#0f5c35]', text: 'text-green-900', bg: 'bg-green-50', link: '/program/pegadaian' }
+        { name: 'tamasa', title: 'Tabungan Emas', desc: 'Investasi aman mulai Rp 10rb', icon: Coins, color: 'from-yellow-400 to-yellow-600', text: 'text-yellow-700', bg: 'bg-yellow-50', link: '/program/tamasa' },
+        { name: 'inflip', title: 'Investasi Properti', desc: 'Flipping properti profit tinggi', icon: Building, color: 'from-green-400 to-green-600', text: 'text-green-800', bg: 'bg-green-50', link: '/program/inflip' },
+        { name: 'pegadaian', title: 'Gadai Emas Syariah', desc: 'Solusi dana cepat & berkah', icon: Wallet, color: 'from-[#136f42] to-[#0f5c35]', text: 'text-green-900', bg: 'bg-green-50', link: '/program/pegadaian' }
     ];
 
     return (

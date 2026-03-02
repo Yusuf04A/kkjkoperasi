@@ -196,14 +196,14 @@ export const AdminVerification = () => {
     );
 
     return (
-        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-white font-sans text-left lowercase">
+        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-white font-sans text-left">
             <div className="mb-6">
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#136f42] mb-4 w-fit transition-colors text-sm font-medium">
-                    <ArrowLeft size={16} /> kembali ke dashboard
+                    <ArrowLeft size={16} /> Kembali
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Anggota</h1>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1 capitalize">Manajemen Anggota</h1>
                         <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi identitas ktp & kelola data anggota aktif.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -253,7 +253,7 @@ export const AdminVerification = () => {
                             {loading ? (
                                 <tr><td colSpan={5} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#136f42]" size={32} /></td></tr>
                             ) : filteredUsers.length === 0 ? (
-                                <tr><td colSpan={5} className="p-20 text-center text-gray-400 font-normal text-sm italic">tidak ada data anggota ditemukan.</td></tr>
+                                <tr><td colSpan={5} className="p-20 text-center text-gray-400 font-normal text-sm italic">Tidak ada data anggota ditemukan.</td></tr>
                             ) : (
                                 filteredUsers.map((u) => (
                                     <tr key={u.id} className="hover:bg-gray-50/20 transition-all group">
@@ -304,7 +304,7 @@ export const AdminVerification = () => {
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/20">
                             <div className="text-left">
                                 <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Review Pendaftaran</h3>
-                                <p className="text-[10px] font-normal text-gray-400 mt-0.5 tracking-widest">Pastikan foto ktp & bukti transfer di wa sesuai</p>
+                                <p className="text-[10px] font-normal text-gray-400 mt-0.5 tracking-widest">Pastikan foto ktp & bukti transfer di WA sesuai</p>
                             </div>
                             <button onClick={() => setShowVerifyModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-all active:scale-90"><X size={20} className="text-gray-400" /></button>
                         </div>
@@ -322,14 +322,14 @@ export const AdminVerification = () => {
                                             />
                                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                                                 <a href={supabase.storage.from('ktp-registrations').getPublicUrl(selectedMember.ktp_url).data.publicUrl} target="_blank" rel="noreferrer" className="bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-[10px] tracking-widest shadow-xl flex items-center gap-2 active:scale-95 transition-all">
-                                                    <Maximize2 size={14} /> perbesar foto
+                                                    <Maximize2 size={14} /> Perbesar foto
                                                 </a>
                                             </div>
                                         </>
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
                                             <AlertTriangle size={32} />
-                                            <p className="font-medium uppercase text-[9px] tracking-widest">ktp belum diunggah</p>
+                                            <p className="font-medium uppercase text-[9px] tracking-widest">KTP belum diunggah</p>
                                         </div>
                                     )}
                                 </div>
@@ -377,7 +377,7 @@ export const AdminVerification = () => {
                             {confirmModal.type === 'reject' ? 'TOLAK ANGGOTA?' : confirmModal.type === 'reset_pin' ? 'RESET PIN?' : 'HAPUS AKUN?'}
                         </h3>
                         <p className="text-xs text-gray-400 font-normal uppercase tracking-wider mb-8 leading-relaxed">
-                            konfirmasi tindakan untuk anggota <span className="text-gray-700 font-semibold">{confirmModal.userName}</span>. tindakan ini tidak dapat dibatalkan.
+                        Konfirmasi tindakan untuk anggota <span className="text-gray-700 font-semibold">{confirmModal.userName}</span>. Tindakan ini tidak dapat dibatalkan.
                         </p>
                         <div className="grid grid-cols-2 gap-3">
                             <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3 bg-gray-50 text-gray-400 font-semibold rounded-lg text-[10px] tracking-widest active:scale-95 transition-all">Batal</button>

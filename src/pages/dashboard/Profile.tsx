@@ -382,7 +382,7 @@ export const Profile = () => {
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-slate-900 tracking-tight">Keamanan Akun</h2>
-                            <p className="text-sm font-medium text-slate-500 lowercase">atur pin 6 digit untuk keamanan transaksi.</p>
+                            <p className="text-sm font-medium text-slate-500">Atur pin 6 digit untuk keamanan transaksi.</p>
                         </div>
                     </div>
 
@@ -402,8 +402,8 @@ export const Profile = () => {
                                 </div>
                             </div>
                             {user?.pin && (
-                                <button onClick={handleForgotPin} className="mt-4 text-xs text-[#136f42] font-bold hover:underline flex items-center gap-2 ml-1 lowercase">
-                                    <HelpCircle size={14} /> lupa pin saya?
+                                <button onClick={handleForgotPin} className="mt-4 text-xs text-[#136f42] font-bold hover:underline flex items-center gap-2 ml-1">
+                                    <HelpCircle size={14} /> Lupa pin saya?
                                 </button>
                             )}
                         </div>
@@ -480,10 +480,10 @@ export const Profile = () => {
                         <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", confirmModal.type === 'logout' || confirmModal.type === 'delete_photo' ? 'bg-rose-50 text-rose-600' : 'bg-green-50 text-green-600')}>
                             {confirmModal.type === 'logout' ? <LogOut size={32} /> : confirmModal.type === 'delete_photo' ? <Trash2 size={32} /> : <Info size={32} />}
                         </div>
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2 lowercase">
+                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
                             {confirmModal.type === 'logout' ? 'Keluar aplikasi?' : confirmModal.type === 'delete_photo' ? 'Hapus foto profil?' : 'Ubah PIN transaksi?'}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4 lowercase">
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4">
                             {confirmModal.type === 'logout' ? 'Apakah Anda yakin ingin mengakhiri sesi dan keluar dari aplikasi?' : confirmModal.type === 'delete_photo' ? 'Tindakan ini akan menghapus foto Anda secara permanen dari server koperasi.' : 'PIN transaksi baru akan segera aktif untuk melindungi seluruh verifikasi keuangan Anda.'}
                         </p>
                         <div className="grid grid-cols-2 gap-3">
