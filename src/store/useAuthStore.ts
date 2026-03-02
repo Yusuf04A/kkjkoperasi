@@ -10,7 +10,18 @@ interface UserProfile {
     status?: string;
     phone?: string;
     tapro_balance?: number; // Tambahan biar TypeScipt ga marah soal saldo
+    tamasa_balance?: number;
+    inflip_balance?: number;
+    simpok_balance?: number;
+    simwa_balance?: number;
+    simade_balance?: number;
+    sipena_balance?: number;
+    siwalima_balance?: number;
+    siuji_balance?: number;
+    siqurma_balance?: number;
+    sihara_balance?: number;
     avatar_url?: string;
+    created_at?: string;
 }
 
 interface AuthState {

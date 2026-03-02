@@ -111,7 +111,7 @@ export const Inflip = () => {
         user_id: user?.id,
         project_id: selectedProject.id,
         amount: cleanAmount,
-        status: 'active'
+        status: 'pending'
       });
       if (errInvest) throw errInvest;
 
@@ -119,11 +119,6 @@ export const Inflip = () => {
         .update({ tapro_balance: (user?.tapro_balance || 0) - cleanAmount })
         .eq('id', user?.id);
       if (errBalance) throw errBalance;
-
-      const { error: errProject } = await supabase.from('inflip_projects')
-        .update({ collected_amount: selectedProject.collected_amount + cleanAmount })
-        .eq('id', selectedProject.id);
-      if (errProject) throw errProject;
 
       await supabase.from('transactions').insert({
         user_id: user?.id,
@@ -135,17 +130,17 @@ export const Inflip = () => {
 
       await supabase.from('notifications').insert({
         user_id: user?.id,
-        title: 'Investasi Berhasil 🎉',
-        message: `anda berhasil berinvestasi sebesar ${formatRupiah(cleanAmount)} pada proyek "${selectedProject.title}".`,
+        title: 'Investasi Diajukan 🎉',
+        message: `pengajuan investasi sebesar ${formatRupiah(cleanAmount)} pada proyek "${selectedProject.title}" sedang diverifikasi admin.`,
         type: 'success'
       });
 
       // 🔥 PUTAR SUARA & TAMPILKAN MODAL SUKSES
       playSuccessSound();
       setShowPinModal(false);
-      
+
       setTimeout(() => {
-        setShowSuccessModal(true); 
+        setShowSuccessModal(true);
       }, 300);
 
       await checkSession();
@@ -218,17 +213,15 @@ export const Inflip = () => {
         <div className="flex p-1.5 bg-green-900/5 rounded-2xl w-full max-w-md mx-auto mb-6 border border-green-100 uppercase">
           <button
             onClick={() => setActiveTab('browse')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${
-              activeTab === 'browse' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${activeTab === 'browse' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
+              }`}
           >
             <Search size={16} /> jelajah
           </button>
           <button
             onClick={() => setActiveTab('portfolio')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${
-              activeTab === 'portfolio' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${activeTab === 'portfolio' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
+              }`}
           >
             <Briefcase size={16} /> portofolio
           </button>
@@ -373,14 +366,14 @@ export const Inflip = () => {
       <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeInvestment} title="konfirmasi inflip" />
 
       {/* SUCCESS MODAL POPUP */}
-      <SuccessModal 
+      <SuccessModal
         isOpen={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
           setActiveTab('portfolio');
         }}
-        title="INVESTASI BERHASIL!"
-        message={`selamat! anda telah berhasil berinvestasi sebesar rp ${investAmount} di proyek "${selectedProject?.title}". pantau perkembangan properti anda di menu portofolio.`}
+        title="INVESTASI DIAJUKAN!"
+        message={`selamat! anda telah berhasil mengajukan investasi sebesar rp ${investAmount} di proyek "${selectedProject?.title}". investasi anda sedang menunggu verifikasi admin.`}
       />
     </div>
   );

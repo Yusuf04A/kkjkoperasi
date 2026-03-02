@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
-import { 
-    ArrowLeft, Check, X, RefreshCw, Clock, Coins, 
+import {
+    ArrowLeft, Check, X, RefreshCw, Clock, Coins,
     FileText, Calendar, Loader2, Archive, CheckCircle, Save, TrendingUp, AlertCircle, Info
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -23,10 +23,10 @@ export const AdminTamasa = () => {
     const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
 
     // 🔥 STATE UNTUK CUSTOM POPUP CONFIRMATION 🔥
-    const [confirmModal, setConfirmModal] = useState<{ 
-        isOpen: boolean; 
-        type: 'approve' | 'reject' | null; 
-        transaction: any; 
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        type: 'approve' | 'reject' | null;
+        transaction: any;
     }>({
         isOpen: false,
         type: null,
@@ -44,7 +44,7 @@ export const AdminTamasa = () => {
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
-            
+
             if (goldData) setCurrentGoldPrice(goldData.buy_price);
 
             // 2. Ambil Transaksi 
@@ -82,7 +82,7 @@ export const AdminTamasa = () => {
     const handleUpdateGoldPrice = async (e: React.FormEvent) => {
         e.preventDefault();
         const priceNum = parseInt(newPriceInput.replace(/\./g, ''));
-        
+
         if (!priceNum || priceNum < 100000) return toast.error("Harga tidak valid!");
 
         setIsUpdatingPrice(true);
@@ -123,12 +123,17 @@ export const AdminTamasa = () => {
                 await supabase.from("tamasa_balances").insert({ user_id: tx.user_id, total_gram: tx.estimasi_gram });
             }
 
+            const { data: userProfile } = await supabase.from('profiles').select('tamasa_balance').eq('id', tx.user_id).single();
+            if (userProfile) {
+                await supabase.from('profiles').update({ tamasa_balance: (userProfile.tamasa_balance || 0) + tx.setoran }).eq('id', tx.user_id);
+            }
+
             await supabase.from("tamasa_transactions").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", tx.id);
-            await supabase.from("notifications").insert({ 
-                user_id: tx.user_id, 
-                title: "TAMASA Disetujui", 
-                message: `Pembelian emas ${tx.estimasi_gram.toFixed(4)} gr sukses.`, 
-                type: "success" 
+            await supabase.from("notifications").insert({
+                user_id: tx.user_id,
+                title: "TAMASA Disetujui",
+                message: `Pembelian emas ${tx.estimasi_gram.toFixed(4)} gr sukses.`,
+                type: "success"
             });
 
             toast.success("Disetujui!", { id: toastId });
@@ -151,7 +156,7 @@ export const AdminTamasa = () => {
         try {
             await supabase.from("tamasa_transactions").update({ status: "rejected", approved_at: new Date().toISOString() }).eq("id", tx.id);
             const { data: userProfile } = await supabase.from('profiles').select('tapro_balance').eq('id', tx.user_id).single();
-            
+
             if (userProfile) {
                 await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + tx.setoran }).eq('id', tx.user_id);
                 await supabase.from('transactions').insert({
@@ -174,7 +179,7 @@ export const AdminTamasa = () => {
 
     return (
         <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50 font-sans">
-            
+
             {/* HEADER KONSISTEN (SESUAI GAMBAR) */}
             <div className="mb-6">
                 <Link to="/admin/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-[#003366] mb-4 w-fit transition-colors text-sm font-medium">
@@ -215,7 +220,7 @@ export const AdminTamasa = () => {
                     <form onSubmit={handleUpdateGoldPrice} className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">Rp</span>
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="Input harga baru..."
                                 value={newPriceInput}
@@ -223,7 +228,7 @@ export const AdminTamasa = () => {
                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black text-slate-800 focus:ring-4 focus:ring-blue-50 focus:border-[#003366] outline-none transition-all placeholder:text-slate-300"
                             />
                         </div>
-                        <button 
+                        <button
                             disabled={isUpdatingPrice || !newPriceInput}
                             className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
                         >
@@ -288,8 +293,8 @@ export const AdminTamasa = () => {
                                             <div className={cn(
                                                 "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-1",
                                                 tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                                                tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
-                                                'bg-amber-50 text-amber-600'
+                                                    tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                                                        'bg-amber-50 text-amber-600'
                                             )}>
                                                 {tx.status}
                                             </div>
@@ -311,7 +316,7 @@ export const AdminTamasa = () => {
                                             </p>
                                         </div>
                                     </div>
-                                    
+
                                     {tx.approved_at && (
                                         <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-black uppercase tracking-widest bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
                                             <CheckCircle size={12} /> Selesai pada {format(new Date(tx.approved_at), 'dd MMM yyyy', { locale: indonesia })}
@@ -322,14 +327,14 @@ export const AdminTamasa = () => {
                                 <div className="flex flex-col justify-center gap-3 md:border-l md:pl-8 border-slate-100 min-w-[220px]">
                                     {tx.status === 'pending' ? (
                                         <>
-                                            <button 
-                                                onClick={() => triggerModal('approve', tx)} 
+                                            <button
+                                                onClick={() => triggerModal('approve', tx)}
                                                 className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <Check size={18} /> Setujui
                                             </button>
-                                            <button 
-                                                onClick={() => triggerModal('reject', tx)} 
+                                            <button
+                                                onClick={() => triggerModal('reject', tx)}
                                                 className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <X size={18} /> Tolak
@@ -338,7 +343,7 @@ export const AdminTamasa = () => {
                                     ) : (
                                         <div className="bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 flex flex-col items-center justify-center text-center opacity-60">
                                             <FileText size={32} className="text-slate-300 mb-2" />
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Data Transaksi<br/>Telah Diarsipkan</p>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Data Transaksi<br />Telah Diarsipkan</p>
                                         </div>
                                     )}
                                 </div>
@@ -355,14 +360,14 @@ export const AdminTamasa = () => {
                         <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", confirmModal.type === 'approve' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600')}>
                             {confirmModal.type === 'approve' ? <Info size={32} /> : <AlertCircle size={32} />}
                         </div>
-                        
+
                         <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Tolak Transaksi'}
                         </h3>
-                        
+
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 px-4 lowercase">
-                            {confirmModal.type === 'approve' 
-                                ? `Setujui pembelian emas sebesar ${confirmModal.transaction?.estimasi_gram.toFixed(4)} gram untuk anggota ${confirmModal.transaction?.profiles?.full_name}?` 
+                            {confirmModal.type === 'approve'
+                                ? `Setujui pembelian emas sebesar ${confirmModal.transaction?.estimasi_gram.toFixed(4)} gram untuk anggota ${confirmModal.transaction?.profiles?.full_name}?`
                                 : `Tolak pembelian ini? Saldo Tapro sebesar ${formatRupiah(confirmModal.transaction?.setoran)} akan dikembalikan secara otomatis ke anggota.`
                             }
                         </p>

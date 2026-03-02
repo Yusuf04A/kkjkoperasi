@@ -42,6 +42,9 @@ export const Home = () => {
     const [cart, setCart] = useState<{ product: Product, quantity: number }[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
+    // --- state dynamic balances ---
+    const [dynamicBalances, setDynamicBalances] = useState({ tamasa: 0, inflip: 0 });
+
     useEffect(() => {
         if (user?.role === 'admin') {
             navigate('/admin/dashboard', { replace: true });
@@ -60,6 +63,32 @@ export const Home = () => {
         if (!error && data) setProducts(data);
         setLoadingShop(false);
     };
+
+    const fetchDynamicBalances = async () => {
+        if (!user) return;
+
+        try {
+            // 1. Fetch Tamasa Market Value
+            const { data: goldPriceData } = await supabase.from('gold_prices').select('buy_price').order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const goldPrice = goldPriceData?.buy_price || 1300000;
+            const { data: tamasaData } = await supabase.from('tamasa_balances').select('total_gram').eq('user_id', user.id).maybeSingle();
+            const tamasaValue = (tamasaData?.total_gram || 0) * goldPrice;
+
+            // 2. Fetch Inflip Active Portfolio
+            const { data: inflipData } = await supabase.from('inflip_investments').select('amount').eq('user_id', user.id).in('status', ['active', 'completed']);
+            const inflipValue = inflipData ? inflipData.reduce((acc, curr) => acc + curr.amount, 0) : 0;
+
+            setDynamicBalances({ tamasa: tamasaValue, inflip: inflipValue });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if (user && user.role !== 'admin') {
+            fetchDynamicBalances();
+        }
+    }, [user]);
 
     if (user?.role === 'admin') return null;
 
@@ -88,8 +117,8 @@ export const Home = () => {
         { id: 'siuji', name: 'S. Umroh & Haji', val: user?.siuji_balance || 0 },
         { id: 'siqurma', name: 'S. Qurban', val: user?.siqurma_balance || 0 },
         { id: 'sihara', name: 'S. Hari Raya', val: user?.sihara_balance || 0 },
-        { id: 'tamasa', name: 'Tamasa (Emas)', val: user?.tamasa_balance || 0 },
-        { id: 'inflip', name: 'Inflip (Properti)', val: user?.inflip_balance || 0 },
+        { id: 'tamasa', name: 'Tamasa (Emas)', val: dynamicBalances.tamasa > 0 ? dynamicBalances.tamasa : (user?.tamasa_balance || 0) },
+        { id: 'inflip', name: 'Inflip (Properti)', val: dynamicBalances.inflip > 0 ? dynamicBalances.inflip : (user?.inflip_balance || 0) },
     ];
 
     // --- logika penjumlahan kumulatif ---
@@ -253,8 +282,8 @@ export const Home = () => {
                 <div className="absolute -top-[10%] -left-[10%] w-[60%] h-[70%] bg-[#1b8a53] rounded-full blur-[100px] opacity-60"></div>
                 <div className="absolute top-0 right-0 w-[40%] h-[50%] bg-[#aeea00] rounded-full blur-[120px] opacity-10"></div>
                 <div className="absolute bottom-0 left-0 w-full h-[40%] bg-gradient-to-t from-black/40 to-transparent"></div>
-                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" 
-                     style={{ backgroundImage: `linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff)`, backgroundSize: '40px 70px' }}>
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
+                    style={{ backgroundImage: `linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(30deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(150deg, #fff 12%, transparent 12.5%, transparent 87%, #fff 87.5%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff), linear-gradient(60deg, #fff 25%, transparent 25.5%, transparent 75%, #fff 75%, #fff)`, backgroundSize: '40px 70px' }}>
                 </div>
                 <div className="max-w-xl mx-auto px-4 relative z-10 flex flex-col items-center">
                     <div id="id-card-render" ref={cardRef} className="bg-gradient-to-tr from-[#0f3d23] via-[#136f42] to-[#1b5e20] rounded-[24px] sm:rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden border border-white/20 flex flex-col justify-between relative w-full max-w-[632px] aspect-[1.58/1] backdrop-blur-sm">
@@ -322,7 +351,7 @@ export const Home = () => {
                             {showBalance ? formatRpUpper(otherSavings.reduce((acc, curr) => acc + curr.val, 0)) : 'Rp ••••••••••'}
                         </div>
                     </div>
-                    
+
                     {/* Quick Actions Grid (Refined) */}
                     <div className="w-full md:w-7/12">
                         <div className="grid grid-cols-4 gap-4">
