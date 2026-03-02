@@ -217,24 +217,24 @@ export const AdminInflip = () => {
         const toastId = toast.loading("Memproses...");
 
         try {
-            await supabase.from("inflip_investments").update({ status: "active", updated_at: new Date().toISOString() }).eq("id", inv.id);
+            const { error: updateErr } = await supabase.from("inflip_investments").update({ status: "active" }).eq("id", inv.id);
+            if (updateErr) throw updateErr;
 
-            const { data: project } = await supabase.from('inflip_projects').select('collected_amount').eq('id', inv.project_id).single();
+            const { data: project, error: projFetchErr } = await supabase.from('inflip_projects').select('collected_amount').eq('id', inv.project_id).single();
+            if (projFetchErr) throw projFetchErr;
+
             if (project) {
-                await supabase.from('inflip_projects').update({ collected_amount: project.collected_amount + inv.amount }).eq('id', inv.project_id);
+                const { error: projUpdErr } = await supabase.from('inflip_projects').update({ collected_amount: project.collected_amount + inv.amount }).eq('id', inv.project_id);
+                if (projUpdErr) throw projUpdErr;
             }
 
-            const { data: userProfile } = await supabase.from('profiles').select('inflip_balance').eq('id', inv.user_id).single();
-            if (userProfile) {
-                await supabase.from('profiles').update({ inflip_balance: (userProfile.inflip_balance || 0) + inv.amount }).eq('id', inv.user_id);
-            }
-
-            await supabase.from("notifications").insert({
+            const { error: notifErr } = await supabase.from("notifications").insert({
                 user_id: inv.user_id,
                 title: "Investasi INFLIP Disetujui",
                 message: `Investasi sebesar ${formatRupiah(inv.amount)} pada proyek ${inv.inflip_projects?.title} telah disetujui.`,
                 type: "success"
             });
+            if (notifErr) throw notifErr;
 
             toast.success("Disetujui!", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, investment: null });
@@ -253,24 +253,30 @@ export const AdminInflip = () => {
         setIsSaving(true);
         const toastId = toast.loading("Menolak...");
         try {
-            await supabase.from("inflip_investments").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", inv.id);
-            const { data: userProfile } = await supabase.from('profiles').select('tapro_balance').eq('id', inv.user_id).single();
+            const { error: updateErr } = await supabase.from("inflip_investments").update({ status: "rejected" }).eq("id", inv.id);
+            if (updateErr) throw updateErr;
+
+            const { data: userProfile, error: profileErr } = await supabase.from('profiles').select('tapro_balance').eq('id', inv.user_id).single();
+            if (profileErr) throw profileErr;
 
             if (userProfile) {
-                await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + inv.amount }).eq('id', inv.user_id);
-                await supabase.from('transactions').insert({
+                const { error: profUpdErr } = await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + inv.amount }).eq('id', inv.user_id);
+                if (profUpdErr) throw profUpdErr;
+
+                const { error: insertErr } = await supabase.from('transactions').insert({
                     user_id: inv.user_id,
                     type: 'topup',
                     amount: inv.amount,
                     status: 'success',
                     description: 'Refund INFLIP Ditolak Admin'
                 });
+                if (insertErr) throw insertErr;
             }
             toast.success("Ditolak & Dana Dikembalikan", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, investment: null });
             fetchInvestments();
-        } catch (err) {
-            toast.error("Gagal menolak", { id: toastId });
+        } catch (err: any) {
+            toast.error("Gagal menolak: " + err.message, { id: toastId });
         } finally {
             setIsSaving(false);
         }

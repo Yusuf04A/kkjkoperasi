@@ -116,25 +116,27 @@ export const AdminTamasa = () => {
         const toastId = toast.loading("Memproses...");
 
         try {
-            const { data: balance } = await supabase.from("tamasa_balances").select("*").eq("user_id", tx.user_id).maybeSingle();
+            const { data: balance, error: balanceFetchErr } = await supabase.from("tamasa_balances").select("*").eq("user_id", tx.user_id).maybeSingle();
+            if (balanceFetchErr) throw balanceFetchErr;
+
             if (balance) {
-                await supabase.from("tamasa_balances").update({ total_gram: balance.total_gram + tx.estimasi_gram }).eq("user_id", tx.user_id);
+                const { error } = await supabase.from("tamasa_balances").update({ total_gram: balance.total_gram + tx.estimasi_gram }).eq("user_id", tx.user_id);
+                if (error) throw error;
             } else {
-                await supabase.from("tamasa_balances").insert({ user_id: tx.user_id, total_gram: tx.estimasi_gram });
+                const { error } = await supabase.from("tamasa_balances").insert({ user_id: tx.user_id, total_gram: tx.estimasi_gram });
+                if (error) throw error;
             }
 
-            const { data: userProfile } = await supabase.from('profiles').select('tamasa_balance').eq('id', tx.user_id).single();
-            if (userProfile) {
-                await supabase.from('profiles').update({ tamasa_balance: (userProfile.tamasa_balance || 0) + tx.setoran }).eq('id', tx.user_id);
-            }
+            const { error: txErr } = await supabase.from("tamasa_transactions").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", tx.id);
+            if (txErr) throw txErr;
 
-            await supabase.from("tamasa_transactions").update({ status: "approved", approved_at: new Date().toISOString() }).eq("id", tx.id);
-            await supabase.from("notifications").insert({
+            const { error: notifErr } = await supabase.from("notifications").insert({
                 user_id: tx.user_id,
                 title: "TAMASA Disetujui",
                 message: `Pembelian emas ${tx.estimasi_gram.toFixed(4)} gr sukses.`,
                 type: "success"
             });
+            if (notifErr) throw notifErr;
 
             toast.success("Disetujui!", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, transaction: null });
@@ -154,24 +156,30 @@ export const AdminTamasa = () => {
         setIsProcessing(true);
         const toastId = toast.loading("Menolak...");
         try {
-            await supabase.from("tamasa_transactions").update({ status: "rejected", approved_at: new Date().toISOString() }).eq("id", tx.id);
-            const { data: userProfile } = await supabase.from('profiles').select('tapro_balance').eq('id', tx.user_id).single();
+            const { error: txErr } = await supabase.from("tamasa_transactions").update({ status: "rejected", approved_at: new Date().toISOString() }).eq("id", tx.id);
+            if (txErr) throw txErr;
+
+            const { data: userProfile, error: profileErr } = await supabase.from('profiles').select('tapro_balance').eq('id', tx.user_id).single();
+            if (profileErr) throw profileErr;
 
             if (userProfile) {
-                await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + tx.setoran }).eq('id', tx.user_id);
-                await supabase.from('transactions').insert({
+                const { error: updateErr } = await supabase.from('profiles').update({ tapro_balance: userProfile.tapro_balance + tx.setoran }).eq('id', tx.user_id);
+                if (updateErr) throw updateErr;
+
+                const { error: insertErr } = await supabase.from('transactions').insert({
                     user_id: tx.user_id,
                     type: 'topup',
                     amount: tx.setoran,
                     status: 'success',
                     description: 'Refund TAMASA Ditolak Admin'
                 });
+                if (insertErr) throw insertErr;
             }
             toast.success("Ditolak & Dana Dikembalikan", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, transaction: null });
             fetchData();
-        } catch (err) {
-            toast.error("Gagal menolak", { id: toastId });
+        } catch (err: any) {
+            toast.error("Gagal menolak: " + err.message, { id: toastId });
         } finally {
             setIsProcessing(false);
         }
