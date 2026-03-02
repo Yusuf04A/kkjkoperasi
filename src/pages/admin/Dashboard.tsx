@@ -27,7 +27,7 @@ export const AdminDashboard = () => {
     const [transactionStats, setTransactionStats] = useState<any[]>([]);
     const [loadingStats, setLoadingStats] = useState(false);
     const [firstRestructureId, setFirstRestructureId] = useState<string | null>(null);
-    
+
     // --- STATE UNTUK POPUP LOGOUT ---
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -81,10 +81,10 @@ export const AdminDashboard = () => {
             ];
 
             const txRows = await Promise.all(txTypes.map(async (item) => {
-                const { data: allAny } = await supabase.from('transactions').select('amount, status').eq('type', item.key).not('description', 'ilike', '%SETOR SIMPANAN%');
-                const { data: allOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%');
-                const { data: dayOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%').gte('created_at', today);
-                const { data: monthOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%').gte('created_at', firstDayMonth);
+                const { data: allAny } = await supabase.from('transactions').select('amount, status').eq('type', item.key).not('description', 'ilike', '%SETOR SIMPANAN%').not('description', 'ilike', '%LHU%').not('description', 'ilike', '%TAMASA%');
+                const { data: allOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%').not('description', 'ilike', '%LHU%').not('description', 'ilike', '%TAMASA%');
+                const { data: dayOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%').not('description', 'ilike', '%LHU%').not('description', 'ilike', '%TAMASA%').gte('created_at', today);
+                const { data: monthOk } = await supabase.from('transactions').select('amount').eq('type', item.key).eq('status', 'success').not('description', 'ilike', '%SETOR SIMPANAN%').not('description', 'ilike', '%LHU%').not('description', 'ilike', '%TAMASA%').gte('created_at', firstDayMonth);
 
                 return {
                     label: item.label,
@@ -180,7 +180,7 @@ export const AdminDashboard = () => {
             const soRow = {
                 label: 'Order Toko',
                 todayCount: soDay?.length || 0, todaySum: sum(soDay || [], 'total_amount'),
-                monthCount: soMonth?.length || 0, monthSum: sum(soMonth || []),
+                monthCount: soMonth?.length || 0, monthSum: sum(soMonth || [], 'total_amount'),
                 totalCount: soOk?.length || 0, totalSum: sum(soOk || [], 'total_amount'),
                 approved: soAll?.filter(x => x.status === 'siap_diambil').length || 0,
                 pending: soAll?.filter(x => x.status === 'diproses').length || 0,
@@ -211,19 +211,19 @@ export const AdminDashboard = () => {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-12 font-sans overflow-x-hidden">
-            
+
             {/* MODAL LOGOUT ANTI GRAVITY */}
             <AnimatePresence>
                 {showLogoutModal && (
                     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowLogoutModal(false)}
                             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -234,15 +234,15 @@ export const AdminDashboard = () => {
                             </div>
                             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Konfirmasi Logout</h3>
                             <p className="text-slate-500 font-medium mt-2 leading-relaxed">Apakah Anda yakin ingin mengakhiri sesi Administrator KKJ?</p>
-                            
+
                             <div className="grid grid-cols-2 gap-3 mt-8">
-                                <button 
+                                <button
                                     onClick={() => setShowLogoutModal(false)}
                                     className="py-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all"
                                 >
                                     Batal
                                 </button>
-                                <button 
+                                <button
                                     onClick={confirmLogout}
                                     className="py-4 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-rose-200 transition-all"
                                 >
@@ -269,8 +269,8 @@ export const AdminDashboard = () => {
                     <div className="flex items-center gap-2 md:gap-4">
                         <button onClick={() => { fetchStats(); fetchTransactionTableStats(); }} className="p-2 text-slate-400 hover:text-[#136f42] transition-colors"><RefreshCcw size={16} className={loadingStats ? "animate-spin" : ""} /></button>
                         {/* TRIGGER MODAL DI SINI */}
-                        <button 
-                            onClick={() => setShowLogoutModal(true)} 
+                        <button
+                            onClick={() => setShowLogoutModal(true)}
                             className="flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-rose-50/50 hover:bg-rose-50 text-rose-600 rounded-lg md:rounded-xl transition-all border border-rose-100 uppercase text-[9px] md:text-[10px] font-black tracking-widest"
                         >
                             <span>Logout</span> <LogOut size={16} />
