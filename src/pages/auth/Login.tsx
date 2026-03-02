@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff, Phone, KeyRound, UserCircle, ChevronRight } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft, Eye, EyeOff, Phone, ChevronRight } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { SuccessModal } from '../../components/SuccessModal';
 import logoKKJ from '/src/assets/Logo-kkj.png';
@@ -304,7 +304,7 @@ export const Login = () => {
             // Initiate the global state change ONLY after modal is closed
             await checkSession();
 
-            if (userRole === 'admin') navigate('/admin/dashboard', { replace: true });
+            if (userRole === 'admin' || userRole === 'superadmin') navigate('/admin/dashboard', { replace: true });
             else navigate('/', { replace: true });
         }
     };

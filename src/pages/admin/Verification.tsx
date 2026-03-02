@@ -66,6 +66,7 @@ export const AdminVerification = () => {
             const { count } = await supabase
                 .from('profiles')
                 .select('*', { count: 'exact', head: true })
+                .eq('role', 'member')
                 .eq('status', 'active')
                 .not('member_id', 'is', null);
 
@@ -78,14 +79,14 @@ export const AdminVerification = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ 
-                    status: 'active', 
+                .update({
+                    status: 'active',
                     member_id: memberId,
                     is_verified: true,
-                    simpok_balance: 250000 
+                    simpok_balance: 250000
                 })
                 .eq('id', userId);
-            
+
             if (error) throw error;
 
             await supabase.from('notifications').insert({
@@ -314,8 +315,8 @@ export const AdminVerification = () => {
                                 <div className="aspect-video w-full bg-slate-50 rounded-xl overflow-hidden border border-gray-100 group relative">
                                     {selectedMember.ktp_url ? (
                                         <>
-                                            <img 
-                                                src={`${supabase.storage.from('ktp-registrations').getPublicUrl(selectedMember.ktp_url).data.publicUrl}`} 
+                                            <img
+                                                src={`${supabase.storage.from('ktp-registrations').getPublicUrl(selectedMember.ktp_url).data.publicUrl}`}
                                                 alt="KTP"
                                                 className="w-full h-full object-contain"
                                             />
@@ -350,8 +351,8 @@ export const AdminVerification = () => {
 
                         <div className="p-6 bg-gray-50/30 border-t border-gray-100 flex gap-3">
                             <button onClick={() => setShowVerifyModal(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-400 font-semibold text-[10px] uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all active:scale-95">TUNDA</button>
-                            <button 
-                                onClick={executeVerify} 
+                            <button
+                                onClick={executeVerify}
                                 disabled={isProcessing}
                                 className="flex-[2] bg-[#136f42] text-white py-3 rounded-xl font-semibold text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                             >
@@ -367,8 +368,8 @@ export const AdminVerification = () => {
                 <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
                     <div className="bg-white w-full max-w-sm rounded-2xl p-8 shadow-2xl text-center border border-gray-100">
                         <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-5 shadow-sm",
-                            confirmModal.type === 'reject' ? 'bg-rose-50 text-rose-500' : 
-                            confirmModal.type === 'reset_pin' ? 'bg-amber-50 text-amber-500' : 'bg-rose-50 text-rose-500'
+                            confirmModal.type === 'reject' ? 'bg-rose-50 text-rose-500' :
+                                confirmModal.type === 'reset_pin' ? 'bg-amber-50 text-amber-500' : 'bg-rose-50 text-rose-500'
                         )}>
                             {confirmModal.type === 'reject' ? <X size={28} /> : confirmModal.type === 'reset_pin' ? <KeyRound size={28} /> : <Trash2 size={28} />}
                         </div>

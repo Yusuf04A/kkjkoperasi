@@ -51,6 +51,7 @@ import { CreditWarehouse } from './pages/admin/CreditWarehouse';
 import { AdminSimpanan } from './pages/admin/AdminSimpanan';
 import { AdminTarikSimpanan } from './pages/admin/AdminTarikSimpanan';
 import { AdminTaproTransaksi } from './pages/admin/AdminTaproTransaksi';
+import { AdminBuatAkun } from './pages/admin/AdminBuatAkun';
 
 // PROGRAM & LAINNYA
 import { Tamasa } from './pages/program/Tamasa';
@@ -126,6 +127,9 @@ function App() {
           <Route path="/admin/kabar" element={<AdminKabar />} />
           <Route path="/admin/kabar/tambah" element={<AdminKabarForm />} />
           <Route path="/admin/kabar/edit/:id" element={<AdminKabarForm />} />
+
+          {/* SuperAdmin Exclusive */}
+          <Route path="/admin/buat-akun" element={<AdminBuatAkun />} />
 
           {/* === PROTECTED MEMBER ROUTES (User Wajib Login) === */}
           <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

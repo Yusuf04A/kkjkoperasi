@@ -3,7 +3,7 @@ import {
     Users, ChevronRight, LogOut, ShieldCheck,
     ArrowRightLeft, PieChart, Megaphone, AlertTriangle, Scale,
     ShoppingBag, TrendingUp, Receipt, Banknote, Warehouse, Building, Wallet,
-    ArrowUpRight, CreditCard, RefreshCcw, X
+    ArrowUpRight, CreditCard, RefreshCcw, UserCog
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -263,7 +263,18 @@ export const AdminDashboard = () => {
                         </div>
                         <div className="flex flex-col">
                             <h1 className="font-black text-slate-900 text-sm md:text-lg uppercase leading-none tracking-tighter">KKJ <span className="text-[#136f42] hidden xs:inline">Control Center</span></h1>
-                            <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5 md:mt-1">Administrator</span>
+                            <div className="flex items-center gap-1.5 mt-0.5 md:mt-1">
+                                <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Administrator</span>
+                                {user?.role === 'superadmin' ? (
+                                    <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#136f42] text-white text-[7px] md:text-[8px] font-black uppercase tracking-widest rounded-md leading-none">
+                                        <UserCog size={8} /> Super Admin
+                                    </span>
+                                ) : (
+                                    <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[7px] md:text-[8px] font-black uppercase tracking-widest rounded-md leading-none">
+                                        <UserCog size={8} /> Admin
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2 md:gap-4">
@@ -389,6 +400,10 @@ export const AdminDashboard = () => {
                         <DashboardCard to="/admin/lhu" icon={<TrendingUp size={22} />} title="LHU" color="teal" count={stats.pendingLHU} />
                         <DashboardCard to="/admin/labarugi" icon={<Receipt size={22} />} title="Laba Rugi" color="slate" count={0} />
                         <DashboardCard to="/admin/kabar" icon={<Megaphone size={22} />} title="Kabar KKJ" color="brown" count={0} />
+                        {/* SUPERADMIN EXCLUSIVE */}
+                        {user?.role === 'superadmin' && (
+                            <DashboardCard to="/admin/buat-akun" icon={<UserCog size={22} />} title="Buat Akun" color="superadmin" count={0} />
+                        )}
                     </div>
                 </div>
 
@@ -424,12 +439,13 @@ const DashboardCard = ({ to, icon, title, color, count }: any) => {
         cyan: "bg-cyan-50/80 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white border-cyan-100",
         sky: "bg-sky-50/80 text-sky-600 group-hover:bg-sky-600 group-hover:text-white border-sky-100",
         indigo: "bg-indigo-50/80 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white border-indigo-100",
+        superadmin: "bg-[#136f42]/10 text-[#136f42] group-hover:bg-[#136f42] group-hover:text-white border-[#136f42]/20",
     };
     return (
         <Link to={to} className="group bg-white rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-5 border shadow-sm hover:shadow-xl transition-all flex flex-col items-center justify-center text-center gap-2 md:gap-3 relative h-[120px] md:h-[150px] hover:-translate-y-1">
             {count > 0 && <div className="absolute top-3 right-3 md:top-4 md:right-4 w-4 h-4 md:w-5 md:h-5 bg-rose-500 text-white text-[8px] md:text-[9px] font-bold flex items-center justify-center rounded-full animate-pulse border-2 border-white">{count}</div>}
             <div className={cn("w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all group-hover:scale-110", styles[color] || styles.slate)}>
-                {React.cloneElement(icon as React.ReactElement, { size: 20 })}
+                {React.cloneElement(icon as React.ReactElement<{ size?: number }>, { size: 20 })}
             </div>
             <h3 className="text-[8px] md:text-[10px] font-black text-slate-600 uppercase tracking-tight md:tracking-widest group-hover:text-[#136f42] line-clamp-2 px-1">{title}</h3>
         </Link>

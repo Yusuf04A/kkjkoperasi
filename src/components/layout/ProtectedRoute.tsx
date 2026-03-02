@@ -20,7 +20,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     // 2. Kalau Login TAPI statusnya 'pending' -> Lempar ke Ruang Tunggu
     // (Kecuali kalau usernya admin, admin bebas masuk walau pending - buat jaga2)
-    if (user.status === 'pending' && user.role !== 'admin') {
+    if (user.status === 'pending' && user.role !== 'admin' && user.role !== 'superadmin') {
         return <Navigate to="/pending" replace />;
     }
 
