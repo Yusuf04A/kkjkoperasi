@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatRupiah, cn } from '../../lib/utils';
-import { 
-    ArrowLeft, RefreshCw, TrendingUp, TrendingDown, 
-    PieChart, BarChart3, Wallet, ShoppingBag, Landmark 
+import {
+    ArrowLeft, RefreshCw, TrendingUp, TrendingDown,
+    PieChart, BarChart3, Wallet, ShoppingBag, Landmark
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { format } from "date-fns";
@@ -64,8 +64,8 @@ export const AdminLabaRugi = () => {
                 </Link>
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Laporan Laba Rugi</h1>
-                        <p className="text-sm text-gray-500">Analisis Keuangan Real-time Koperasi Karya Kita Jaya</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Laporan Laba Rugi</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Analisis Keuangan Real-time Koperasi Karya Kita Jaya</p>
                     </div>
                     <button onClick={fetchRealtimeStats} className="p-2 bg-white border rounded-lg hover:bg-gray-50 transition-all shadow-sm">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-kkj-blue")} />
@@ -76,24 +76,24 @@ export const AdminLabaRugi = () => {
             {/* Widget Utama */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pendapatan Kotor</p>
+                    <p className="text-[11px] font-black text-slate-400 tracking-widest mb-1">Total Pendapatan Kotor</p>
                     <p className="text-2xl font-[1000] text-kkj-blue">{formatRupiah(stats.total_income)}</p>
-                    <div className="mt-3 flex items-center gap-1 text-emerald-500 text-[10px] font-bold uppercase">
+                    <div className="mt-3 flex items-center gap-1 text-emerald-500 text-[10px] font-bold">
                         <TrendingUp size={12} /> Akumulasi Real-time
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Beban Operasional</p>
+                    <p className="text-[11px] font-black text-slate-400 tracking-widest mb-1">Beban Operasional</p>
                     <p className="text-2xl font-[1000] text-rose-500">{formatRupiah(stats.operational_costs)}</p>
-                    <div className="mt-3 flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase">
+                    <div className="mt-3 flex items-center gap-1 text-slate-400 text-[10px] font-bold">
                         <Landmark size={12} /> Biaya Sesuai LHU Terakhir
                     </div>
                 </div>
                 <div className={cn("p-6 rounded-2xl shadow-lg border", netProfit >= 0 ? "bg-kkj-blue text-white border-blue-900" : "bg-rose-600 text-white border-rose-900")}>
-                    <p className="text-[11px] font-black text-blue-100 uppercase tracking-widest mb-1 text-opacity-80">Estimasi Laba Bersih</p>
+                    <p className="text-[11px] font-black text-blue-100 tracking-widest mb-1 text-opacity-80">Estimasi Laba Bersih</p>
                     <p className="text-3xl font-[1000]">{formatRupiah(netProfit)}</p>
-                    <div className="mt-3 flex items-center gap-1 text-[10px] font-bold uppercase">
-                        {netProfit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />} 
+                    <div className="mt-3 flex items-center gap-1 text-[10px] font-bold">
+                        {netProfit >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                         {netProfit >= 0 ? "Surplus Keuangan" : "Defisit Keuangan"}
                     </div>
                 </div>
@@ -102,14 +102,14 @@ export const AdminLabaRugi = () => {
             {/* Rincian Unit Usaha */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-50 bg-slate-50/50">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-black text-slate-900 tracking-widest flex items-center gap-2">
                         <BarChart3 size={18} className="text-kkj-blue" /> Rincian Pendapatan Per Unit
                     </h3>
                 </div>
                 <div className="divide-y divide-slate-50">
-                    <UnitItem icon={<ShoppingBag size={20}/>} label="Unit Toko Koperasi" value={stats.toko_income} color="text-blue-600" />
-                    <UnitItem icon={<PieChart size={20}/>} label="Margin TAMASA (Tabungan Emas)" value={stats.tamasa_margin} color="text-yellow-600" />
-                    <UnitItem icon={<Wallet size={20}/>} label="Jasa Gadai Emas Syariah" value={stats.gadai_fees} color="text-emerald-600" />
+                    <UnitItem icon={<ShoppingBag size={20} />} label="Unit Toko Koperasi" value={stats.toko_income} color="text-blue-600" />
+                    <UnitItem icon={<PieChart size={20} />} label="Margin TAMASA (Tabungan Emas)" value={stats.tamasa_margin} color="text-yellow-600" />
+                    <UnitItem icon={<Wallet size={20} />} label="Jasa Gadai Emas Syariah" value={stats.gadai_fees} color="text-emerald-600" />
                 </div>
             </div>
         </div>
@@ -122,7 +122,7 @@ const UnitItem = ({ icon, label, value, color }: any) => (
             <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">{icon}</div>
             <div>
                 <p className="text-sm font-bold text-slate-900">{label}</p>
-                <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Unit Aktif</p>
+                <p className="text-[10px] text-slate-400 font-black tracking-widest">Unit Aktif</p>
             </div>
         </div>
         <p className={cn("text-lg font-[1000] tracking-tighter", color)}>{formatRupiah(value)}</p>

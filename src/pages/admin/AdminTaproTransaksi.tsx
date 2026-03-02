@@ -178,8 +178,8 @@ export const AdminTaproTransaksi = () => {
                             <Wallet size={20} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-black tracking-tight uppercase">Transaksi TaPro Anggota</h1>
-                            <p className="text-[10px] text-green-200/80 font-bold uppercase tracking-[0.2em]">Admin Dapat Mentransaksikan Atas Nama Anggota</p>
+                            <h1 className="text-xl md:text-2xl font-black tracking-tight uppercase leading-none mb-1">Transaksi TaPro Anggota</h1>
+                            <p className="text-[10px] text-green-200/80 font-bold uppercase tracking-widest">Admin Dapat Mentransaksikan Atas Nama Anggota</p>
                         </div>
                     </div>
                 </div>

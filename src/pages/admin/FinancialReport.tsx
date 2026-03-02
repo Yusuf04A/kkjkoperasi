@@ -141,8 +141,8 @@ export const AdminFinancialReport = () => {
 
             <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Laporan Keuangan</h1>
-                    <p className="text-sm text-gray-500">Ringkasan Aset & Arus Kas Koperasi.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight leading-none mb-1">Laporan Keuangan</h1>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Ringkasan Aset & Arus Kas Koperasi.</p>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={handleExportMergedCSV} className="bg-kkj-blue text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-800 shadow-md">

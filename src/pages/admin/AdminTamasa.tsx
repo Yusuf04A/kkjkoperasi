@@ -195,8 +195,8 @@ export const AdminTamasa = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Manajemen TAMASA</h1>
-                        <p className="text-sm text-gray-500">Kontrol harga emas & verifikasi setoran anggota</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen TAMASA</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Kontrol harga emas & verifikasi setoran anggota</p>
                     </div>
                     <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#003366]")} />
@@ -211,11 +211,11 @@ export const AdminTamasa = () => {
                         <Coins size={200} />
                     </div>
                     <div className="relative z-10">
-                        <p className="text-blue-200 text-xs font-black uppercase tracking-[0.3em] mb-2">Harga Emas Hari Ini</p>
+                        <p className="text-blue-200 text-xs font-black tracking-[0.3em] mb-2">Harga Emas Hari Ini</p>
                         <h2 className="text-4xl font-black tracking-tighter">{formatRupiah(currentGoldPrice)}<span className="text-sm font-bold text-blue-300 ml-2">/gram</span></h2>
                         <div className="mt-4 flex items-center gap-2 bg-white/10 w-fit px-3 py-1 rounded-full border border-white/10">
                             <Clock size={12} className="text-blue-300" />
-                            <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">Update: {format(new Date(), 'dd MMM yyyy')}</span>
+                            <span className="text-[10px] font-bold text-blue-100 tracking-widest">Update: {format(new Date(), 'dd MMM yyyy')}</span>
                         </div>
                     </div>
                     <div className="hidden lg:block relative z-10">
@@ -224,7 +224,7 @@ export const AdminTamasa = () => {
                 </div>
 
                 <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Perbarui Harga Pasar</h3>
+                    <h3 className="text-sm font-black text-slate-400 tracking-widest mb-4">Perbarui Harga Pasar</h3>
                     <form onSubmit={handleUpdateGoldPrice} className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">Rp</span>
@@ -238,7 +238,7 @@ export const AdminTamasa = () => {
                         </div>
                         <button
                             disabled={isUpdatingPrice || !newPriceInput}
-                            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+                            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
                         >
                             <Save size={18} /> Update
                         </button>
@@ -294,19 +294,19 @@ export const AdminTamasa = () => {
                                             </div>
                                             <div>
                                                 <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{tx.profiles?.full_name}</h3>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{tx.profiles?.member_id}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 tracking-[0.2em]">{tx.profiles?.member_id}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <div className={cn(
-                                                "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-1",
+                                                "px-3 py-1 rounded-lg text-[10px] font-black tracking-widest mb-1",
                                                 tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
                                                     tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
                                                         'bg-amber-50 text-amber-600'
                                             )}>
                                                 {tx.status}
                                             </div>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center justify-end gap-1">
+                                            <p className="text-[10px] text-slate-400 font-bold flex items-center justify-end gap-1">
                                                 <Calendar size={10} /> {format(new Date(tx.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
                                             </p>
                                         </div>
@@ -314,11 +314,11 @@ export const AdminTamasa = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Setoran Tunai</p>
+                                            <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Setoran Tunai</p>
                                             <p className="text-2xl font-black text-[#003366] tracking-tighter">{formatRupiah(tx.setoran)}</p>
                                         </div>
                                         <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Perolehan Emas</p>
+                                            <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Perolehan Emas</p>
                                             <p className="text-2xl font-black text-yellow-600 tracking-tighter">
                                                 {tx.estimasi_gram.toFixed(4)} <span className="text-xs font-bold text-slate-300">gr</span>
                                             </p>
@@ -326,7 +326,7 @@ export const AdminTamasa = () => {
                                     </div>
 
                                     {tx.approved_at && (
-                                        <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-black uppercase tracking-widest bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
+                                        <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-black tracking-widest bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
                                             <CheckCircle size={12} /> Selesai pada {format(new Date(tx.approved_at), 'dd MMM yyyy', { locale: indonesia })}
                                         </div>
                                     )}
@@ -337,13 +337,13 @@ export const AdminTamasa = () => {
                                         <>
                                             <button
                                                 onClick={() => triggerModal('approve', tx)}
-                                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <Check size={18} /> Setujui
                                             </button>
                                             <button
                                                 onClick={() => triggerModal('reject', tx)}
-                                                className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <X size={18} /> Tolak
                                             </button>

@@ -163,8 +163,8 @@ export const AdminTarikSimpanan = () => {
         <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
             {/* --- HEADER KONSISTEN --- */}
             <div className="mb-8">
-                <Link 
-                    to="/admin/dashboard" 
+                <Link
+                    to="/admin/dashboard"
                     className="inline-flex items-center gap-2 text-slate-400 hover:text-[#136f42] mb-6 transition-all group"
                 >
                     <div className="p-2 rounded-xl group-hover:bg-green-50 transition-colors">
@@ -172,21 +172,21 @@ export const AdminTarikSimpanan = () => {
                     </div>
                     <span className="text-sm font-bold uppercase tracking-widest">Kembali</span>
                 </Link>
-                
+
                 <div className="bg-[#136f42] rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-green-900/20">
                     <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                     <div className="absolute left-1/3 bottom-0 w-40 h-40 bg-black/5 rounded-full blur-2xl -mb-10 pointer-events-none" />
-                    
+
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
                             <div className="w-14 h-14 md:w-16 md:h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 shadow-inner">
                                 <Banknote size={32} strokeWidth={2.5} className="text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-none uppercase">
+                                <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight leading-none mb-1">
                                     TARIK SIMPANAN
                                 </h1>
-                                <p className="text-[10px] md:text-xs text-green-200/80 font-bold uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                                <p className="text-[10px] md:text-xs text-green-200/80 font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
                                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                                     Otoritas Admin • Eksekusi Instan
                                 </p>
@@ -198,10 +198,10 @@ export const AdminTarikSimpanan = () => {
 
             {/* --- BODY CONTENT --- */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
+
                 {/* SISI KIRI: STEP 1 & 2 */}
                 <div className="lg:col-span-7 space-y-6">
-                    
+
                     {/* STEP 1: CARI ANGGOTA */}
                     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8">
                         <div className="flex items-center gap-3 mb-6">
@@ -210,7 +210,7 @@ export const AdminTarikSimpanan = () => {
                             </div>
                             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 1: Identifikasi Anggota</h2>
                         </div>
-                        
+
                         <div className="flex gap-2">
                             <div className="relative flex-1">
                                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -348,14 +348,14 @@ export const AdminTarikSimpanan = () => {
                                         />
                                         <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-black text-xl">Rp</div>
                                     </div>
-                                    
+
                                     <button
                                         type="button"
-                                        onClick={() => { setTarikSemua(!tarikSemua); if(!tarikSemua) setAmount(''); }}
+                                        onClick={() => { setTarikSemua(!tarikSemua); if (!tarikSemua) setAmount(''); }}
                                         className={cn(
                                             "w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
-                                            tarikSemua 
-                                                ? "bg-green-50 border-green-200 text-[#136f42]" 
+                                            tarikSemua
+                                                ? "bg-green-50 border-green-200 text-[#136f42]"
                                                 : "bg-white border-slate-100 text-slate-400 hover:bg-slate-50"
                                         )}
                                     >
@@ -388,7 +388,7 @@ export const AdminTarikSimpanan = () => {
                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-slate-200 mb-4 shadow-sm">
                                 <Banknote size={32} />
                             </div>
-                            <p className="text-sm font-bold text-slate-400">Pilih anggota dan jenis simpanan<br/>untuk memulai penarikan</p>
+                            <p className="text-sm font-bold text-slate-400">Pilih anggota dan jenis simpanan<br />untuk memulai penarikan</p>
                         </div>
                     )}
                 </div>
@@ -407,7 +407,7 @@ export const AdminTarikSimpanan = () => {
                             <span className="block text-3xl font-black text-[#136f42] my-3">{formatRupiah(getNominalTarik())}</span>
                             Nama Anggota: <span className="font-bold text-slate-900">{selectedMember.full_name}</span>
                         </p>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <button
                                 onClick={() => setShowConfirm(false)}

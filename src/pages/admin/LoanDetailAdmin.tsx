@@ -128,12 +128,12 @@ Terima kasih. 🙏
                 </button>
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Detail Pinjaman</h1>
-                        <p className="text-sm text-gray-500">{loan.type} {loan.loan_code && <span className="font-mono font-bold text-[#136f42]">• {loan.loan_code}</span>} • ID: {loan.id.slice(0, 8).toUpperCase()}</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Detail Pinjaman</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">{loan.type} {loan.loan_code && <span className="font-mono font-black text-[#136f42]">• {loan.loan_code}</span>} • ID: {loan.id.slice(0, 8).toUpperCase()}</p>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border shadow-sm ${loan.status === 'active' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                            loan.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                'bg-gray-100 text-gray-600 border-gray-200'
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-black tracking-widest border shadow-sm ${loan.status === 'active' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                        loan.status === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                            'bg-gray-100 text-gray-600 border-gray-200'
                         }`}>
                         {loan.status === 'active' ? '● AKTIF' : loan.status === 'paid' ? '● LUNAS' : loan.status}
                     </span>
@@ -172,7 +172,7 @@ Terima kasih. 🙏
                             <DollarSign size={80} />
                         </div>
                         <div className="relative z-10">
-                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">Sisa Pokok Pinjaman</p>
+                            <p className="text-[10px] text-gray-400 font-black tracking-[0.2em] mb-2">Sisa Pokok Pinjaman</p>
                             <p className="text-3xl font-black text-[#136f42] tracking-tighter">{formatRupiah(sisaPokok)}</p>
                             <div className="flex items-center gap-1.5 mt-2 text-gray-400 text-xs font-medium">
                                 <Info size={12} /> dari total {formatRupiah(loan.amount)}
@@ -181,17 +181,17 @@ Terima kasih. 🙏
 
                         <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-dashed border-gray-100">
                             <div>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Tenor</p>
+                                <p className="text-[9px] text-gray-400 font-bold mb-1">Tenor</p>
                                 <p className="font-bold text-gray-800">{loan.duration} Bulan</p>
                             </div>
                             <div>
-                                <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Cicilan / Bln</p>
+                                <p className="text-[9px] text-gray-400 font-bold mb-1">Cicilan / Bln</p>
                                 <p className="font-bold text-gray-800">{formatRupiah(loan.monthly_payment)}</p>
                             </div>
                         </div>
 
                         <div className="mt-6">
-                            <div className="flex justify-between text-[10px] mb-2 font-bold text-gray-500 uppercase tracking-wider">
+                            <div className="flex justify-between text-[10px] mb-2 font-bold text-gray-500 tracking-wider">
                                 <span>Progress Pelunasan</span>
                                 <span>{Math.round(progress)}%</span>
                             </div>
@@ -207,7 +207,7 @@ Terima kasih. 🙏
                     {/* ALERT RESTRUKTURISASI */}
                     {loan.restructure_status === 'pending' && (
                         <div className="bg-amber-50 border-2 border-amber-200 p-5 rounded-2xl shadow-sm animate-pulse">
-                            <h4 className="font-black text-amber-800 text-xs uppercase tracking-widest flex items-center gap-2 mb-2">
+                            <h4 className="font-black text-amber-800 text-xs tracking-widest flex items-center gap-2 mb-2">
                                 <AlertTriangle size={16} /> Pengajuan Perpanjangan
                             </h4>
                             <p className="text-xs text-amber-700 leading-relaxed font-medium">
@@ -232,10 +232,10 @@ Terima kasih. 🙏
                 {/* KOLOM KANAN */}
                 <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[560px]">
                     <div className="p-5 border-b border-gray-100 bg-gray-50/30 flex justify-between items-center shrink-0">
-                        <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 uppercase tracking-wider">
+                        <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2 tracking-wider">
                             <Calendar size={18} className="text-blue-500" /> Riwayat Angsuran
                         </h3>
-                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                        <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full tracking-widest">
                             {paidCount} / {installments.length} Lunas
                         </span>
                     </div>
@@ -248,7 +248,7 @@ Terima kasih. 🙏
                             </div>
                         ) : (
                             <table className="w-full text-left">
-                                <thead className="bg-gray-50/50 sticky top-0 z-10 text-[10px] text-gray-400 font-black uppercase tracking-widest border-b">
+                                <thead className="bg-gray-50/50 sticky top-0 z-10 text-[10px] text-gray-400 font-black tracking-widest border-b">
                                     <tr>
                                         <th className="p-4 text-center w-16">No</th>
                                         <th className="p-4">Jatuh Tempo</th>
@@ -276,11 +276,11 @@ Terima kasih. 🙏
                                                 </td>
                                                 <td className="p-4 text-right pr-6">
                                                     {isPaid ? (
-                                                        <span className="inline-flex items-center gap-1.5 text-emerald-600 bg-emerald-100/50 border border-emerald-200 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                                                        <span className="inline-flex items-center gap-1.5 text-emerald-600 bg-emerald-100/50 border border-emerald-200 px-3 py-1 rounded-full text-[10px] font-black">
                                                             <CheckCircle size={12} /> Lunas
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1.5 text-amber-600 bg-amber-100/50 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                                                        <span className="inline-flex items-center gap-1.5 text-amber-600 bg-amber-100/50 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-black">
                                                             <Clock size={12} /> Menunggu
                                                         </span>
                                                     )}

@@ -292,8 +292,8 @@ export const AdminInflip = () => {
                 </Link>
                 <div className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 leading-none">Manajemen Properti (INFLIP)</h1>
-                        <p className="text-sm text-gray-500 mt-1 lowercase">Kelola portofolio investasi properti koperasi & Verifikasi</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen INFLIP</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola portofolio investasi properti koperasi & Verifikasi Data Proyek Menunggu Konfirmasi</p>
                     </div>
                 </div>
             </div>
@@ -374,7 +374,7 @@ export const AdminInflip = () => {
 
                                     {/* Card Content */}
                                     <div className="p-5 flex flex-col flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{item.title}</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1 line-clamp-2 tracking-tight">{item.title}</h3>
                                         <div className="flex items-center gap-1 text-gray-500 text-xs mb-4">
                                             <MapPin size={12} /> {item.location}
                                         </div>
@@ -401,11 +401,11 @@ export const AdminInflip = () => {
 
                                         <div className="grid grid-cols-2 gap-2 border-t border-gray-50 pt-3 mt-auto">
                                             <div className="bg-gray-50 p-2 rounded-lg text-center border border-gray-100">
-                                                <p className="text-[9px] text-gray-400 uppercase font-black">Min. Invest</p>
+                                                <p className="text-[9px] text-gray-400 font-black">Min. Invest</p>
                                                 <p className="text-xs font-bold text-slate-800 tracking-tighter">{formatRupiah(item.min_investment)}</p>
                                             </div>
                                             <div className="bg-gray-50 p-2 rounded-lg text-center border border-gray-100">
-                                                <p className="text-[9px] text-gray-400 uppercase font-black">Tenor</p>
+                                                <p className="text-[9px] text-gray-400 font-black">Tenor</p>
                                                 <p className="text-xs font-bold text-slate-800 tracking-tighter">{item.duration_months} Bulan</p>
                                             </div>
                                         </div>
@@ -441,19 +441,19 @@ export const AdminInflip = () => {
                                                 </div>
                                                 <div>
                                                     <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">{inv.profiles?.full_name}</h3>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{inv.profiles?.member_id}</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 tracking-[0.2em]">{inv.profiles?.member_id}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <div className={cn(
-                                                    "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-1",
+                                                    "px-3 py-1 rounded-lg text-[10px] font-black tracking-widest mb-1",
                                                     inv.status === 'active' || inv.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                                                         inv.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
                                                             'bg-amber-50 text-amber-600'
                                                 )}>
                                                     {inv.status}
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase flex items-center justify-end gap-1">
+                                                <p className="text-[10px] text-slate-400 font-bold flex items-center justify-end gap-1">
                                                     <Clock size={10} /> {format(new Date(inv.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}
                                                 </p>
                                             </div>
@@ -461,13 +461,13 @@ export const AdminInflip = () => {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Nominal Investasi</p>
+                                                <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Nominal Investasi</p>
                                                 <p className="text-2xl font-black text-[#136f42] tracking-tighter">{formatRupiah(inv.amount)}</p>
                                             </div>
                                             <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 relative overflow-hidden">
-                                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Target Proyek</p>
+                                                <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Target Proyek</p>
                                                 <p className="font-bold text-slate-700 tracking-tight truncate pr-8">{inv.inflip_projects?.title}</p>
-                                                <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] px-2 py-0.5 rounded font-bold uppercase">ROI {inv.inflip_projects?.roi_percent}%</div>
+                                                <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] px-2 py-0.5 rounded font-bold">ROI {inv.inflip_projects?.roi_percent}%</div>
                                             </div>
                                         </div>
                                     </div>
@@ -476,13 +476,13 @@ export const AdminInflip = () => {
                                         <div className="flex flex-col justify-center gap-3 md:border-l md:pl-8 border-slate-100 min-w-[220px]">
                                             <button
                                                 onClick={() => triggerModal('approve', inv)}
-                                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs tracking-[0.2em] shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <Check size={18} /> Setujui
                                             </button>
                                             <button
                                                 onClick={() => triggerModal('reject', inv)}
-                                                className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-black text-xs tracking-[0.2em] hover:bg-rose-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
                                                 <X size={18} /> Tolak
                                             </button>
@@ -501,8 +501,8 @@ export const AdminInflip = () => {
                     <form onSubmit={handleSubmit} className="bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl animate-in zoom-in-95 border border-gray-200 max-h-[90vh] overflow-y-auto text-left">
 
                         <div className="flex justify-between items-center border-b pb-4 mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">{formData.id ? 'Edit Proyek Properti' : 'Tambah Proyek Baru'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors uppercase"><X size={20} /></button>
+                            <h2 className="text-xl font-bold text-gray-900 tracking-tight">{formData.id ? 'Edit Proyek Properti' : 'Tambah Proyek Baru'}</h2>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-red-500 transition-colors"><X size={20} /></button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -510,10 +510,10 @@ export const AdminInflip = () => {
                             {/* KIRI: Gambar & Status */}
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <label className="text-[10px] font-black text-slate-400 tracking-widest flex items-center gap-2">
                                         <ImageIcon size={14} className="text-[#136f42]" /> Foto Properti
                                     </label>
-                                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">Maks 10MB</span>
+                                    <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg">Maks 10MB</span>
                                 </div>
 
                                 <label className="block w-full h-48 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-green-50 hover:border-[#136f42] transition-all group relative overflow-hidden bg-gray-50">
@@ -521,24 +521,24 @@ export const AdminInflip = () => {
                                     {imagePreview ? (
                                         <>
                                             <img src={imagePreview} className="w-full h-full object-cover animate-in fade-in" alt="Preview" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black uppercase tracking-widest">Ganti Foto Proyek</div>
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black tracking-widest">Ganti Foto Proyek</div>
                                         </>
                                     ) : (
                                         <div className="text-center group-hover:scale-105 transition-transform duration-300 px-4">
                                             <ImageIcon className="mx-auto text-gray-300 mb-2" size={40} />
                                             <p className="text-sm font-bold text-gray-600 first-letter:uppercase">Pilih foto properti</p>
                                             <div className="mt-2 flex flex-col gap-1">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-center gap-1">
+                                                <p className="text-[10px] font-bold text-slate-400 tracking-tighter flex items-center justify-center gap-1">
                                                     <Info size={10} /> jpg, png, webp
                                                 </p>
-                                                <p className="text-[10px] font-black text-[#136f42] uppercase tracking-tighter">Otomatis Dikompres ke 1MB</p>
+                                                <p className="text-[10px] font-black text-[#136f42] tracking-tighter">Otomatis Dikompres ke 1MB</p>
                                             </div>
                                         </div>
                                     )}
                                 </label>
 
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Status Proyek</label>
+                                    <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Status Proyek</label>
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -554,12 +554,12 @@ export const AdminInflip = () => {
                             {/* KANAN: Input Data */}
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Nama Proyek</label>
+                                    <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Nama Proyek</label>
                                     <input type="text" required placeholder="Misal: Perumahan Cluster Hijau" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full border border-gray-200 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:border-[#136f42] transition-all bg-gray-50/50" />
                                 </div>
 
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Lokasi Proyek</label>
+                                    <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Lokasi Proyek</label>
                                     <div className="relative">
                                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                         <input type="text" required placeholder="Kota / Wilayah" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full border border-gray-200 pl-10 pr-4 py-3.5 rounded-xl font-medium text-slate-800 outline-none focus:border-[#136f42] transition-all bg-gray-50/50" />
@@ -568,7 +568,7 @@ export const AdminInflip = () => {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Target Dana (Rp)</label>
+                                        <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Target Dana (Rp)</label>
                                         <input
                                             type="text"
                                             required
@@ -579,7 +579,7 @@ export const AdminInflip = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Terkumpul (Rp)</label>
+                                        <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Terkumpul (Rp)</label>
                                         <input
                                             type="text"
                                             required
@@ -593,15 +593,15 @@ export const AdminInflip = () => {
 
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">ROI (%)</label>
+                                        <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">ROI (%)</label>
                                         <input type="number" step="0.1" required value={formData.roi_percent} onChange={(e) => setFormData({ ...formData, roi_percent: Number(e.target.value) })} className="w-full border border-gray-200 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:border-[#136f42] bg-gray-50/50" placeholder="0" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Tenor (Bln)</label>
+                                        <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Tenor (Bln)</label>
                                         <input type="number" required value={formData.duration_months} onChange={(e) => setFormData({ ...formData, duration_months: Number(e.target.value) })} className="w-full border border-gray-200 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:border-[#136f42] bg-gray-50/50" placeholder="0" />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Min. Invest</label>
+                                        <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Min. Invest</label>
                                         <input
                                             type="text"
                                             required
@@ -616,7 +616,7 @@ export const AdminInflip = () => {
                         </div>
 
                         <div className="mt-4">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 mb-1.5 block">Deskripsi Detail Proyek</label>
+                            <label className="text-[10px] font-black text-slate-400 tracking-[0.2em] ml-1 mb-1.5 block">Deskripsi Detail Proyek</label>
                             <textarea
                                 rows={3}
                                 value={formData.description || ''}
@@ -627,10 +627,10 @@ export const AdminInflip = () => {
                         </div>
 
                         <div className="flex gap-3 pt-6 mt-2">
-                            <button type="submit" disabled={isSaving} className="flex-1 bg-[#136f42] text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50">
+                            <button type="submit" disabled={isSaving} className="flex-1 bg-[#136f42] text-white py-4 rounded-2xl font-black tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50">
                                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {isSaving ? 'Menyimpan...' : 'Simpan Proyek'}
                             </button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-gray-200 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all text-[10px] uppercase tracking-widest">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-gray-200 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all text-[10px] tracking-widest">
                                 Batal
                             </button>
                         </div>
@@ -647,7 +647,7 @@ export const AdminInflip = () => {
                             {confirmModal.type === 'approve' ? <Info size={32} /> : <AlertCircle size={32} />}
                         </div>
 
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Tolak Investasi'}
                         </h3>
 
@@ -659,10 +659,10 @@ export const AdminInflip = () => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, investment: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, investment: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isSaving} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isSaving} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 {isSaving ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
                             </button>
                         </div>

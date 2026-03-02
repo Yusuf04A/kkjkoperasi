@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useNavigate, Link } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
-import { 
-    ArrowLeft, Check, X, RefreshCw, Scale, 
+import {
+    ArrowLeft, Check, X, RefreshCw, Scale,
     ExternalLink, Archive, Clock, CheckCircle, Calendar, Coins, Save, CalendarDays, AlertTriangle, Info
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -18,9 +18,9 @@ export const AdminPegadaian = () => {
 
     // --- State untuk Custom Modal ---
     const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false); 
-    const [isConfirmCairModal, setIsConfirmCairModal] = useState(false); 
-    
+    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    const [isConfirmCairModal, setIsConfirmCairModal] = useState(false);
+
     const [selectedReq, setSelectedReq] = useState<any>(null);
     const [taksiranCair, setTaksiranCair] = useState<number>(0);
     const [rejectReason, setRejectReason] = useState("");
@@ -81,7 +81,7 @@ export const AdminPegadaian = () => {
             await supabase.from("profiles")
                 .update({ tapro_balance: currentBalance + taksiranCair })
                 .eq("id", selectedReq.user_id);
-            
+
             await supabase.from("transactions").insert({
                 user_id: selectedReq.user_id,
                 type: "topup",
@@ -127,13 +127,13 @@ export const AdminPegadaian = () => {
                 message: `Pengajuan gadai ${selectedReq.item_name} ditolak. Alasan: ${rejectReason}`,
                 type: "error"
             });
-            
+
             toast.success("Pengajuan ditolak", { id: toastId });
             setIsRejectModalOpen(false);
             setRejectReason("");
             fetchData();
-        } catch (err) { 
-            toast.error("Gagal memproses penolakan", { id: toastId }); 
+        } catch (err) {
+            toast.error("Gagal memproses penolakan", { id: toastId });
         } finally {
             setIsProcessing(false);
         }
@@ -148,8 +148,8 @@ export const AdminPegadaian = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight leading-none mb-1">Approval Gadai</h1>
-                        <p className="text-sm text-gray-500">Verifikasi & taksiran gadai emas syariah anggota</p>
+                       <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Approval GADAI</h1>
+                          <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi & taksiran gadai emas syariah anggota</p>
                     </div>
                     <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#136f42]")} />
@@ -184,7 +184,7 @@ export const AdminPegadaian = () => {
                                 <div className="w-full lg:w-44 h-44 bg-gray-100 rounded-[1.5rem] overflow-hidden shrink-0 relative border border-slate-100 shadow-inner group">
                                     <img src={req.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={req.item_name} />
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <a href={req.image_url} target="_blank" rel="noreferrer" className="bg-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><ExternalLink size={14} /> Perbesar</a>
+                                        <a href={req.image_url} target="_blank" rel="noreferrer" className="bg-white px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest flex items-center gap-2"><ExternalLink size={14} /> Perbesar</a>
                                     </div>
                                 </div>
 
@@ -194,31 +194,31 @@ export const AdminPegadaian = () => {
                                             <div className="w-12 h-12 bg-green-50 text-[#136f42] rounded-2xl flex items-center justify-center border border-green-100"><Coins size={24} /></div>
                                             <div>
                                                 <h3 className="text-lg font-bold text-slate-900 tracking-tight">{req.item_name}</h3>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{req.profiles?.full_name} • {req.profiles?.member_id}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 tracking-widest">{req.profiles?.full_name} • {req.profiles?.member_id}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border", 
+                                            <span className={cn("px-3 py-1 rounded-full text-[10px] font-black tracking-widest border",
                                                 req.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                                req.status === 'approved' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'
+                                                    req.status === 'approved' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-green-50 text-green-600 border-green-100'
                                             )}>{req.status}</span>
-                                            <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase">{format(new Date(req.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}</p>
+                                            <p className="text-[9px] text-slate-400 font-bold mt-1">{format(new Date(req.created_at), 'dd MMM yyyy, HH:mm', { locale: indonesia })}</p>
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center">
-                                        <div><p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Berat</p><p className="text-xs font-bold text-slate-800">{req.item_weight} gr</p></div>
-                                        <div><p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Karat</p><p className="text-xs font-bold text-slate-800">{req.item_karat} K</p></div>
-                                        <div><p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Tenor</p><p className="text-xs font-bold text-blue-700 uppercase">{req.tenor_bulan || 4} bln</p></div>
-                                        <div className="truncate px-1"><p className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Kondisi</p><p className="text-xs font-bold text-slate-800 truncate">{req.item_condition}</p></div>
+                                        <div><p className="text-[9px] text-slate-400 font-bold tracking-widest mb-0.5">Berat</p><p className="text-xs font-bold text-slate-800">{req.item_weight} gr</p></div>
+                                        <div><p className="text-[9px] text-slate-400 font-bold tracking-widest mb-0.5">Karat</p><p className="text-xs font-bold text-slate-800">{req.item_karat} K</p></div>
+                                        <div><p className="text-[9px] text-slate-400 font-bold tracking-widest mb-0.5">Tenor</p><p className="text-xs font-bold text-blue-700">{req.tenor_bulan || 4} bln</p></div>
+                                        <div className="truncate px-1"><p className="text-[9px] text-slate-400 font-bold tracking-widest mb-0.5">Kondisi</p><p className="text-xs font-bold text-slate-800 truncate">{req.item_condition}</p></div>
                                     </div>
-                                    {req.loan_amount > 0 && <div className="flex items-center justify-between bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100"><span className="text-[10px] font-bold text-blue-800 uppercase tracking-widest">Taksiran dana cair:</span><span className="font-bold text-blue-900 text-lg tracking-tight">{formatRupiah(req.loan_amount)}</span></div>}
+                                    {req.loan_amount > 0 && <div className="flex items-center justify-between bg-blue-50/50 px-4 py-3 rounded-xl border border-blue-100"><span className="text-[10px] font-bold text-blue-800 tracking-widest">Taksiran dana cair:</span><span className="font-bold text-blue-900 text-lg tracking-tight">{formatRupiah(req.loan_amount)}</span></div>}
                                 </div>
 
                                 {activeTab === 'pending' && (
                                     <div className="flex flex-col justify-center gap-2 min-w-[180px]">
-                                        <button onClick={() => openApproveModal(req)} className="w-full py-4 bg-[#136f42] text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">Setujui</button>
-                                        <button onClick={() => { setSelectedReq(req); setIsRejectModalOpen(true); }} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all">Tolak</button>
+                                        <button onClick={() => openApproveModal(req)} className="w-full py-4 bg-[#136f42] text-white rounded-2xl font-bold text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Setujui</button>
+                                        <button onClick={() => { setSelectedReq(req); setIsRejectModalOpen(true); }} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl font-bold text-[10px] tracking-widest active:scale-95 transition-all">Tolak</button>
                                     </div>
                                 )}
                             </div>
@@ -233,22 +233,22 @@ export const AdminPegadaian = () => {
                     <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-bold text-slate-900 tracking-tight">Setujui Gadai</h2>
-                            <button onClick={() => setIsApproveModalOpen(false)} className="p-2 bg-gray-50 rounded-full hover:bg-slate-100 text-slate-400"><X size={20}/></button>
+                            <button onClick={() => setIsApproveModalOpen(false)} className="p-2 bg-gray-50 rounded-full hover:bg-slate-100 text-slate-400"><X size={20} /></button>
                         </div>
                         <div className="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1">
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Barang jaminan</p>
-                            <p className="text-sm font-bold text-slate-800 leading-tight uppercase">{selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)</p>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest">Barang Jaminan</p>
+                            <p className="text-sm font-bold text-slate-800 leading-tight">{selectedReq.item_name} ({selectedReq.item_weight}gr - {selectedReq.item_karat}K)</p>
                         </div>
                         <div className="mb-8">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 block mb-2">Nominal taksiran (cair)</label>
+                            <label className="text-[10px] font-bold text-slate-400 tracking-widest ml-1 block mb-2">Nominal taksiran (cair)</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">Rp</span>
                                 <input type="text" required placeholder="0" value={taksiranCair ? taksiranCair.toLocaleString('id-ID') : ''} onChange={handleTaksiranChange} className="w-full border-slate-200 bg-slate-50 rounded-2xl pl-12 pr-4 py-4 font-bold text-xl text-slate-900 outline-none focus:bg-white focus:border-[#136f42] transition-all" autoFocus />
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <button onClick={() => taksiranCair > 0 && setIsConfirmCairModal(true)} className="flex-1 bg-[#136f42] text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all">Lanjut</button>
-                            <button onClick={() => setIsApproveModalOpen(false)} className="px-6 border border-slate-100 rounded-2xl font-bold text-slate-400 text-[10px] uppercase tracking-widest">Batal</button>
+                            <button onClick={() => taksiranCair > 0 && setIsConfirmCairModal(true)} className="flex-1 bg-[#136f42] text-white py-4 rounded-2xl font-bold text-[10px] tracking-widest active:scale-95 transition-all">Lanjut</button>
+                            <button onClick={() => setIsApproveModalOpen(false)} className="px-6 border border-slate-100 rounded-2xl font-bold text-slate-400 text-[10px] tracking-widest">Batal</button>
                         </div>
                     </div>
                 </div>
@@ -262,8 +262,8 @@ export const AdminPegadaian = () => {
                         <h3 className="text-base font-bold text-slate-800 tracking-tight mb-2">Konfirmasi Cair</h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">Cairkan dana <b>{formatRupiah(taksiranCair)}</b> ke saldo Tapro <b>{selectedReq.profiles?.full_name}</b>?</p>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setIsConfirmCairModal(false)} className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Batal</button>
-                            <button onClick={executeApproval} disabled={isProcessing} className="py-3 bg-[#136f42] text-white font-bold rounded-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Cairkan</button>
+                            <button onClick={() => setIsConfirmCairModal(false)} className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-[10px] tracking-widest active:scale-95 transition-all">Batal</button>
+                            <button onClick={executeApproval} disabled={isProcessing} className="py-3 bg-[#136f42] text-white font-bold rounded-xl text-[10px] tracking-widest active:scale-95 transition-all">Cairkan</button>
                         </div>
                     </div>
                 </div>
@@ -278,8 +278,8 @@ export const AdminPegadaian = () => {
                         <p className="text-xs text-slate-400 font-medium mb-6">Berikan alasan mengapa pengajuan gadai ini ditolak.</p>
                         <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Contoh: Foto barang tidak jelas / emas tidak murni..." className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-medium outline-none focus:bg-white focus:border-rose-500 transition-all h-28 resize-none mb-6" />
                         <div className="flex gap-3">
-                            <button onClick={executeReject} disabled={isProcessing} className="flex-1 bg-rose-600 text-white py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Ya, Tolak</button>
-                            <button onClick={() => setIsRejectModalOpen(false)} className="px-6 border border-slate-100 rounded-2xl font-bold text-slate-400 text-[10px] uppercase tracking-widest">Batal</button>
+                            <button onClick={executeReject} disabled={isProcessing} className="flex-1 bg-rose-600 text-white py-4 rounded-2xl font-bold text-[10px] tracking-widest shadow-xl active:scale-95 transition-all">Ya, Tolak</button>
+                            <button onClick={() => setIsRejectModalOpen(false)} className="px-6 border border-slate-100 rounded-2xl font-bold text-slate-400 text-[10px] tracking-widest">Batal</button>
                         </div>
                     </div>
                 </div>

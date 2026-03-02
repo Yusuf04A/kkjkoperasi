@@ -166,7 +166,7 @@ export const AdminBuatAkun = () => {
             <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 size={40} className="animate-spin text-[#136f42]" />
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memproses akun...</p>
+                    <p className="text-[10px] font-black text-slate-400 tracking-widest">Memproses akun...</p>
                 </div>
             </div>
         );
@@ -180,13 +180,13 @@ export const AdminBuatAkun = () => {
                     <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
                         <ShieldAlert size={40} className="text-rose-500" />
                     </div>
-                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Akses Ditolak</h2>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tighter">Akses Ditolak</h2>
                     <p className="text-slate-500 text-sm font-medium mt-3 leading-relaxed">
                         Halaman ini hanya dapat diakses oleh <span className="text-[#136f42] font-black">Super Admin</span>.
                     </p>
                     <button
                         onClick={() => navigate('/admin/dashboard')}
-                        className="mt-8 w-full py-3.5 bg-[#136f42] hover:bg-[#0f5a35] text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all"
+                        className="mt-8 w-full py-3.5 bg-[#136f42] hover:bg-[#0f5a35] text-white font-black rounded-2xl text-[10px] tracking-widest transition-all"
                     >
                         Kembali ke Dashboard
                     </button>
@@ -199,193 +199,190 @@ export const AdminBuatAkun = () => {
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-16 font-sans">
 
-            {/* TOP BAR */}
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 md:px-6 py-3 shadow-sm">
-                <div className="max-w-2xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 flex items-center justify-center bg-white border border-slate-100 rounded-xl p-1 shadow-sm">
-                            <img src={logoKKJ} alt="Logo" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="flex flex-col">
-                            <h1 className="font-black text-slate-900 text-sm uppercase leading-none tracking-tighter">
-                                Buat Akun <span className="text-[#136f42]">Anggota</span>
-                            </h1>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
-                                Super Admin Tools
-                            </span>
+            {/* HEADER */}
+            <div className="bg-white border-b sticky top-0 z-30 px-6 py-6 shadow-sm">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={() => navigate('/admin/dashboard')}
+                            className="flex items-center gap-2 text-gray-400 hover:text-[#136f42] transition-all group w-fit"
+                        >
+                            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium">Kembali</span>
+                        </button>
+
+                        <div className="flex flex-col mt-1">
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Buat Akun Anggota</h1>
+                            <p className="text-xs font-bold text-slate-500 tracking-widest">Super Admin Tools</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => navigate('/admin/dashboard')}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-[#136f42] hover:bg-[#0f5a35] text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest shadow-sm"
-                    >
-                        <ArrowLeft size={14} /> Dashboard
-                    </button>
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 pt-8 space-y-6">
+            <div className="max-w-7xl mx-auto px-4 pt-8 space-y-6">
+                <div className="max-w-2xl mx-auto space-y-6">
 
-                {/* HERO CARD */}
-                <div className="relative bg-[#136f42] rounded-[2rem] p-7 overflow-hidden shadow-xl">
-                    <div className="relative z-10 flex items-center gap-5">
-                        <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/20">
-                            <UserPlus size={26} className="text-white" />
+                    {/* HERO CARD */}
+                    <div className="relative bg-[#136f42] rounded-[2rem] p-7 overflow-hidden shadow-xl">
+                        <div className="relative z-10 flex items-center gap-5">
+                            <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/20">
+                                <UserPlus size={26} className="text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-white tracking-tighter leading-tight">
+                                    Buat Akun Manual
+                                </h2>
+                                <p className="text-green-100/70 text-[10px] font-bold tracking-widest mt-1">
+                                    Akun langsung aktif tanpa perlu verifikasi
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-black text-white uppercase tracking-tighter leading-tight">
-                                Buat Akun Manual
-                            </h2>
-                            <p className="text-green-100/70 text-[10px] font-bold uppercase tracking-widest mt-1">
-                                Akun langsung aktif tanpa perlu verifikasi
-                            </p>
-                        </div>
+                        <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-white/5 rounded-full blur-3xl" />
                     </div>
-                    <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-white/5 rounded-full blur-3xl" />
-                </div>
 
-                {/* FEEDBACK BANNER */}
-                <AnimatePresence>
-                    {feedback && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className={`flex items-start gap-3 p-4 rounded-2xl border ${feedback.type === 'success'
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                : 'bg-rose-50 border-rose-200 text-rose-800'
-                                }`}
-                        >
-                            {feedback.type === 'success'
-                                ? <CheckCircle2 size={18} className="flex-shrink-0 mt-0.5" />
-                                : <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
-                            }
-                            <p className="text-[11px] font-bold leading-relaxed">{feedback.message}</p>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    {/* FEEDBACK BANNER */}
+                    <AnimatePresence>
+                        {feedback && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className={`flex items-start gap-3 p-4 rounded-2xl border ${feedback.type === 'success'
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                                    }`}
+                            >
+                                {feedback.type === 'success'
+                                    ? <CheckCircle2 size={18} className="flex-shrink-0 mt-0.5" />
+                                    : <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+                                }
+                                <p className="text-[11px] font-bold leading-relaxed">{feedback.message}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                {/* FORM CARD */}
-                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-lg p-6 md:p-8">
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* FORM CARD */}
+                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-lg p-6 md:p-8">
+                        <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Nama Lengkap */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <User size={11} /> Nama Lengkap
-                            </label>
-                            <input
-                                type="text"
-                                value={fullName}
-                                onChange={e => setFullName(e.target.value)}
-                                placeholder="Contoh: Budi Santoso"
-                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* Email */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Mail size={11} /> Email
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="contoh@email.com"
-                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* Nomor HP */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Phone size={11} /> Nomor HP / WhatsApp
-                            </label>
-                            <input
-                                type="tel"
-                                value={phone}
-                                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                                placeholder="08xxxxxxxxxx"
-                                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
-                                disabled={isLoading}
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Lock size={11} /> Password
-                            </label>
-                            <div className="relative">
+                            {/* Nama Lengkap */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <User size={11} /> Nama Lengkap
+                                </label>
                                 <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="Minimal 6 karakter"
-                                    className="w-full px-4 py-3.5 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all font-mono"
+                                    type="text"
+                                    value={fullName}
+                                    onChange={e => setFullName(e.target.value)}
+                                    placeholder="Contoh: Budi Santoso"
+                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
                                     disabled={isLoading}
                                 />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    <button
-                                        type="button"
-                                        onClick={generatePassword}
-                                        title="Generate password otomatis"
-                                        className="p-1.5 text-slate-400 hover:text-[#136f42] transition-colors"
-                                        disabled={isLoading}
-                                    >
-                                        <RefreshCw size={14} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(v => !v)}
-                                        className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
-                                        disabled={isLoading}
-                                    >
-                                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                                    </button>
-                                </div>
                             </div>
-                            <p className="text-[9px] text-slate-400 font-medium pl-1">
-                                💡 Klik ikon <RefreshCw size={9} className="inline" /> untuk generate password otomatis
-                            </p>
-                        </div>
 
-                        {/* INFO BOX */}
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">
-                            <AlertCircle size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-[10px] text-blue-700 font-semibold leading-relaxed">
-                                Akun yang dibuat di sini langsung berstatus <strong>aktif (approved)</strong>.
-                                Pastikan catat email & password untuk diberikan ke anggota yang bersangkutan.
-                            </p>
-                        </div>
+                            {/* Email */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <Mail size={11} /> Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="contoh@email.com"
+                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
+                                    disabled={isLoading}
+                                />
+                            </div>
 
-                        {/* SUBMIT BUTTON */}
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full py-4 bg-[#136f42] hover:bg-[#0f5a35] disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 size={16} className="animate-spin" />
-                                    Membuat Akun...
-                                </>
-                            ) : (
-                                <>
-                                    <UserPlus size={15} />
-                                    Buat Akun Sekarang
-                                </>
-                            )}
-                        </button>
-                    </form>
+                            {/* Nomor HP */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <Phone size={11} /> Nomor HP / WhatsApp
+                                </label>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                                    placeholder="08xxxxxxxxxx"
+                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all"
+                                    disabled={isLoading}
+                                />
+                            </div>
+
+                            {/* Password */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                    <Lock size={11} /> Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        placeholder="Minimal 6 karakter"
+                                        className="w-full px-4 py-3.5 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all font-mono"
+                                        disabled={isLoading}
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={generatePassword}
+                                            title="Generate password otomatis"
+                                            className="p-1.5 text-slate-400 hover:text-[#136f42] transition-colors"
+                                            disabled={isLoading}
+                                        >
+                                            <RefreshCw size={14} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(v => !v)}
+                                            className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
+                                            disabled={isLoading}
+                                        >
+                                            {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-slate-400 font-medium pl-1">
+                                    💡 Klik ikon <RefreshCw size={9} className="inline" /> untuk generate password otomatis
+                                </p>
+                            </div>
+
+                            {/* INFO BOX */}
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">
+                                <AlertCircle size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-blue-700 font-semibold leading-relaxed">
+                                    Akun yang dibuat di sini langsung berstatus <strong>aktif (approved)</strong>.
+                                    Pastikan catat email & password untuk diberikan ke anggota yang bersangkutan.
+                                </p>
+                            </div>
+
+                            {/* SUBMIT BUTTON */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-4 bg-[#136f42] hover:bg-[#0f5a35] disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-2xl text-[10px] tracking-widest transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Membuat Akun...
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserPlus size={15} />
+                                        Buat Akun Sekarang
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+
+                    <p className="text-center text-[9px] font-bold text-slate-300 tracking-widest pb-4">
+                        Super Admin Exclusive • KKJ Internal Tools
+                    </p>
                 </div>
-
-                <p className="text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest pb-4">
-                    Super Admin Exclusive • KKJ Internal Tools
-                </p>
             </div>
         </div>
     );

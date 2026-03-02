@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { 
-  ArrowLeft, Plus, Package, Edit, Trash2, 
-  Search, X, Check, Save, RefreshCw 
+import {
+    ArrowLeft, Plus, Package, Edit, Trash2,
+    Search, X, Check, Save, RefreshCw
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -97,8 +97,8 @@ export const CreditWarehouse = () => {
     const toggleTenor = (val: number) => {
         setFormData(prev => ({
             ...prev,
-            tenors: prev.tenors.includes(val) 
-                ? prev.tenors.filter(t => t !== val) 
+            tenors: prev.tenors.includes(val)
+                ? prev.tenors.filter(t => t !== val)
                 : [...prev.tenors, val].sort((a, b) => a - b)
         }));
     };
@@ -109,8 +109,8 @@ export const CreditWarehouse = () => {
             <div className="bg-white border-b sticky top-0 z-30 px-6 py-6 shadow-sm">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex flex-col gap-2">
-                        <Link 
-                            to="/admin/dashboard" 
+                        <Link
+                            to="/admin/dashboard"
                             className="flex items-center gap-2 text-gray-400 hover:text-[#136f42] transition-all group w-fit"
                         >
                             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
@@ -118,15 +118,14 @@ export const CreditWarehouse = () => {
                         </Link>
 
                         <div className="flex flex-col mt-1">
-                            {/* Ukuran Font 2xl font-bold seperti contoh Kabar */}
-                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight leading-none">Gudang Kredit</h1>
-                            <p className="text-sm text-gray-500 font-medium mt-1">Manajemen katalog barang & cicilan</p>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Gudang Kredit</h1>
+                            <p className="text-xs font-bold text-slate-500 tracking-widest">Manajemen katalog barang & cicilan</p>
                         </div>
                     </div>
-                    
+
                     <button
                         onClick={openModalAdd}
-                        className="bg-[#136f42] text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-xl hover:bg-[#0f5c35] transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 active:scale-95"
+                        className="bg-[#136f42] text-white text-xs font-black tracking-widest px-6 py-3.5 rounded-xl hover:bg-[#0f5c35] transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 active:scale-95"
                     >
                         <Plus size={18} strokeWidth={3} /> Tambah Barang
                     </button>
@@ -150,7 +149,7 @@ export const CreditWarehouse = () => {
                 <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50/50 text-gray-400 text-[11px] font-bold border-b border-gray-100 uppercase tracking-widest">
+                            <thead className="bg-gray-50/50 text-gray-400 text-[11px] font-bold border-b border-gray-100 tracking-widest">
                                 <tr>
                                     <th className="p-6">Nama Barang</th>
                                     <th className="p-6 text-center">Harga Cash</th>
@@ -165,7 +164,7 @@ export const CreditWarehouse = () => {
                                     <tr>
                                         <td colSpan={6} className="p-24 text-center">
                                             <RefreshCw size={32} className="animate-spin text-[#136f42] mx-auto mb-3" />
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sinkronisasi Data...</span>
+                                            <span className="text-[10px] font-black text-gray-400 tracking-widest">Sinkronisasi Data...</span>
                                         </td>
                                     </tr>
                                 ) : items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map((item) => (
@@ -237,10 +236,10 @@ export const CreditWarehouse = () => {
                             <Input label="Biaya Admin/Pajak" type="number" value={formData.tax} onChange={e => setFormData({ ...formData, tax: e.target.value })} placeholder="0" className="rounded-xl text-sm" />
 
                             <div>
-                                <label className="block text-[11px] font-bold text-gray-400 mb-3 uppercase tracking-wider">Opsi Tenor Tersedia</label>
+                                <label className="block text-[11px] font-bold text-gray-400 mb-3 tracking-wider">Opsi Tenor Tersedia</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {[3, 6, 12, 18, 24, 36].map((t) => (
-                                        <label key={t} className={`cursor-pointer px-4 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${formData.tenors.includes(t) ? 'bg-[#136f42] text-white border-[#136f42] shadow-lg shadow-green-900/20' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-[#136f42]/30'}`}>
+                                        <label key={t} className={`cursor-pointer px-4 py-3 rounded-xl border text-[10px] font-black tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${formData.tenors.includes(t) ? 'bg-[#136f42] text-white border-[#136f42] shadow-lg shadow-green-900/20' : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-[#136f42]/30'}`}>
                                             <input type="checkbox" className="hidden" checked={formData.tenors.includes(t)} onChange={() => toggleTenor(t)} />
                                             {formData.tenors.includes(t) && <Check size={12} strokeWidth={4} />}
                                             {t} Bulan
@@ -251,9 +250,9 @@ export const CreditWarehouse = () => {
 
                             <div className="pt-6 flex gap-3">
                                 <Button type="button" variant="outline" className="flex-1 rounded-xl font-bold border-gray-200 text-gray-400 text-xs" onClick={() => setIsModalOpen(false)}>Batal</Button>
-                                <Button 
-                                    type="submit" 
-                                    className="flex-1 bg-[#136f42] hover:bg-[#0f5c35] text-white rounded-xl shadow-xl shadow-green-900/20 font-bold py-4 text-xs uppercase tracking-widest" 
+                                <Button
+                                    type="submit"
+                                    className="flex-1 bg-[#136f42] hover:bg-[#0f5c35] text-white rounded-xl shadow-xl shadow-green-900/20 font-bold py-4 text-xs tracking-widest"
                                     isLoading={isSaving}
                                 >
                                     {!isSaving && <Save size={16} className="mr-2" />} {editMode ? 'Simpan' : 'Tambahkan'}
@@ -264,7 +263,7 @@ export const CreditWarehouse = () => {
                 </div>
             )}
 
-            <p className="text-center text-slate-300 text-[10px] font-medium mt-16 mb-8 uppercase tracking-[0.3em]">
+            <p className="text-center text-slate-300 text-[10px] font-medium mt-16 mb-8 tracking-[0.3em]">
                 © 2026 Koperasi Pemasaran Karya Kita Jaya
             </p>
         </div>

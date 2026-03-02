@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { 
-    Check, X, Loader2, RefreshCw, ArrowLeft, Eye, Clock, 
-    CheckCircle, XCircle, ArrowDownLeft, ArrowUpRight, 
-    Wallet, Banknote, Download, AlertTriangle 
+import {
+    Check, X, Loader2, RefreshCw, ArrowLeft, Eye, Clock,
+    CheckCircle, XCircle, ArrowDownLeft, ArrowUpRight,
+    Wallet, Banknote, Download, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -95,20 +95,20 @@ export const AdminTransactions = () => {
                 toast.success('Transaksi Berhasil Disetujui!', { id: toastId });
             } else {
                 if (!rejectReason.trim()) throw new Error("Alasan penolakan wajib diisi");
-                
+
                 // 🔥 PERBAIKAN: Menggunakan status 'failed' agar sesuai database constraint
                 const { error } = await supabase
                     .from('transactions')
-                    .update({ 
-                        status: 'failed', 
-                        description: rejectReason 
+                    .update({
+                        status: 'failed',
+                        description: rejectReason
                     })
                     .eq('id', tx.id);
-                
+
                 if (error) throw error;
                 toast.success('Transaksi Telah Ditolak.', { id: toastId });
             }
-            
+
             fetchTransactions();
             setConfirmModal({ isOpen: false, type: 'approve', tx: null });
             setRejectReason('');
@@ -135,8 +135,8 @@ export const AdminTransactions = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Data Transaksi Admin</h1>
-                        <p className="text-sm text-gray-500">Monitoring Top Up, Penarikan, dan Pembayaran.</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Data Transaksi Admin</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Monitoring Top Up, Penarikan, dan Pembayaran</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-all text-sm font-bold">
@@ -165,12 +165,12 @@ export const AdminTransactions = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Anggota</th>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tipe</th>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nominal</th>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Bukti</th>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                                <th className="p-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Aksi</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Anggota</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Tipe</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Nominal</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Bukti</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Status</th>
+                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
@@ -186,7 +186,7 @@ export const AdminTransactions = () => {
                                             <p className="text-[10px] text-gray-400 font-mono uppercase">{tx.profiles?.member_id}</p>
                                         </td>
                                         <td className="p-4">
-                                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full w-fit text-[10px] font-black uppercase tracking-tighter ${getTypeConfig(tx.type).color}`}>
+                                            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full w-fit text-[10px] font-black tracking-tighter ${getTypeConfig(tx.type).color}`}>
                                                 {getTypeConfig(tx.type).icon} {getTypeConfig(tx.type).label}
                                             </div>
                                         </td>
@@ -194,9 +194,9 @@ export const AdminTransactions = () => {
                                         <td className="p-4">
                                             {tx.proof_url ? (
                                                 <button onClick={() => setSelectedImage(tx.proof_url)} className="text-[#136f42] hover:underline text-[10px] font-bold flex items-center gap-1">
-                                                    <Eye size={12} /> LIHAT BUKTI
+                                                    <Eye size={12} /> Lihat Bukti
                                                 </button>
-                                            ) : <span className="text-[10px] text-gray-300 font-bold uppercase">N/A</span>}
+                                            ) : <span className="text-[10px] text-gray-300 font-bold">N/A</span>}
                                         </td>
                                         <td className="p-4">
                                             {tx.status === 'pending' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500 uppercase tracking-wider"><Clock size={12} /> Pending</span>}
@@ -234,7 +234,7 @@ export const AdminTransactions = () => {
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'approve' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
                             {confirmModal.type === 'approve' ? <CheckCircle size={32} /> : <AlertTriangle size={32} />}
                         </div>
-                        
+
                         <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Konfirmasi Penolakan'}
                         </h3>

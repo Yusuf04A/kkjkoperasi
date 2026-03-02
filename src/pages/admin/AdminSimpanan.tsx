@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useNavigate, Link } from "react-router-dom";
 import { formatRupiah, cn } from "../../lib/utils";
-import { 
-    ArrowLeft, Check, X, RefreshCw, Wallet, 
+import {
+    ArrowLeft, Check, X, RefreshCw, Wallet,
     User, Calendar, Clock, AlertCircle, CheckCircle, AlertTriangle
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -105,7 +105,7 @@ export const AdminSimpanan = () => {
                     .from('profiles')
                     .update({ [targetColumn]: currentBalance - req.amount })
                     .eq('id', req.user_id);
-                
+
                 if (updateProfileError) throw updateProfileError;
 
                 await supabase.from('savings_withdrawals').update({ status: 'approved' }).eq('id', req.id);
@@ -122,15 +122,15 @@ export const AdminSimpanan = () => {
                 toast.success("Penarikan Berhasil Disetujui!", { id: toastId });
             } else {
                 if (!rejectReason.trim()) throw new Error("Alasan penolakan wajib diisi");
-                
+
                 // 🔥 Gunakan status 'rejected' sesuai skema tabel withdrawals
                 await supabase.from('savings_withdrawals')
                     .update({ status: 'rejected', admin_note: rejectReason })
                     .eq('id', req.id);
-                
+
                 toast.success("Permintaan Telah Ditolak", { id: toastId });
             }
-            
+
             fetchData();
             setConfirmModal({ isOpen: false, type: 'approve', req: null });
             setRejectReason('');
@@ -148,8 +148,8 @@ export const AdminSimpanan = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Approval Penarikan</h1>
-                        <p className="text-sm text-gray-500">Verifikasi penarikan Simpanan Anggota</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Approval Penarikan</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi penarikan Simpanan Anggota</p>
                     </div>
                     <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#136f42]")} />
@@ -181,7 +181,7 @@ export const AdminSimpanan = () => {
                             <div key={req.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col lg:flex-row gap-6 items-center hover:shadow-md transition-shadow">
                                 <div className="flex-1 space-y-3 w-full">
                                     <div className="flex items-center justify-between">
-                                        <span className="bg-green-50 text-[#136f42] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-100">
+                                        <span className="bg-green-50 text-[#136f42] px-3 py-1 rounded-full text-[10px] font-black tracking-widest border border-green-100">
                                             {req.type}
                                         </span>
                                         <span className="text-[10px] text-gray-400 font-bold">
@@ -189,7 +189,7 @@ export const AdminSimpanan = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100"><User size={24}/></div>
+                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100"><User size={24} /></div>
                                         <div>
                                             <h3 className="font-bold text-gray-900 tracking-tight">{req.profiles?.full_name}</h3>
                                             <p className="text-xs text-gray-400 font-mono uppercase">{req.profiles?.member_id}</p>
@@ -197,11 +197,11 @@ export const AdminSimpanan = () => {
                                     </div>
                                     <div className="bg-gray-50/50 p-4 rounded-2xl flex justify-between border border-gray-100/50">
                                         <div>
-                                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Nominal Tarik</p>
+                                            <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1">Nominal Tarik</p>
                                             <p className="text-xl font-black text-[#136f42] tracking-tight">{formatRupiah(req.amount)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-1">Saldo Saat Ini</p>
+                                            <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1">Saldo Saat Ini</p>
                                             <p className="text-sm font-bold text-gray-700">
                                                 {formatRupiah(req.profiles?.[columnMapping[req.type]] || 0)}
                                             </p>
@@ -213,15 +213,15 @@ export const AdminSimpanan = () => {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {activeTab === 'pending' ? (
                                     <div className="flex lg:flex-col gap-2 w-full lg:w-fit">
-                                        <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', req })} className="flex-1 lg:w-32 bg-[#136f42] text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">Setujui</button>
-                                        <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', req })} className="flex-1 lg:w-32 bg-white text-rose-600 border border-rose-100 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">Tolak</button>
+                                        <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', req })} className="flex-1 lg:w-32 bg-[#136f42] text-white py-3 rounded-2xl font-black text-[10px] tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">Setujui</button>
+                                        <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', req })} className="flex-1 lg:w-32 bg-white text-rose-600 border border-rose-100 py-3 rounded-2xl font-black text-[10px] tracking-widest active:scale-95 transition-all">Tolak</button>
                                     </div>
                                 ) : (
                                     <div className={cn(
-                                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border",
+                                        "px-4 py-2 rounded-xl text-[10px] font-black tracking-widest border",
                                         req.status === 'approved' ? "bg-green-50 text-green-700 border-green-100" : "bg-rose-50 text-rose-700 border-rose-100"
                                     )}>
                                         {req.status === 'approved' ? 'Berhasil' : 'Ditolak'}
@@ -240,8 +240,8 @@ export const AdminSimpanan = () => {
                         <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'approve' ? 'bg-green-50 text-green-600' : 'bg-rose-50 text-rose-600'}`}>
                             {confirmModal.type === 'approve' ? <CheckCircle size={32} /> : <AlertTriangle size={32} />}
                         </div>
-                        
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi persetujuan' : 'Konfirmasi penolakan'}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
@@ -262,10 +262,10 @@ export const AdminSimpanan = () => {
                             <button onClick={() => {
                                 setConfirmModal({ isOpen: false, type: 'approve', req: null });
                                 setRejectReason('');
-                            }} className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-transform">
+                            }} className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs tracking-widest active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={handleConfirmAction} className={`py-3 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform ${confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-red-900/20'}`}>
+                            <button onClick={handleConfirmAction} className={`py-3 text-white font-bold rounded-xl text-xs tracking-widest shadow-lg active:scale-95 transition-transform ${confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-red-900/20'}`}>
                                 Ya, {confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}
                             </button>
                         </div>

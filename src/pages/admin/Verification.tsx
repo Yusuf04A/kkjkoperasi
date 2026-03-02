@@ -203,8 +203,8 @@ export const AdminVerification = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight uppercase">MANAJEMEN ANGGOTA</h1>
-                        <p className="text-sm text-gray-400 font-normal">verifikasi identitas ktp & kelola data anggota aktif.</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Anggota</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi identitas ktp & kelola data anggota aktif.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {activeTab === 'active' && (
@@ -220,11 +220,11 @@ export const AdminVerification = () => {
             </div>
 
             <div className="flex gap-8 mb-6 border-b border-gray-100">
-                <button onClick={() => setActiveTab('pending')} className={cn("pb-4 px-2 font-semibold text-xs uppercase tracking-widest transition-all relative", activeTab === 'pending' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
+                <button onClick={() => setActiveTab('pending')} className={cn("pb-4 px-2 font-semibold text-xs tracking-widest transition-all relative", activeTab === 'pending' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
                     VERIFIKASI BARU {users.length > 0 && activeTab === 'pending' && <span className="ml-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-[9px] tracking-normal font-normal">{users.length}</span>}
                     {activeTab === 'pending' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#136f42] animate-in slide-in-from-left duration-300"></div>}
                 </button>
-                <button onClick={() => setActiveTab('active')} className={cn("pb-4 px-2 font-semibold text-xs uppercase tracking-widest transition-all relative", activeTab === 'active' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
+                <button onClick={() => setActiveTab('active')} className={cn("pb-4 px-2 font-semibold text-xs tracking-widest transition-all relative", activeTab === 'active' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
                     DATA ANGGOTA AKTIF
                     {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#136f42] animate-in slide-in-from-left duration-300"></div>}
                 </button>
@@ -242,11 +242,11 @@ export const AdminVerification = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50/30 border-b border-gray-100">
                             <tr>
-                                <th className="p-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">ANGGOTA</th>
-                                <th className="p-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">KONTAK</th>
-                                <th className="p-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">REGISTRASI</th>
-                                {activeTab === 'active' && <th className="p-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">SALDO TAPRO</th>}
-                                <th className="p-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right">AKSI</th>
+                                <th className="p-4 text-[10px] font-semibold text-gray-400 tracking-widest">Anggota</th>
+                                <th className="p-4 text-[10px] font-semibold text-gray-400 tracking-widest">Kontak</th>
+                                <th className="p-4 text-[10px] font-semibold text-gray-400 tracking-widest">Registrasi</th>
+                                {activeTab === 'active' && <th className="p-4 text-[10px] font-semibold text-gray-400 tracking-widest">Saldo Tapro</th>}
+                                <th className="p-4 text-[10px] font-semibold text-gray-400 tracking-widest text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -279,11 +279,11 @@ export const AdminVerification = () => {
                                                 {activeTab === 'pending' ? (
                                                     <>
                                                         <button onClick={() => triggerModal('reject', u.id, u.full_name)} className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-lg border border-rose-50 transition-all active:scale-95"><X size={18} /></button>
-                                                        <button onClick={() => triggerModal('verify', u.id, u.full_name, u)} className="px-5 py-2 bg-[#136f42] text-white rounded-lg hover:bg-green-800 font-semibold text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95"><Check size={14} /> review verifikasi</button>
+                                                        <button onClick={() => triggerModal('verify', u.id, u.full_name, u)} className="px-5 py-2 bg-[#136f42] text-white rounded-lg hover:bg-green-800 font-semibold text-[10px] tracking-widest flex items-center gap-2 transition-all active:scale-95"><Check size={14} /> Review Verifikasi</button>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <button onClick={() => triggerModal('reset_pin', u.id, u.full_name)} className="px-4 py-2 border border-amber-100 text-amber-600 hover:bg-amber-50 rounded-lg text-[10px] font-semibold flex items-center gap-2 uppercase tracking-widest transition-all"><KeyRound size={14} /> reset pin</button>
+                                                        <button onClick={() => triggerModal('reset_pin', u.id, u.full_name)} className="px-4 py-2 border border-amber-100 text-amber-600 hover:bg-amber-50 rounded-lg text-[10px] font-semibold flex items-center gap-2 tracking-widest transition-all"><KeyRound size={14} /> Reset Pin</button>
                                                         <button onClick={() => triggerModal('delete', u.id, u.full_name, u)} className="p-2 border border-rose-50 text-rose-500 hover:bg-rose-50 rounded-lg transition-all active:scale-95"><Trash2 size={16} /></button>
                                                     </>
                                                 )}
@@ -303,15 +303,15 @@ export const AdminVerification = () => {
                     <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-300">
                         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/20">
                             <div className="text-left">
-                                <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight">REVIEW PENDAFTARAN</h3>
-                                <p className="text-[10px] font-normal text-gray-400 mt-0.5 uppercase tracking-widest">pastikan foto ktp & bukti transfer di wa sesuai</p>
+                                <h3 className="text-lg font-semibold text-gray-800 tracking-tight">Review Pendaftaran</h3>
+                                <p className="text-[10px] font-normal text-gray-400 mt-0.5 tracking-widest">Pastikan foto ktp & bukti transfer di wa sesuai</p>
                             </div>
                             <button onClick={() => setShowVerifyModal(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-all active:scale-90"><X size={20} className="text-gray-400" /></button>
                         </div>
 
                         <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
                             <div className="space-y-3">
-                                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block text-left">FOTO KTP ANGGOTA</label>
+                                <label className="text-[10px] font-semibold text-gray-400 tracking-widest block text-left">Foto KTP Anggota</label>
                                 <div className="aspect-video w-full bg-slate-50 rounded-xl overflow-hidden border border-gray-100 group relative">
                                     {selectedMember.ktp_url ? (
                                         <>
@@ -321,7 +321,7 @@ export const AdminVerification = () => {
                                                 className="w-full h-full object-contain"
                                             />
                                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                                <a href={supabase.storage.from('ktp-registrations').getPublicUrl(selectedMember.ktp_url).data.publicUrl} target="_blank" rel="noreferrer" className="bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-[10px] uppercase tracking-widest shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+                                                <a href={supabase.storage.from('ktp-registrations').getPublicUrl(selectedMember.ktp_url).data.publicUrl} target="_blank" rel="noreferrer" className="bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-[10px] tracking-widest shadow-xl flex items-center gap-2 active:scale-95 transition-all">
                                                     <Maximize2 size={14} /> perbesar foto
                                                 </a>
                                             </div>
@@ -337,24 +337,24 @@ export const AdminVerification = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-4 bg-gray-50/50 rounded-xl border border-gray-100 text-left">
-                                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest mb-1">NAMA PENDAFTAR</p>
-                                    <p className="text-base font-semibold text-gray-700 uppercase tracking-tight">{selectedMember.full_name}</p>
+                                    <p className="text-[9px] font-semibold text-gray-400 tracking-widest mb-1">Nama Pendaftar</p>
+                                    <p className="text-base font-semibold text-gray-700 tracking-tight">{selectedMember.full_name}</p>
                                     <p className="text-xs font-normal text-[#136f42] mt-0.5">{selectedMember.phone}</p>
                                 </div>
                                 <div className="p-4 bg-green-50/50 rounded-xl border border-green-100 text-left">
-                                    <p className="text-[9px] font-semibold text-green-600 uppercase tracking-widest mb-1">STATUS KEUANGAN</p>
-                                    <p className="text-base font-semibold text-green-700 uppercase tracking-tight">WAJIB BAYAR</p>
+                                    <p className="text-[9px] font-semibold text-green-600 tracking-widest mb-1">Status Keuangan</p>
+                                    <p className="text-base font-semibold text-green-700 tracking-tight">Wajib Bayar</p>
                                     <p className="text-xs font-normal text-green-600 mt-0.5 italic">rp 250.000 (pas)</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-6 bg-gray-50/30 border-t border-gray-100 flex gap-3">
-                            <button onClick={() => setShowVerifyModal(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-400 font-semibold text-[10px] uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all active:scale-95">TUNDA</button>
+                            <button onClick={() => setShowVerifyModal(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-400 font-semibold text-[10px] tracking-widest rounded-xl hover:bg-gray-50 transition-all active:scale-95">Tunda</button>
                             <button
                                 onClick={executeVerify}
                                 disabled={isProcessing}
-                                className="flex-[2] bg-[#136f42] text-white py-3 rounded-xl font-semibold text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                                className="flex-[2] bg-[#136f42] text-white py-3 rounded-xl font-semibold text-[10px] tracking-widest active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                             >
                                 {isProcessing ? <Loader2 className="animate-spin" size={16} /> : <><ShieldCheck size={16} /> AKTIFKAN ANGGOTA</>}
                             </button>
@@ -373,19 +373,19 @@ export const AdminVerification = () => {
                         )}>
                             {confirmModal.type === 'reject' ? <X size={28} /> : confirmModal.type === 'reset_pin' ? <KeyRound size={28} /> : <Trash2 size={28} />}
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight mb-2">
+                        <h3 className="text-lg font-semibold text-gray-800 tracking-tight mb-2">
                             {confirmModal.type === 'reject' ? 'TOLAK ANGGOTA?' : confirmModal.type === 'reset_pin' ? 'RESET PIN?' : 'HAPUS AKUN?'}
                         </h3>
                         <p className="text-xs text-gray-400 font-normal uppercase tracking-wider mb-8 leading-relaxed">
                             konfirmasi tindakan untuk anggota <span className="text-gray-700 font-semibold">{confirmModal.userName}</span>. tindakan ini tidak dapat dibatalkan.
                         </p>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3 bg-gray-50 text-gray-400 font-semibold rounded-lg text-[10px] uppercase tracking-widest active:scale-95 transition-all">BATAL</button>
+                            <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3 bg-gray-50 text-gray-400 font-semibold rounded-lg text-[10px] tracking-widest active:scale-95 transition-all">Batal</button>
                             <button onClick={() => {
                                 if (confirmModal.type === 'reject') executeReject();
                                 else if (confirmModal.type === 'reset_pin') executeResetPin();
                                 else if (confirmModal.type === 'delete') executeDeleteUser();
-                            }} className={cn("py-3 text-white font-semibold rounded-lg text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-sm",
+                            }} className={cn("py-3 text-white font-semibold rounded-lg text-[10px] tracking-widest active:scale-95 transition-all shadow-sm",
                                 confirmModal.type === 'reset_pin' ? 'bg-amber-500' : 'bg-rose-600'
                             )}>LANJUTKAN</button>
                         </div>

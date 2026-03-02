@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatRupiah, cn } from '../../lib/utils';
-import { 
-    Plus, Pencil, ArrowLeft, Package, 
-    Save, X, RefreshCw, Image as ImageIcon, 
+import {
+    Plus, Pencil, ArrowLeft, Package,
+    Save, X, RefreshCw, Image as ImageIcon,
     Loader2, Clock, Check, Archive, CheckCircle, Calendar, Eye, EyeOff, ListOrdered, ShoppingBag, Search, History, Phone, MapPin, AlertTriangle, Info
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -11,14 +11,14 @@ import toast from 'react-hot-toast';
 import { format } from "date-fns";
 import { id as indonesia } from "date-fns/locale";
 // 🔥 IMPORT LIBRARY KOMPRESI
-import imageCompression from 'browser-image-compression'; 
+import imageCompression from 'browser-image-compression';
 
 export const AdminTokoKatalog = () => {
     const navigate = useNavigate();
-    
+
     // TAB: 3 Opsi (Pesanan, Riwayat, Katalog)
     const [activeTab, setActiveTab] = useState<'pesanan' | 'riwayat' | 'katalog'>('pesanan');
-    
+
     const [products, setProducts] = useState<any[]>([]);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export const AdminTokoKatalog = () => {
         type: 'approve',
         order: null
     });
-    
+
     const [formData, setFormData] = useState<any>({
         name: '', price: 0, stock: 0, image_url: '', category: '', is_active: true
     });
@@ -92,8 +92,8 @@ export const AdminTokoKatalog = () => {
     const pendingOrders = orders.filter(o => o.status === 'diproses' || o.status === 'pending');
     const historyOrders = orders.filter(o => o.status !== 'diproses' && o.status !== 'pending');
 
-    const filteredProducts = products.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const filteredProducts = products.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
@@ -129,26 +129,26 @@ export const AdminTokoKatalog = () => {
                     }
                 }
                 await supabase.from('transactions').update({ status: 'success' }).eq(
-                    'user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`
-                );
+                    'user_id', order.user_id).ilike('description', `%${order.id.slice(0, 8)}%`
+                    );
             }
-            
+
             if (newStatus === 'ditolak') {
                 const currentBalance = order.profiles?.tapro_balance || 0;
                 await supabase.from('profiles').update({ tapro_balance: currentBalance + order.total_amount }).eq('id', order.user_id);
                 await supabase.from('transactions').update({ status: 'failed' }).eq(
-                    'user_id', order.user_id).ilike('description', `%${order.id.slice(0,8)}%`
-                );
+                    'user_id', order.user_id).ilike('description', `%${order.id.slice(0, 8)}%`
+                    );
             }
-            
+
             const { error } = await supabase.from('shop_orders').update({ status: newStatus }).eq('id', order.id);
             if (error) throw error;
-            
+
             toast.success(`Pesanan berhasil diperbarui`, { id: toastId });
             setConfirmModal({ isOpen: false, type: 'approve', order: null });
             fetchOrders();
-        } catch (err: any) { 
-            toast.error(err.message, { id: toastId }); 
+        } catch (err: any) {
+            toast.error(err.message, { id: toastId });
         }
     };
 
@@ -168,8 +168,8 @@ export const AdminTokoKatalog = () => {
         try {
             // Konfigurasi Kompresi
             const options = {
-                maxSizeMB: 1,           
-                maxWidthOrHeight: 1024, 
+                maxSizeMB: 1,
+                maxWidthOrHeight: 1024,
                 useWebWorker: true,
             };
 
@@ -219,9 +219,9 @@ export const AdminTokoKatalog = () => {
                         </div>
                     </div>
                     <div className="text-right">
-                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider", 
-                            o.status === 'diproses' ? 'bg-orange-100 text-orange-700' : 
-                            o.status === 'ditolak' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
+                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold tracking-wider",
+                            o.status === 'diproses' ? 'bg-orange-100 text-orange-700' :
+                                o.status === 'ditolak' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
                             {o.status.replace('_', ' ')}
                         </span>
                         <p className="text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1">
@@ -232,11 +232,11 @@ export const AdminTokoKatalog = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Tagihan Belanja</p>
+                        <p className="text-[10px] text-gray-400 font-bold mb-1">Tagihan Belanja</p>
                         <p className="text-xl font-bold text-[#136f42]">{formatRupiah(o.total_amount)}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Metode Pengiriman</p>
+                        <p className="text-[10px] text-gray-400 font-bold mb-1">Metode Pengiriman</p>
                         <p className="text-sm font-bold text-gray-700 flex items-center gap-1.5 mt-1">
                             {o.delivery_method?.includes('Diantar') ? <><Package size={14} className="text-[#136f42]" /> Diantar Ekspedisi</> : <><CheckCircle size={14} className="text-green-500" /> Diambil di Toko</>}
                         </p>
@@ -248,14 +248,14 @@ export const AdminTokoKatalog = () => {
                         <div className="flex items-start gap-2">
                             <Phone size={14} className="text-[#136f42] mt-0.5 shrink-0" />
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase">Nomor WA Pengiriman</p>
+                                <p className="text-[10px] font-bold text-slate-500">Nomor WA Pengiriman</p>
                                 <p className="text-sm font-semibold text-slate-800">{o.delivery_phone || 'Tidak dicantumkan'}</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-2">
                             <MapPin size={14} className="text-[#136f42] mt-0.5 shrink-0" />
                             <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase">Alamat Pengiriman</p>
+                                <p className="text-[10px] font-bold text-slate-500">Alamat Pengiriman</p>
                                 <p className="text-sm font-medium text-slate-800 leading-snug">{o.delivery_address || 'Tidak dicantumkan'}</p>
                             </div>
                         </div>
@@ -263,8 +263,8 @@ export const AdminTokoKatalog = () => {
                 )}
 
                 <div className="bg-white border border-gray-100 p-4 rounded-xl">
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <ListOrdered size={12}/> Daftar Barang Dipesan
+                    <h4 className="text-[10px] font-bold text-gray-400 tracking-widest mb-3 flex items-center gap-2">
+                        <ListOrdered size={12} /> Daftar Barang Dipesan
                     </h4>
                     <div className="space-y-2">
                         {o.shop_order_items?.map((item: any, idx: number) => (
@@ -282,10 +282,10 @@ export const AdminTokoKatalog = () => {
 
             {!isHistory && (
                 <div className="flex flex-col justify-center gap-3 md:border-l md:pl-6 border-gray-100 min-w-[200px]">
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', order: o })} className="w-full py-4 bg-[#136f42] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', order: o })} className="w-full py-4 bg-[#136f42] text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">
                         Setujui Pesanan
                     </button>
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', order: o })} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-xl font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all">
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', order: o })} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-xl font-black text-[10px] tracking-widest active:scale-95 transition-all">
                         Tolak & Refund
                     </button>
                 </div>
@@ -301,8 +301,8 @@ export const AdminTokoKatalog = () => {
                 </Link>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Manajemen Toko</h1>
-                        <p className="text-sm text-gray-500">Verifikasi belanja & kontrol inventaris gudang</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Toko</h1>
+                        <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi belanja & kontrol inventaris gudang</p>
                     </div>
                     <button onClick={() => activeTab === 'katalog' ? fetchProducts() : fetchOrders()} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#136f42]")} />
@@ -333,7 +333,7 @@ export const AdminTokoKatalog = () => {
                 ) : (
                     <div className="space-y-6">
                         <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm gap-4">
-                            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                            <h3 className="text-xs font-black tracking-widest flex items-center gap-2">
                                 <Archive size={18} className="text-[#136f42]" /> Stok Barang Gudang
                             </h3>
                             <div className="flex w-full md:w-auto gap-2">
@@ -341,7 +341,7 @@ export const AdminTokoKatalog = () => {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#136f42] transition-colors" size={16} />
                                     <input type="text" placeholder="Cari barang..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#136f42]/20 outline-none" />
                                 </div>
-                                <button onClick={() => { setEditingId(null); setFormData({name:'', price:0, stock:0, image_url:'', category:'', is_active:true}); setIsModalOpen(true); }} className="bg-[#136f42] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg shadow-green-900/20 active:scale-95">
+                                <button onClick={() => { setEditingId(null); setFormData({ name: '', price: 0, stock: 0, image_url: '', category: '', is_active: true }); setIsModalOpen(true); }} className="bg-[#136f42] text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-lg shadow-green-900/20 active:scale-95">
                                     <Plus size={16} /> <span>Tambah Stok</span>
                                 </button>
                             </div>
@@ -354,16 +354,16 @@ export const AdminTokoKatalog = () => {
                                     <div className="flex-1 flex flex-col justify-between py-0.5">
                                         <div>
                                             <div className="flex justify-between items-start mb-1">
-                                                <span className="text-[8px] font-black text-[#136f42] bg-green-50 px-2 py-0.5 rounded border border-green-100 uppercase truncate max-w-[80px]">{p.category || 'Tanpa Kategori'}</span>
-                                                <span className={cn("text-[9px] font-black uppercase", p.stock < 5 && p.is_active ? "text-red-500 animate-pulse" : "text-slate-400")}>Stok: {p.stock}</span>
+                                                <span className="text-[8px] font-black text-[#136f42] bg-green-50 px-2 py-0.5 rounded border border-green-100 truncate max-w-[80px]">{p.category || 'Tanpa Kategori'}</span>
+                                                <span className={cn("text-[9px] font-black", p.stock < 5 && p.is_active ? "text-red-500 animate-pulse" : "text-slate-400")}>Stok: {p.stock}</span>
                                             </div>
                                             <h3 className="text-sm font-bold leading-tight line-clamp-1">{p.name}</h3>
                                             <p className="text-xs font-black text-slate-800 mt-1 tracking-tighter">{formatRupiah(p.price)}</p>
                                         </div>
                                         <div className="flex gap-1.5 mt-3">
-                                            <button onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="flex-1 bg-slate-50 py-2 rounded-lg text-[10px] font-black text-slate-500 hover:bg-[#136f42] hover:text-white transition-all uppercase tracking-widest border border-slate-100">Edit</button>
+                                            <button onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="flex-1 bg-slate-50 py-2 rounded-lg text-[10px] font-black text-slate-500 hover:bg-[#136f42] hover:text-white transition-all tracking-widest border border-slate-100">Edit</button>
                                             <button onClick={() => toggleProductStatus(p.id, p.is_active)} className={cn("px-3 py-2 rounded-lg transition-all border", p.is_active ? "bg-white text-rose-500 border-rose-100" : "bg-emerald-500 text-white border-emerald-500")}>
-                                                {p.is_active ? <EyeOff size={14}/> : <Eye size={14}/>}
+                                                {p.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
                                             </button>
                                         </div>
                                     </div>
@@ -379,16 +379,16 @@ export const AdminTokoKatalog = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
                     <form onSubmit={handleSaveProduct} className="bg-white w-full max-w-lg rounded-[2rem] p-8 shadow-2xl space-y-6 animate-in zoom-in-95 border border-white/20 text-left">
                         <div className="flex justify-between items-center border-b pb-4">
-                            <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">{editingId ? 'Ubah Data Produk' : 'Tambah Produk Baru'}</h2>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors uppercase"><X size={20}/></button>
+                            <h2 className="text-lg font-black text-slate-900 tracking-tight">{editingId ? 'Ubah Data Produk' : 'Tambah Produk Baru'}</h2>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
                         </div>
-                        
+
                         <div className="space-y-4">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <label className="text-[10px] font-black text-slate-400 tracking-widest flex items-center gap-2">
                                     <ImageIcon size={14} className="text-[#136f42]" /> Foto Produk
                                 </label>
-                                <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg uppercase">Maks 10MB</span>
+                                <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg">Maks 10MB</span>
                             </div>
 
                             <label className="block w-full h-40 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-green-50/30 transition-all group overflow-hidden bg-slate-50/30">
@@ -397,30 +397,30 @@ export const AdminTokoKatalog = () => {
                                     <img src={formData.image_url} className="w-full h-full object-contain p-2 animate-in fade-in" alt="Preview Produk" />
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform duration-300">
-                                        <ImageIcon className="mx-auto text-slate-300 mb-2" size={32}/>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Foto Produk</p>
+                                        <ImageIcon className="mx-auto text-slate-300 mb-2" size={32} />
+                                        <p className="text-[10px] font-black text-slate-400 tracking-widest">Pilih Foto Produk</p>
                                         <div className="mt-2 flex flex-col gap-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-center gap-1">
+                                            <p className="text-[10px] font-bold text-slate-400 tracking-tighter flex items-center justify-center gap-1">
                                                 <Info size={10} /> jpg, png, webp
                                             </p>
-                                            <p className="text-[10px] font-black text-[#136f42] uppercase tracking-tighter">Otomatis Dikompres ke 1MB</p>
+                                            <p className="text-[10px] font-black text-[#136f42] tracking-tighter">Otomatis Dikompres ke 1MB</p>
                                         </div>
                                     </div>
                                 )}
                             </label>
-                            <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Nama Produk</label><input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                            <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Nama Produk</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Harga Jual</label><input type="text" required value={formData.price ? formData.price.toLocaleString('id-ID') : ''} onChange={handlePriceChange} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
-                                <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Stok Awal</label><input type="number" required value={formData.stock || ''} onChange={e => setFormData({...formData, stock: Number(e.target.value)})} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Harga Jual</label><input type="text" required value={formData.price ? formData.price.toLocaleString('id-ID') : ''} onChange={handlePriceChange} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Stok Awal</label><input type="number" required value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                             </div>
-                            <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Kategori</label><input required placeholder="Contoh: Sembako" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                            <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Kategori</label><input required placeholder="Contoh: Sembako" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t text-center">
-                            <button type="submit" disabled={uploading} className="flex-1 bg-[#136f42] text-white py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50">
+                            <button type="submit" disabled={uploading} className="flex-1 bg-[#136f42] text-white py-4 rounded-xl font-black text-[10px] tracking-widest shadow-xl shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50">
                                 {editingId ? 'Perbarui Data' : 'Simpan Katalog'}
                             </button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 border border-slate-100 rounded-xl font-black text-slate-300 text-[10px] uppercase tracking-widest">Batal</button>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 border border-slate-100 rounded-xl font-black text-slate-300 text-[10px] tracking-widest">Batal</button>
                         </div>
                     </form>
                 </div>
@@ -433,8 +433,8 @@ export const AdminTokoKatalog = () => {
                         <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", confirmModal.type === 'approve' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600')}>
                             {confirmModal.type === 'approve' ? <CheckCircle size={32} /> : <AlertTriangle size={32} />}
                         </div>
-                        
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Pesanan' : 'Batalkan Pesanan'}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8">
@@ -446,10 +446,10 @@ export const AdminTokoKatalog = () => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3 text-center">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: 'approve', order: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform uppercase">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: 'approve', order: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform uppercase">
                                 Batal
                             </button>
-                            <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 Ya, {confirmModal.type === 'approve' ? 'Setujui' : 'Refund'}
                             </button>
                         </div>
