@@ -146,7 +146,7 @@ export const Withdraw = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left lowercase">
+        <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left">
 
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
@@ -154,7 +154,7 @@ export const Withdraw = () => {
                     <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-green-50 transition shrink-0 uppercase">
                         <ArrowLeft size={20} className="text-[#136f42]" />
                     </button>
-                    <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight first-letter:uppercase">tarik tunai</h1>
+                    <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight">Tarik Tunai</h1>
                 </div>
             </div>
 
@@ -170,7 +170,7 @@ export const Withdraw = () => {
                         )}
                     >
                         <Wallet size={24} />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-center">saldo tapro</span>
+                        <span className="text-[10px] font-black tracking-widest text-center">Saldo TaPro</span>
                     </button>
                     <button
                         onClick={() => setSourceType('simpanan')}
@@ -181,7 +181,7 @@ export const Withdraw = () => {
                     >
                         <PiggyBank size={24} />
                         {/* REVISI: Label Diganti dari NON-TAPRO ke SIMPANAN */}
-                        <span className="text-[10px] font-black uppercase tracking-widest text-center">simpanan</span>
+                        <span className="text-[10px] font-black tracking-widest text-center">Simpanan</span>
                     </button>
                 </div>
 
@@ -191,10 +191,10 @@ export const Withdraw = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-[#136f42] to-[#0f5c35] opacity-90 z-0"></div>
 
                     <div className="relative z-10">
-                        <p className="text-[10px] font-bold text-[#aeea00] uppercase tracking-[0.2em] mb-1">
-                            {sourceType === 'tapro' ? 'saldo dompet tapro' : 'pilih jenis simpanan'}
+                        <p className="text-[10px] font-bold text-[#aeea00] tracking-[0.2em] mb-1 uppercase">
+                            {sourceType === 'tapro' ? 'Saldo Dompet TaPro' : 'Pilih Jenis Simpanan'}
                         </p>
-                        <h2 className="text-3xl font-black tracking-tight uppercase">
+                        <h2 className="text-3xl font-black tracking-tight">
                             {formatRupiah(getActiveBalance())}
                         </h2>
 
@@ -219,7 +219,7 @@ export const Withdraw = () => {
                                                 <span className="first-letter:uppercase">{opt.name}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="opacity-80 font-mono uppercase">{formatRupiah(user?.[opt.col] || 0)}</span>
+                                                <span className="opacity-80 font-mono">{formatRupiah(user?.[opt.col] || 0)}</span>
                                             </div>
                                         </button>
                                     );
@@ -232,13 +232,13 @@ export const Withdraw = () => {
                 {/* 3. FORM INPUT */}
                 <form onSubmit={handleWithdrawClick} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-6 space-y-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">nominal penarikan</label>
+                        <label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 uppercase">Nominal Penarikan</label>
                         <div className="relative group">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-[#136f42] transition-colors uppercase">rp</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 group-focus-within:text-[#136f42] transition-colors">Rp</span>
                             <input
                                 type="text"
                                 placeholder="0"
-                                className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all uppercase"
+                                className="w-full pl-12 h-14 text-xl font-black bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all"
                                 value={amount}
                                 onChange={handleAmountChange}
                                 required
@@ -247,13 +247,13 @@ export const Withdraw = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">rekening tujuan</label>
+                        <label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 uppercase">Rekening Tujuan</label>
                         <div className="relative">
                             <Landmark className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="nama bank (bca, mandiri, dll)"
-                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none first-letter:uppercase"
+                                placeholder="Nama Bank (BCA, Mandiri, dll)"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none"
                                 value={bankName}
                                 onChange={(e) => setBankName(e.target.value)}
                                 required
@@ -263,8 +263,8 @@ export const Withdraw = () => {
                             <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="nomor rekening"
-                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none first-letter:uppercase"
+                                placeholder="Nomor Rekening"
+                                className="w-full pl-12 h-12 text-sm font-bold bg-gray-50 border border-gray-100 rounded-xl focus:bg-white focus:border-[#136f42] outline-none"
                                 value={accountNumber}
                                 onChange={(e) => setAccountNumber(e.target.value)}
                                 required
@@ -275,17 +275,17 @@ export const Withdraw = () => {
                     <button
                         type="submit"
                         disabled={isLoading || (parseInt(amount.replace(/\D/g, '')) > getActiveBalance())}
-                        className="w-full h-14 text-sm font-black uppercase tracking-widest rounded-2xl bg-[#136f42] text-white hover:bg-[#0f5c35] shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                        className="w-full h-14 text-sm font-black tracking-widest rounded-2xl bg-[#136f42] text-white hover:bg-[#0f5c35] shadow-lg active:scale-95 transition-all disabled:opacity-50"
                     >
-                        {isLoading ? <Loader2 className="animate-spin mx-auto" /> : <><Banknote size={18} className="inline mr-2 uppercase" /> ajukan penarikan</>}
+                        {isLoading ? <Loader2 className="animate-spin mx-auto" /> : <><Banknote size={18} className="inline mr-2" /> Ajukan Penarikan</>}
                     </button>
                 </form>
 
                 {/* INFO */}
-                <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-2xl p-4 lowercase">
+                <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-2xl p-4">
                     <AlertCircle size={20} className="shrink-0 mt-0.5 text-amber-600" />
                     <p className="text-[11px] text-amber-900 leading-relaxed font-medium">
-                        permintaan penarikan akan diverifikasi admin dalam waktu 1x24 jam kerja.
+                        Permintaan penarikan akan diverifikasi admin dalam waktu 1x24 jam kerja.
                     </p>
                 </div>
             </div>
@@ -294,7 +294,7 @@ export const Withdraw = () => {
                 isOpen={showPinModal}
                 onClose={() => setShowPinModal(false)}
                 onSuccess={executeWithdraw}
-                title="konfirmasi penarikan"
+                title="Konfirmasi Penarikan"
             />
 
             <SuccessModal
@@ -304,7 +304,7 @@ export const Withdraw = () => {
                     navigate('/transaksi/riwayat');
                 }}
                 title="Penarikan Diajukan!"
-                message={`permintaan penarikan sebesar rp ${amount} telah berhasil dikirim ke admin untuk verifikasi.`}
+                message={`Permintaan penarikan sebesar Rp ${amount} telah berhasil dikirim ke admin untuk verifikasi.`}
             />
         </div>
     );

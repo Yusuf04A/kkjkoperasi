@@ -8,7 +8,7 @@ import { ArrowLeft, Phone, Send, Search, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah } from '../../lib/utils';
 import { PinModal } from '../../components/PinModal';
-import { SuccessModal } from '../../components/SuccessModal'; 
+import { SuccessModal } from '../../components/SuccessModal';
 
 export const Transfer = () => {
     const navigate = useNavigate();
@@ -20,7 +20,7 @@ export const Transfer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
     const [showPinModal, setShowPinModal] = useState(false);
-    
+
     // --- STATE UNTUK SUCCESS MODAL ---
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -36,7 +36,7 @@ export const Transfer = () => {
     };
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/\D/g, ''); 
+        const rawValue = e.target.value.replace(/\D/g, '');
         if (rawValue) {
             const formattedValue = parseInt(rawValue).toLocaleString('id-ID');
             setAmount(formattedValue);
@@ -79,7 +79,7 @@ export const Transfer = () => {
 
             // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
             playSuccessSound();
-            setShowSuccessModal(true); 
+            setShowSuccessModal(true);
 
         } catch (error: any) {
             toast.error('gagal: ' + error.message);
@@ -111,7 +111,7 @@ export const Transfer = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left capitalize">
-            
+
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
@@ -123,13 +123,13 @@ export const Transfer = () => {
             </div>
 
             <div className="max-w-xl mx-auto p-4 space-y-8">
-                
+
                 {/* INFO SALDO */}
                 <div className="bg-gradient-to-r from-[#136f42] to-[#0f5c35] p-6 rounded-2xl text-white shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                     <div className="relative z-10">
                         <p className="text-sm font-medium text-green-100 mb-1 tracking-wide capitalize">saldo Anda</p>
-                        <h2 className="text-3xl font-black font-mono tracking-tight uppercase">
+                        <h2 className="text-3xl font-black font-mono tracking-tight">
                             {formatRupiah(user?.tapro_balance || 0)}
                         </h2>
                     </div>
@@ -137,10 +137,10 @@ export const Transfer = () => {
 
                 {/* FORM */}
                 <form onSubmit={handleTransferClick} className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6">
-                    
+
                     {/* NOMOR TUJUAN */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">Nomor WhatsApp tujuan</label>
+                        <label className="block text-xs font-bold text-gray-500 tracking-widest ml-1 mb-2">Nomor WhatsApp tujuan</label>
                         <div className="flex gap-2">
                             <div className="relative flex-1">
                                 <Phone className="absolute left-4 top-3.5 text-gray-400" size={18} />
@@ -174,9 +174,9 @@ export const Transfer = () => {
 
                     {/* NOMINAL */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2">Nominal transfer</label>
+                        <label className="block text-xs font-bold text-gray-500 tracking-widest ml-1 mb-2">Nominal transfer</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-3.5 text-[#136f42] font-bold uppercase">rp</span>
+                            <span className="absolute left-4 top-3.5 text-[#136f42] font-bold">Rp</span>
                             <Input
                                 type="text"
                                 placeholder="0"
@@ -193,7 +193,7 @@ export const Transfer = () => {
                         type="submit"
                         isLoading={isLoading}
                         disabled={!recipientName || isLoading}
-                        className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-6 text-lg rounded-xl shadow-lg shadow-green-900/20 font-bold active:scale-95 transition-all uppercase"
+                        className="w-full bg-[#136f42] hover:bg-[#0f5c35] py-6 text-lg rounded-xl shadow-lg shadow-green-900/20 font-bold active:scale-95 transition-all"
                     >
                         <Send className="mr-2" size={18} /> Kirim sekarang
                     </Button>
@@ -209,7 +209,7 @@ export const Transfer = () => {
             />
 
             {/* SUCCESS MODAL POPUP */}
-            <SuccessModal 
+            <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => {
                     setShowSuccessModal(false);

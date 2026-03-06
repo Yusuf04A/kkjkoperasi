@@ -90,13 +90,13 @@ export const Inflip = () => {
 
   const handleInitialSubmit = () => {
     const cleanAmount = investAmount ? parseInt(investAmount.replace(/\./g, '')) : 0;
-    if (!user) { toast.error("silakan login dahulu"); return; }
+    if (!user) { toast.error("Silakan login dahulu"); return; }
     if (cleanAmount < (selectedProject?.min_investment || 0)) {
-      toast.error(`minimal investasi ${formatRupiah(selectedProject?.min_investment)}`);
+      toast.error(`Minimal investasi ${formatRupiah(selectedProject?.min_investment)}`);
       return;
     }
     if (cleanAmount > (user.tapro_balance || 0)) {
-      toast.error("saldo tapro tidak mencukupi");
+      toast.error("Saldo TaPro tidak mencukupi");
       return;
     }
     setShowPinModal(true);
@@ -125,13 +125,13 @@ export const Inflip = () => {
         type: 'withdraw',
         amount: cleanAmount,
         status: 'success',
-        description: `investasi inflip: ${selectedProject.title}`
+        description: `Investasi Inflip: ${selectedProject.title}`
       });
 
       await supabase.from('notifications').insert({
         user_id: user?.id,
         title: 'Investasi Diajukan 🎉',
-        message: `pengajuan investasi sebesar ${formatRupiah(cleanAmount)} pada proyek "${selectedProject.title}" sedang diverifikasi admin.`,
+        message: `Pengajuan investasi sebesar ${formatRupiah(cleanAmount)} pada proyek "${selectedProject.title}" sedang diverifikasi admin.`,
         type: 'success'
       });
 
@@ -146,26 +146,26 @@ export const Inflip = () => {
       await checkSession();
       fetchData();
     } catch (err: any) {
-      toast.error("gagal: " + err.message);
+      toast.error("Gagal: " + err.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 overflow-y-scroll font-sans text-slate-900 text-left lowercase">
+    <div className="min-h-screen bg-gray-50 pb-24 overflow-y-scroll font-sans text-slate-900 text-left">
 
       {/* HEADER */}
       <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
         <div className="px-4 py-4 flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full hover:bg-green-50 text-[#136f42] transition-colors uppercase"
+            className="p-2 rounded-full hover:bg-green-50 text-[#136f42] transition-colors"
           >
             <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
-          <h1 className="text-lg font-bold text-gray-900 leading-none tracking-tight uppercase">
-            inflip (properti)
+          <h1 className="text-lg font-bold text-gray-900 leading-none tracking-tight">
+            Inflip (Properti)
           </h1>
         </div>
       </div>
@@ -182,20 +182,20 @@ export const Inflip = () => {
               <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10">
                 <Building className="text-[#aeea00]" size={18} />
               </div>
-              <span className="font-black tracking-[0.2em] text-[#aeea00] text-[10px] uppercase">investment flipping property</span>
+              <span className="font-black tracking-[0.2em] text-[#aeea00] text-[10px] uppercase tracking-widest">Investment Flipping Property</span>
             </div>
-            <h2 className="text-2xl lg:text-4xl font-black mb-4 leading-tight tracking-tight uppercase">
-              bangun aset properti <br /> tanpa modal besar
+            <h2 className="text-2xl lg:text-4xl font-black mb-4 leading-tight tracking-tight">
+              Bangun Aset Properti <br /> Tanpa Modal Besar
             </h2>
-            <p className="text-green-50/80 text-sm lg:text-base leading-relaxed mb-6 max-w-lg font-medium first-letter:uppercase">
-              platform investasi patungan untuk proyek renovasi dan jual beli properti. aman, transparan, dan dikelola profesional oleh koperasi kkj.
+            <p className="text-green-50/80 text-sm lg:text-base leading-relaxed mb-6 max-w-lg font-medium">
+              Platform investasi patungan untuk proyek renovasi dan jual beli properti. Aman, transparan, dan dikelola profesional oleh Koperasi KKJ.
             </p>
-            <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest">
+            <div className="flex gap-3 text-[10px] font-black tracking-widest">
               <div className="bg-white/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10 shadow-sm">
-                <CheckCircle size={14} className="text-[#aeea00]" /> roi s.d 20%
+                <CheckCircle size={14} className="text-[#aeea00]" /> ROI s.d 20%
               </div>
               <div className="bg-white/10 px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/10 shadow-sm">
-                <CheckCircle size={14} className="text-[#aeea00]" /> legalitas aman
+                <CheckCircle size={14} className="text-[#aeea00]" /> Legalitas Aman
               </div>
             </div>
           </div>
@@ -210,20 +210,20 @@ export const Inflip = () => {
         </div>
 
         {/* TABS NAVIGATION */}
-        <div className="flex p-1.5 bg-green-900/5 rounded-2xl w-full max-w-md mx-auto mb-6 border border-green-100 uppercase">
+        <div className="flex p-1.5 bg-green-900/5 rounded-2xl w-full max-w-md mx-auto mb-6 border border-green-100">
           <button
             onClick={() => setActiveTab('browse')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${activeTab === 'browse' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
               }`}
           >
-            <Search size={16} /> jelajah
+            <Search size={16} /> Jelajah
           </button>
           <button
             onClick={() => setActiveTab('portfolio')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black tracking-widest rounded-xl transition-all ${activeTab === 'portfolio' ? 'bg-white text-[#136f42] shadow-md border border-green-50' : 'text-gray-400 hover:text-[#136f42]'
               }`}
           >
-            <Briefcase size={16} /> portofolio
+            <Briefcase size={16} /> Portofolio
           </button>
         </div>
 
@@ -232,14 +232,14 @@ export const Inflip = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-gray-400">
               <Loader2 className="animate-spin mb-3 text-[#136f42]" size={32} />
-              <p className="text-sm font-bold uppercase tracking-widest">memuat proyek...</p>
+              <p className="text-sm font-bold tracking-widest">Memuat proyek...</p>
             </div>
           ) : activeTab === 'browse' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.length === 0 ? (
-                <div className="col-span-full text-center py-24 bg-white rounded-[2rem] border border-green-100 border-dashed uppercase">
+                <div className="col-span-full text-center py-24 bg-white rounded-[2rem] border border-green-100 border-dashed">
                   <Building size={48} className="mx-auto text-green-100 mb-4" />
-                  <p className="text-gray-400 font-bold tracking-widest text-xs">belum ada proyek dibuka</p>
+                  <p className="text-gray-400 font-bold tracking-widest text-xs">Belum Ada Proyek Dibuka</p>
                 </div>
               ) : projects.map((item) => {
                 const progress = Math.min((item.collected_amount / item.target_amount) * 100, 100);
@@ -247,11 +247,11 @@ export const Inflip = () => {
                   <div key={item.id} className="bg-white rounded-[2rem] border border-green-50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden group flex flex-col h-full">
                     <div className="h-48 relative overflow-hidden">
                       <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      <div className="absolute top-3 right-3 bg-[#aeea00] px-3 py-1 rounded-full text-[10px] font-black text-[#136f42] shadow-lg flex items-center gap-1 uppercase">
-                        <TrendingUp size={12} /> roi {item.roi_percent}%
+                      <div className="absolute top-3 right-3 bg-[#aeea00] px-3 py-1 rounded-full text-[10px] font-black text-[#136f42] shadow-lg flex items-center gap-1">
+                        <TrendingUp size={12} /> ROI {item.roi_percent}%
                       </div>
                     </div>
-                    <div className="p-6 flex-1 flex flex-col uppercase">
+                    <div className="p-6 flex-1 flex flex-col">
                       <div className="mb-4">
                         <h4 className="font-black text-gray-900 text-lg leading-tight mb-2 tracking-tight group-hover:text-[#136f42] transition-colors">{item.title}</h4>
                         <div className="flex items-center gap-1 text-gray-400 text-[10px] font-bold tracking-wide">
@@ -260,32 +260,32 @@ export const Inflip = () => {
                       </div>
                       <div className="mb-6">
                         <div className="flex justify-between text-[10px] mb-2 font-black tracking-tighter">
-                          <span className="text-gray-400">pendanaan</span>
+                          <span className="text-gray-400">Pendanaan</span>
                           <span className="text-[#136f42]">{Math.round(progress)}%</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
                           <div className="bg-[#136f42] h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
                         </div>
                         <div className="flex justify-between text-[10px] mt-2 font-bold font-mono text-gray-400">
-                          <span className="text-[#136f42] uppercase">{formatRupiah(item.collected_amount)}</span>
-                          <span>target: {formatRupiah(item.target_amount)}</span>
+                          <span className="text-[#136f42]">{formatRupiah(item.collected_amount)}</span>
+                          <span>Target: {formatRupiah(item.target_amount)}</span>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3 mb-6 mt-auto">
                         <div className="bg-green-50/50 p-3 rounded-xl text-center border border-green-100">
-                          <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">min. invest</p>
+                          <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1">Min. Invest</p>
                           <p className="text-xs font-black text-[#136f42] tracking-tighter">{formatRupiah(item.min_investment)}</p>
                         </div>
                         <div className="bg-green-50/50 p-3 rounded-xl text-center border border-green-100">
-                          <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">tenor</p>
+                          <p className="text-[9px] text-gray-400 font-black tracking-widest mb-1">Tenor</p>
                           <p className="text-xs font-black text-[#136f42] tracking-tighter">{item.duration_months} bulan</p>
                         </div>
                       </div>
                       <button
                         onClick={() => setSelectedProject(item)}
-                        className="w-full bg-[#136f42] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/10 active:scale-95 flex items-center justify-center gap-2"
+                        className="w-full bg-[#136f42] text-white py-4 rounded-2xl font-black text-xs tracking-widest hover:bg-[#0f5c35] transition-all shadow-lg shadow-green-900/10 active:scale-95 flex items-center justify-center gap-2"
                       >
-                        ikut patungan <ChevronRight size={16} strokeWidth={3} />
+                        Ikut Patungan <ChevronRight size={16} strokeWidth={3} />
                       </button>
                     </div>
                   </div>
@@ -293,11 +293,11 @@ export const Inflip = () => {
               })}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 uppercase">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {myInvestments.length === 0 ? (
                 <div className="col-span-full text-center py-24 bg-white rounded-[2rem] border border-green-100 border-dashed">
                   <PieChart size={48} className="mx-auto text-green-100 mb-4" />
-                  <p className="text-gray-400 font-bold tracking-widest text-xs">belum ada investasi</p>
+                  <p className="text-gray-400 font-bold tracking-widest text-xs">Belum Ada Investasi</p>
                 </div>
               ) : myInvestments.map((inv) => (
                 <div key={inv.id} className="bg-white p-5 rounded-[1.5rem] border border-green-50 shadow-sm flex gap-4 items-center hover:border-[#136f42] transition-all group">
@@ -308,19 +308,19 @@ export const Inflip = () => {
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-black text-gray-900 text-sm truncate pr-2 group-hover:text-[#136f42] transition-colors">{inv.project?.title}</h4>
                       <span className="bg-green-50 text-green-700 text-[8px] px-2 py-1 rounded-full font-black tracking-widest border border-green-100">
-                        aktif
+                        Aktif
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-400 mb-3 flex items-center gap-1 font-bold">
-                      <Clock size={12} className="text-[#136f42]" /> tenor {inv.project?.duration_months} bln
+                      <Clock size={12} className="text-[#136f42]" /> Tenor {inv.project?.duration_months} bln
                     </p>
                     <div className="flex justify-between items-end border-t border-green-50 pt-2">
                       <div>
-                        <p className="text-[9px] text-gray-400 font-black tracking-widest">modal</p>
-                        <p className="font-black text-sm text-[#136f42] tracking-tighter uppercase">{formatRupiah(inv.amount)}</p>
+                        <p className="text-[9px] text-gray-400 font-black tracking-widest">Modal</p>
+                        <p className="font-black text-sm text-[#136f42] tracking-tighter">{formatRupiah(inv.amount)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[9px] text-gray-400 font-black tracking-widest">return</p>
+                        <p className="text-[9px] text-gray-400 font-black tracking-widest">Return</p>
                         <p className="font-black text-sm text-[#aeea00] drop-shadow-sm">+{inv.project?.roi_percent}%</p>
                       </div>
                     </div>
@@ -337,33 +337,33 @@ export const Inflip = () => {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="fixed inset-0 bg-[#0f5c35]/80 backdrop-blur-md" onClick={() => setSelectedProject(null)}></div>
           <div className="relative bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-20 duration-500">
-            <button onClick={() => setSelectedProject(null)} className="absolute top-6 right-6 p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors text-gray-400 uppercase"><X size={20} /></button>
-            <h3 className="font-black text-2xl text-gray-900 tracking-tighter mb-1 uppercase">mulai investasi</h3>
-            <p className="text-sm text-gray-400 font-medium mb-8 leading-tight first-letter:uppercase">{selectedProject.title}</p>
+            <button onClick={() => setSelectedProject(null)} className="absolute top-6 right-6 p-2 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors text-gray-400"><X size={20} /></button>
+            <h3 className="font-black text-2xl text-gray-900 tracking-tighter mb-1">Mulai Investasi</h3>
+            <p className="text-sm text-gray-400 font-medium mb-8 leading-tight">{selectedProject.title}</p>
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between mb-2">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">nominal patungan</label>
-                  <span className="text-[10px] text-[#136f42] font-black bg-green-50 px-3 py-1 rounded-full border border-green-100 uppercase tracking-tighter uppercase">saldo: {formatRupiah(user?.tapro_balance || 0)}</span>
+                  <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] ml-1">Nominal Patungan</label>
+                  <span className="text-[10px] text-[#136f42] font-black bg-green-50 px-3 py-1 rounded-full border border-green-100 tracking-tighter">Saldo: {formatRupiah(user?.tapro_balance || 0)}</span>
                 </div>
-                <div className="relative group uppercase">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-gray-300 text-xl group-focus-within:text-[#136f42]">rp</span>
-                  <input type="text" value={investAmount} onChange={handleAmountChange} placeholder={`min ${parseInt(selectedProject.min_investment).toLocaleString('id-ID')}`} className="w-full pl-14 pr-4 py-5 bg-gray-50 border border-gray-100 rounded-2xl font-black text-2xl text-gray-900 focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all placeholder:text-gray-200 uppercase" />
+                <div className="relative group">
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-gray-300 text-xl group-focus-within:text-[#136f42]">Rp</span>
+                  <input type="text" value={investAmount} onChange={handleAmountChange} placeholder={`Min ${parseInt(selectedProject.min_investment).toLocaleString('id-ID')}`} className="w-full pl-14 pr-4 py-5 bg-gray-50 border border-gray-100 rounded-2xl font-black text-2xl text-gray-900 focus:bg-white focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all placeholder:text-gray-400" />
                 </div>
               </div>
               <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100 text-[11px] text-amber-800 leading-relaxed flex gap-3 shadow-sm">
                 <AlertCircle size={18} className="shrink-0 text-amber-600 mt-0.5" />
-                <p className="font-medium">dana akan dikunci selama <b>{selectedProject.duration_months} bulan</b>. estimasi profit <b>{selectedProject.roi_percent}%</b> (prorata) akan dibagikan ke saldo tapro di akhir tenor.</p>
+                <p className="font-medium">Dana akan dikunci selama <b>{selectedProject.duration_months} bulan</b>. Estimasi profit <b>{selectedProject.roi_percent}%</b> (prorata) akan dibagikan ke Saldo TaPro di akhir tenor.</p>
               </div>
-              <button onClick={handleInitialSubmit} disabled={isSubmitting} className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-[#0f5c35] transition-all shadow-xl shadow-green-900/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3">
-                {isSubmitting ? <Loader2 className="animate-spin" /> : "konfirmasi investasi"}
+              <button onClick={handleInitialSubmit} disabled={isSubmitting} className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-sm tracking-widest hover:bg-[#0f5c35] transition-all shadow-xl shadow-green-900/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-3">
+                {isSubmitting ? <Loader2 className="animate-spin" /> : "Konfirmasi Investasi"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeInvestment} title="konfirmasi inflip" />
+      <PinModal isOpen={showPinModal} onClose={() => setShowPinModal(false)} onSuccess={executeInvestment} title="Konfirmasi Inflip" />
 
       {/* SUCCESS MODAL POPUP */}
       <SuccessModal
@@ -372,8 +372,8 @@ export const Inflip = () => {
           setShowSuccessModal(false);
           setActiveTab('portfolio');
         }}
-        title="INVESTASI DIAJUKAN!"
-        message={`selamat! anda telah berhasil mengajukan investasi sebesar rp ${investAmount} di proyek "${selectedProject?.title}". investasi anda sedang menunggu verifikasi admin.`}
+        title="Investasi Diajukan!"
+        message={`Selamat! Anda telah berhasil mengajukan investasi sebesar Rp ${investAmount} di proyek "${selectedProject?.title}". Investasi Anda sedang menunggu verifikasi admin.`}
       />
     </div>
   );
