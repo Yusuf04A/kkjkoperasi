@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { formatRupiah } from '../../lib/utils';
-import { 
-    ShoppingBag, Search, Filter, ShoppingCart, 
-    ChevronRight, ArrowLeft, Plus, Minus, X, CheckCircle2 
+import {
+    ShoppingBag, Search, Filter, ShoppingCart,
+    ChevronRight, ArrowLeft, Plus, Minus, X, CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -24,7 +24,7 @@ export const KatalogBelanja = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('Semua');
-    const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
+    const [cart, setCart] = useState<{ product: Product, quantity: number }[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const categories = ['Semua', 'Sembako', 'Elektronik', 'Atribut', 'Lainnya'];
@@ -49,10 +49,10 @@ export const KatalogBelanja = () => {
         const existing = cart.find(item => item.product.id === product.id);
         if (existing) {
             if (existing.quantity >= product.stock) return toast.error("Stok tidak mencukupi");
-            setCart(cart.map(item => 
-                item.product.id === product.id 
-                ? { ...item, quantity: item.quantity + 1 } 
-                : item
+            setCart(cart.map(item =>
+                item.product.id === product.id
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
             ));
         } else {
             setCart([...cart, { product, quantity: 1 }]);
@@ -66,7 +66,7 @@ export const KatalogBelanja = () => {
 
     const totalBayar = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
-    const filteredProducts = products.filter(p => 
+    const filteredProducts = products.filter(p =>
         (selectedCategory === 'Semua' || p.category === selectedCategory) &&
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -85,7 +85,7 @@ export const KatalogBelanja = () => {
                             <p className="text-[10px] text-blue-200 font-bold uppercase tracking-widest">Self-Pickup & Tapro Pay</p>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={() => setIsCartOpen(true)}
                         className="relative p-3 bg-amber-500 rounded-2xl shadow-lg shadow-amber-600/30 active:scale-90 transition-all"
                     >
@@ -101,7 +101,7 @@ export const KatalogBelanja = () => {
                 {/* SEARCH BAR */}
                 <div className="max-w-5xl mx-auto mt-6 relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-300" size={18} />
-                    <input 
+                    <input
                         type="text"
                         placeholder="Cari produk keinginan Anda..."
                         value={searchTerm}
@@ -120,9 +120,9 @@ export const KatalogBelanja = () => {
                             onClick={() => setSelectedCategory(cat)}
                             className={cn(
                                 "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border",
-                                selectedCategory === cat 
-                                ? "bg-[#003366] text-white border-[#003366] shadow-lg shadow-blue-900/20" 
-                                : "bg-white text-slate-400 border-slate-200 hover:border-[#003366]"
+                                selectedCategory === cat
+                                    ? "bg-[#003366] text-white border-[#003366] shadow-lg shadow-blue-900/20"
+                                    : "bg-white text-slate-400 border-slate-200 hover:border-[#003366]"
                             )}
                         >
                             {cat}
@@ -133,7 +133,7 @@ export const KatalogBelanja = () => {
                 {/* PRODUCT GRID */}
                 {loading ? (
                     <div className="grid grid-cols-2 gap-4">
-                        {[1,2,3,4].map(i => <div key={i} className="h-64 bg-slate-200 animate-pulse rounded-[2rem]" />)}
+                        {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-slate-200 animate-pulse rounded-[2rem]" />)}
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -148,7 +148,7 @@ export const KatalogBelanja = () => {
                                 <div className="p-4 space-y-2">
                                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter leading-tight line-clamp-1">{product.name}</h3>
                                     <p className="text-xs font-black text-[#003366]">{formatRupiah(product.price)}</p>
-                                    <button 
+                                    <button
                                         onClick={() => addToCart(product)}
                                         disabled={product.stock === 0}
                                         className="w-full bg-slate-50 hover:bg-[#003366] text-slate-400 hover:text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 border border-slate-100"
@@ -178,7 +178,7 @@ export const KatalogBelanja = () => {
                                 <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto">
                                     <ShoppingBag size={40} className="text-slate-200" />
                                 </div>
-                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Keranjang Anda Kosong</p>
+                                <p className="text-slate-400 font-bold tracking-widest text-xs uppercase">Keranjang Kosong</p>
                             </div>
                         ) : (
                             <div className="space-y-6">
@@ -191,7 +191,7 @@ export const KatalogBelanja = () => {
                                             <h4 className="font-black text-slate-900 text-sm uppercase tracking-tighter">{item.product.name}</h4>
                                             <p className="text-xs font-bold text-[#003366]">{formatRupiah(item.product.price)} x {item.quantity}</p>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => removeFromCart(item.product.id)}
                                             className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
                                         >
@@ -201,15 +201,15 @@ export const KatalogBelanja = () => {
                                 ))}
 
                                 <div className="pt-6 border-t border-slate-200 space-y-4">
-                                    <div className="flex justify-between items-center px-2">
-                                        <span className="text-slate-400 font-black uppercase text-[10px] tracking-[0.2em]">Total Estimasi</span>
-                                        <span className="text-2xl font-[1000] text-[#003366] tracking-tighter">{formatRupiah(totalBayar)}</span>
+                                    <div className="flex justify-between items-center px-2 font-black">
+                                        <span className="text-slate-400 uppercase text-[10px] tracking-[0.2em]">TOTAL</span>
+                                        <span className="text-2xl text-[#003366] tracking-tighter">{formatRupiah(totalBayar)}</span>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })}
                                         className="w-full bg-[#003366] text-white py-5 rounded-[2rem] font-[1000] text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-900/40 active:scale-95 transition-all flex items-center justify-center gap-3"
                                     >
-                                        Lanjut ke Checkout <ChevronRight size={18} className="stroke-[3px]" />
+                                        CHECKOUT SEKARANG <ChevronRight size={18} className="stroke-[3px]" />
                                     </button>
                                 </div>
                             </div>

@@ -462,10 +462,10 @@ export const Home = () => {
                 <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-full duration-500 text-left">
                         <div className="flex justify-between items-center mb-8 border-b border-slate-50 pb-4 uppercase font-bold text-[#136f42]">
-                            <h2 className="text-2xl tracking-tighter">keranjang belanja</h2>
+                            <h2 className="text-2xl tracking-tighter">KERANJANG BELANJA</h2>
                             <button onClick={() => setIsCartOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400"><X size={24} /></button>
                         </div>
-                        {cart.length === 0 ? <p className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">keranjang kosong</p> : (
+                        {cart.length === 0 ? <p className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs">Keranjang Kosong</p> : (
                             <div className="space-y-6">
                                 {cart.map(item => (
                                     <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
@@ -475,8 +475,8 @@ export const Home = () => {
                                     </div>
                                 ))}
                                 <div className="pt-6 border-t border-slate-200 space-y-4">
-                                    <div className="flex justify-between items-center px-2 uppercase font-black"><span className="text-slate-400 text-[10px] tracking-[0.2em]">total</span><span className="text-2xl text-[#136f42] tracking-tighter">{formatRpUpper(totalBayar)}</span></div>
-                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#136f42] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">checkout sekarang <ChevronRight size={18} /></button>
+                                    <div className="flex justify-between items-center px-2 font-black"><span className="text-slate-400 text-[10px] tracking-[0.2em] uppercase">TOTAL</span><span className="text-2xl text-[#136f42] tracking-tighter">{formatRpUpper(totalBayar)}</span></div>
+                                    <button onClick={() => navigate('/belanja/checkout', { state: { cart, total: totalBayar } })} className="w-full bg-[#136f42] text-white py-5 rounded-[2rem] font-bold text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">CHECKOUT SEKARANG <ChevronRight size={18} /></button>
                                 </div>
                             </div>
                         )}
