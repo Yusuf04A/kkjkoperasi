@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 // 🔥 Icon lengkap sesuai kode awal Anda
-import { 
-    User, Phone, Lock, Mail, Loader2, ArrowLeft, 
-    Eye, EyeOff, AlertCircle, CheckCircle2, FileUp, 
-    MessageCircle, CreditCard, QrCode 
+import {
+    User, Phone, Lock, Mail, Loader2, ArrowLeft,
+    Eye, EyeOff, AlertCircle, CheckCircle2, FileUp,
+    MessageCircle, CreditCard, QrCode
 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
 import toast from 'react-hot-toast';
-import { SuccessModal } from '../../components/SuccessModal'; 
+import { SuccessModal } from '../../components/SuccessModal';
 import logoKKJ from '/src/assets/Logo-kkj.png';
 
 export const Register = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    
+
     // 🔥 State File KTP mandatori
     const [ktpFile, setKtpFile] = useState<File | null>(null);
 
@@ -55,7 +55,7 @@ export const Register = () => {
     const checkPasswordStrength = (value: string) => {
         if (value.length === 0) return null;
         if (value.length < 6) return { label: 'Minimal 6 karakter', color: 'text-slate-400', isWeak: true };
-        
+
         const hasNumber = /\d/.test(value);
         const hasUpper = /[A-Z]/.test(value);
         const isVeryWeak = "1234567890".includes(value) || value.toLowerCase() === "password";
@@ -77,7 +77,7 @@ export const Register = () => {
 
     // 🔥 Fungsi WA Admin Otomatis
     const handleSendWhatsApp = () => {
-        const adminNumber = "6289676065953"; 
+        const adminNumber = "6289676065953";
         const text = `Halo Admin KKJ, saya *${formData.name}* baru saja mendaftar di aplikasi. Berikut saya lampirkan Bukti Bayar Simpanan Pokok saya senilai *Rp 250.000 (PAS)*. Mohon bantuannya untuk verifikasi akun saya. Terima kasih.`;
         const waUrl = `https://wa.me/${adminNumber}?text=${encodeURIComponent(text)}`;
         window.open(waUrl, '_blank');
@@ -103,9 +103,9 @@ export const Register = () => {
             // 1. PROSES UPLOAD KTP KE STORAGE
             const fileExt = ktpFile.name.split('.').pop();
             const fileName = `${Date.now()}-${formData.name.replace(/\s+/g, '_').toLowerCase()}.${fileExt}`;
-            
+
             const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('ktp-registrations') 
+                .from('ktp-registrations')
                 .upload(fileName, ktpFile);
 
             if (uploadError) {
@@ -130,18 +130,18 @@ export const Register = () => {
                 options: {
                     data: {
                         full_name: formData.name,
-                        phone_number: formData.phone, 
+                        phone_number: formData.phone,
                         role: 'member',
                         ktp_url: uploadData.path, // 🔥 NILAI INI YANG DISIMPAN KE DATABASE
-                        is_verified: false 
+                        is_verified: false
                     }
                 }
             });
 
             if (error) {
                 playSuccessSound();
-                let errorMessage = error.message.includes("User already registered") 
-                    ? "Email ini sudah terdaftar." 
+                let errorMessage = error.message.includes("User already registered")
+                    ? "Email ini sudah terdaftar."
                     : "Terjadi kesalahan saat mendaftar.";
 
                 setModalConfig({ isOpen: true, title: "Pendaftaran Gagal!", message: errorMessage, type: 'error' });
@@ -169,14 +169,14 @@ export const Register = () => {
         const isSuccess = modalConfig.type === 'success';
         setModalConfig({ ...modalConfig, isOpen: false });
         if (isSuccess) {
-            handleSendWhatsApp(); 
+            handleSendWhatsApp();
             navigate('/login');
         }
     };
 
     return (
         <div className="min-h-screen flex w-full font-sans bg-white overflow-hidden text-left">
-            
+
             {/* === BAGIAN KIRI === */}
             <div className="hidden lg:flex w-1/2 bg-[#136f42] relative flex-col justify-between p-12 text-white">
                 <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
@@ -207,7 +207,7 @@ export const Register = () => {
             {/* === BAGIAN KANAN === */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative overflow-y-auto">
                 <div className="w-full max-w-md space-y-6">
-                    
+
                     <div className="lg:hidden flex flex-col items-center mb-6">
                         <img src={logoKKJ} alt="Logo" className="w-20 h-20 mb-3 object-contain drop-shadow-md" />
                         <h2 className="text-2xl font-black text-gray-900 tracking-tight text-center uppercase">Daftar Anggota</h2>
@@ -246,7 +246,7 @@ export const Register = () => {
                             </div>
                         </div>
                         <div className="bg-orange-50 p-2 rounded-lg border border-orange-100">
-                             <p className="text-[9px] font-bold text-orange-600 text-center leading-tight lowercase">
+                            <p className="text-[9px] font-bold text-orange-600 text-center leading-tight lowercase">
                                 *pastikan nominal transfer pas rp 250.000. simpan bukti transfer untuk dikirim ke whatsapp admin setelah pendaftaran.
                             </p>
                         </div>
@@ -264,7 +264,7 @@ export const Register = () => {
                                 className="focus:ring-[#5db930] focus:border-[#5db930] bg-gray-50 border-gray-200 pl-10 py-4 rounded-xl text-sm text-slate-800 font-bold uppercase"
                             />
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5 uppercase">
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Email Aktif</label>
@@ -337,7 +337,7 @@ export const Register = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-4 rounded-xl bg-gradient-to-t from-[#5db930] to-[#76d646] text-white font-black text-lg shadow-[0_4px_0_#4a9c22] uppercase tracking-wider flex items-center justify-center gap-2 mt-6 disabled:opacity-50"
+                            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#136f42] to-[#1a8e55] text-white font-black text-lg shadow-[0_4px_15px_rgba(19,111,66,0.3)] hover:shadow-[0_6px_20px_rgba(19,111,66,0.4)] hover:-translate-y-0.5 active:translate-y-1 transition-all uppercase tracking-wider flex items-center justify-center gap-2 mt-6 disabled:opacity-50"
                         >
                             {isLoading ? <Loader2 className="animate-spin" size={22} /> : 'Kirim Pendaftaran'}
                         </button>
@@ -349,12 +349,12 @@ export const Register = () => {
                 </div>
             </div>
 
-            <SuccessModal 
+            <SuccessModal
                 isOpen={modalConfig.isOpen}
                 onClose={handleModalClose}
                 title={modalConfig.title}
                 message={modalConfig.message}
-                type={modalConfig.type} 
+                type={modalConfig.type}
                 actionLabel="Kirim Bukti ke Admin (WA)"
                 onAction={handleSendWhatsApp}
             />

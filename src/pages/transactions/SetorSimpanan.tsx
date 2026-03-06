@@ -195,8 +195,8 @@ export const SetorSimpanan = () => {
                         </div>
                     </div>
 
-                    <div className="pt-6">
-                        <button onClick={handleInitialSubmit} className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-lg shadow-lg shadow-[#136f42]/20 active:scale-[0.98] transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                    <div className="col-span-1 md:col-span-2 pt-6">
+                        <button onClick={handleInitialSubmit} className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-lg shadow-lg shadow-[#136f42]/20 active:scale-[0.98] transition-all tracking-wide flex items-center justify-center gap-2">
                             {isSubmitting ? <Loader2 className="animate-spin" /> : (
                                 <>
                                     <Wallet size={20} />

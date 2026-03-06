@@ -365,7 +365,7 @@ export const Home = () => {
                                     )}>
                                         <action.icon className={cn("w-6 h-6", action.color)} />
                                     </div>
-                                    <span className="text-[10px] font-bold text-slate-600 group-hover:text-[#136f42] text-center leading-tight uppercase tracking-tighter transition-colors">
+                                    <span className="text-[11px] font-bold text-slate-700 group-hover:text-[#136f42] text-center leading-tight tracking-wide transition-colors">
                                         {action.label}
                                     </span>
                                 </Link>
@@ -379,8 +379,8 @@ export const Home = () => {
             <div className="max-w-5xl mx-auto px-4 mt-10 space-y-10">
                 <NewsCarousel />
                 <div>
-                    <div className="flex justify-between items-end mb-4 px-2 uppercase font-bold">
-                        <h3 className="text-lg text-gray-900">program unggulan</h3>
+                    <div className="flex justify-between items-end mb-4 px-2 capitalize font-bold">
+                        <h3 className="text-lg text-gray-900">Program Unggulan</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {featuredPrograms.map((program, idx) => (
@@ -390,7 +390,7 @@ export const Home = () => {
                                     <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", program.bg)}><program.icon className={program.text} size={20} /></div>
                                     <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-[#136f42] group-hover:text-white transition-colors"><ArrowUpRight size={16} /></div>
                                 </div>
-                                <h4 className="text-base font-bold text-gray-900 mb-0.5 uppercase">{program.name}</h4>
+                                <h4 className="text-base font-bold text-gray-900 mb-0.5 capitalize">{program.name}</h4>
                                 <p className="text-xs font-medium text-gray-600 mb-1 italic">{program.title}</p>
                                 <p className="text-[10px] text-gray-400">{program.desc}</p>
                             </Link>
@@ -402,7 +402,7 @@ export const Home = () => {
                     <div className="flex justify-between items-center px-2">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-[#136f42] rounded-2xl text-white shadow-xl shadow-green-900/20"><ShoppingBag size={24} /></div>
-                            <div><h3 className="text-xl font-bold text-slate-900 tracking-tight leading-none uppercase">katalog belanja</h3><p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">self-pickup & tapro pay</p></div>
+                            <div><h3 className="text-xl font-bold text-slate-900 tracking-tight leading-none capitalize">Katalog Belanja</h3><p className="text-[10px] text-slate-400 font-bold capitalize mt-1 tracking-widest">Self-pickup & Tapro Pay</p></div>
                         </div>
                         <button onClick={() => setIsCartOpen(true)} className="relative p-4 bg-amber-500 rounded-2xl shadow-xl transition-all text-white group shadow-amber-600/30 active:scale-95">
                             <ShoppingCart size={24} className="group-hover:rotate-12 transition-transform" />
