@@ -138,47 +138,71 @@ export const SetorSimpanan = () => {
                 </div>
 
                 {/* FORM CONTAINER */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-8 text-left">
-                    {/* INPUT UTAMA */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Simpanan Pokok</label>
-                            <input type="text" value={depositForm.simpok.toLocaleString('id-ID')} onChange={(e) => handleInputChange('simpok', e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-bold text-xl text-slate-800 focus:border-[#136f42] focus:bg-white outline-none transition-all" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Simpanan Wajib</label>
-                            <input disabled={isSimwaLunas} type="text" value={isSimwaLunas ? "LUNAS" : depositForm.simwa.toLocaleString('id-ID')} onChange={(e) => handleInputChange('simwa', e.target.value)} className={cn("w-full border-2 rounded-2xl p-5 font-bold text-xl outline-none transition-all", isSimwaLunas ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-slate-50 border-slate-100 text-slate-800 focus:border-[#136f42] focus:bg-white")} />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[11px] font-black uppercase text-orange-400 tracking-widest ml-1">Donasi Kebersamaan</label>
-                            <input type="text" value={depositForm.donasi.toLocaleString('id-ID')} onChange={(e) => handleInputChange('donasi', e.target.value)} className="w-full bg-orange-50/30 border-2 border-orange-100 rounded-2xl p-5 font-bold text-xl text-orange-700 focus:border-orange-400 focus:bg-white outline-none transition-all" />
-                        </div>
-                    </div>
-
-                    <div className="border-t border-dashed border-slate-200 pt-8">
-                        <h3 className="text-xs font-black uppercase text-slate-400 mb-6 tracking-[0.2em]">Simpanan Sukarela Lainnya</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6 text-left">
+                    <div className="overflow-x-auto">
+                        <div className="w-full flex flex-col gap-2">
                             {[
-                                { id: 'simade', label: 'Masa Depan' }, { id: 'sipena', label: 'Pendidikan' },
-                                { id: 'sihara', label: 'Hari Raya' }, { id: 'siqurma', label: 'Qurban' },
-                                { id: 'siuji', label: 'Haji / Umroh' }, { id: 'siwalima', label: 'Walimah' }
-                            ].map((item) => (
-                                <div key={item.id} className="space-y-2">
-                                    <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wider ml-1">{item.label}</label>
-                                    <input type="text" placeholder="Rp 0" value={depositForm[item.id as keyof typeof depositForm] === 0 ? '' : depositForm[item.id as keyof typeof depositForm].toLocaleString('id-ID')} onChange={(e) => handleInputChange(item.id, e.target.value)} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 font-bold text-slate-700 focus:border-[#136f42] outline-none transition-all" />
+                                { id: 'simpok', label: 'Simpanan Pokok' },
+                                { id: 'simwa', label: 'Simpanan Wajib' },
+                                { id: 'simade', label: 'Simpanan Masa Depan' },
+                                { id: 'sipena', label: 'Simpanan Pendidikan' },
+                                { id: 'siwalima', label: 'Simpanan Walimah' },
+                                { id: 'siuji', label: 'Simpanan Umroh & Haji' },
+                                { id: 'siqurma', label: 'Simpanan Qurban' },
+                                { id: 'sihara', label: 'Simpanan Hari Raya' },
+                                { id: 'donasi', label: 'Donasi Kebersamaan' }
+                            ].map((item, index) => (
+                                <div key={item.id} className={cn(
+                                    "flex items-center justify-between py-4 px-5 rounded-2xl transition-all",
+                                    index % 2 === 0 ? "bg-slate-50 border border-slate-100/50" : "bg-white border border-slate-100"
+                                )}>
+                                    <div className="w-1/2 md:w-5/12">
+                                        <label className="text-sm md:text-base text-slate-700 font-bold">{item.label}</label>
+                                    </div>
+                                    <div className="w-1/2 md:w-7/12 flex items-center justify-end md:justify-start gap-2">
+                                        <span className={cn(
+                                            "text-sm md:text-base font-bold",
+                                            item.id === 'simwa' && isSimwaLunas ? "text-emerald-500" : "text-slate-800"
+                                        )}>Rp</span>
+                                        <input
+                                            disabled={item.id === 'simwa' && isSimwaLunas}
+                                            type="text"
+                                            placeholder="0"
+                                            value={item.id === 'simwa' && isSimwaLunas ? "LUNAS" : depositForm[item.id as keyof typeof depositForm] === 0 ? '' : depositForm[item.id as keyof typeof depositForm].toLocaleString('id-ID')}
+                                            onChange={(e) => handleInputChange(item.id, e.target.value)}
+                                            className={cn(
+                                                "w-full bg-transparent outline-none text-right md:text-left transition-all font-black text-lg md:text-xl",
+                                                item.id === 'simwa' && isSimwaLunas
+                                                    ? "text-emerald-600"
+                                                    : "text-slate-900 focus:text-[#136f42] placeholder:text-slate-400"
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             ))}
+
+                            {/* Total Row */}
+                            <div className="flex items-center justify-between py-6 px-5 mt-4 rounded-3xl bg-[#136f42]/10 border border-[#136f42]/20">
+                                <div className="w-1/2 md:w-5/12">
+                                    <span className="text-base md:text-lg font-black text-[#136f42]">Total Setoran</span>
+                                    <p className="text-[10px] text-[#136f42]/60 font-bold uppercase tracking-widest mt-0.5">Seluruh Simpanan</p>
+                                </div>
+                                <div className="w-1/2 md:w-7/12 flex items-center justify-end md:justify-start gap-2">
+                                    <span className="text-[#136f42] font-black text-lg md:text-xl">Rp</span>
+                                    <span className="text-[#136f42] font-black text-2xl md:text-3xl tracking-tighter w-full text-right md:text-left">{totalSetoran.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* TOTAL & SUBMIT */}
-                    <div className="pt-8 border-t border-slate-100">
-                        <div className="flex justify-between items-center mb-8 px-2 font-black uppercase">
-                            <span className="text-slate-400 text-sm tracking-widest">Total Setoran</span>
-                            <span className="text-3xl text-[#136f42] tracking-tighter">{formatRpUpper(totalSetoran)}</span>
-                        </div>
-                        <button onClick={handleInitialSubmit} className="w-full bg-[#136f42] text-white py-6 rounded-3xl font-bold text-xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">
-                            {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : "Konfirmasi Setoran"}
+                    <div className="pt-6">
+                        <button onClick={handleInitialSubmit} className="w-full bg-[#136f42] text-white py-5 rounded-2xl font-black text-lg shadow-lg shadow-[#136f42]/20 active:scale-[0.98] transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+                            {isSubmitting ? <Loader2 className="animate-spin" /> : (
+                                <>
+                                    <Wallet size={20} />
+                                    <span>Konfirmasi Setoran</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

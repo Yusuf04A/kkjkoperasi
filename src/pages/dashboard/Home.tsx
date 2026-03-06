@@ -337,7 +337,7 @@ export const Home = () => {
 
             {/* 2. TOTAL SIMPANAN OVERLAY & QUICK ACTIONS */}
             <div className="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
-                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-8 items-center text-left lowercase">
+                <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-8 items-center text-left">
                     {/* Aset Section */}
                     <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-8 cursor-pointer group p-2 rounded-lg transition-all active:scale-[0.98]">
                         <div className="flex justify-between items-center mb-1 text-slate-500 uppercase font-bold text-xs">
@@ -381,7 +381,6 @@ export const Home = () => {
                 <div>
                     <div className="flex justify-between items-end mb-4 px-2 uppercase font-bold">
                         <h3 className="text-lg text-gray-900">program unggulan</h3>
-                        <button className="text-xs text-[#136f42] hover:underline flex items-center gap-1">lihat semua <ArrowRight size={14} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         {featuredPrograms.map((program, idx) => (
@@ -418,10 +417,10 @@ export const Home = () => {
                                     <img src={product.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className={cn("absolute top-3 right-3 px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm backdrop-blur-md transition-all", product.stock > 0 ? "bg-white/90 text-[#136f42] border border-green-100" : "bg-rose-500 text-white")}>{product.stock > 0 ? `stok: ${product.stock}` : 'habis'}</div>
                                 </div>
-                                <div className="flex-1 flex flex-col text-left font-bold uppercase">
+                                <div className="flex-1 flex flex-col text-left font-bold">
                                     <span className="text-[8px] font-bold text-[#136f42] bg-green-50 px-2 py-0.5 rounded uppercase w-fit mb-1">{product.category}</span>
                                     <h3 className="text-[13px] font-bold text-slate-800 leading-tight line-clamp-2 mb-2">{product.name}</h3>
-                                    <div className="mt-auto"><p className="text-sm font-bold text-[#136f42] mb-3 lowercase">{formatRpUpper(product.price)}</p><button onClick={() => addToCart(product)} disabled={product.stock === 0} className="w-full py-2.5 bg-[#136f42] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-1.5 uppercase font-black">tambah</button></div>
+                                    <div className="mt-auto"><p className="text-sm font-bold text-[#136f42] mb-3">{formatRpUpper(product.price)}</p><button onClick={() => addToCart(product)} disabled={product.stock === 0} className="w-full py-2.5 bg-[#136f42] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg active:scale-95 flex items-center justify-center gap-1.5 uppercase font-black">tambah</button></div>
                                 </div>
                             </div>
                         ))}
@@ -471,7 +470,7 @@ export const Home = () => {
                                 {cart.map(item => (
                                     <div key={item.product.id} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm transition-all active:scale-[0.98]">
                                         <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md"><img src={item.product.image_url} className="w-full h-full object-cover" /></div>
-                                        <div className="flex-1 uppercase font-bold"><h4 className="text-slate-900 text-sm tracking-tighter">{item.product.name}</h4><p className="text-xs text-[#136f42] mt-1">{formatRpUpper(item.product.price)} x {item.quantity}</p></div>
+                                        <div className="flex-1 font-bold"><h4 className="text-slate-900 text-sm tracking-tighter uppercase">{item.product.name}</h4><p className="text-xs text-[#136f42] mt-1">{formatRpUpper(item.product.price)} x {item.quantity}</p></div>
                                         <button onClick={() => removeFromCart(item.product.id)} className="p-2 text-rose-500"><X size={18} /></button>
                                     </div>
                                 ))}

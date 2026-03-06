@@ -196,7 +196,7 @@ export const TopUp = () => {
                 {/* FORM INPUT */}
                 <form onSubmit={handlePreSubmit} className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm space-y-6">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2 text-left lowercase">nominal top up</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2 text-left lowercase">Nominal Top Up</label>
                         <div className="relative">
                             <span className="absolute left-4 top-3.5 text-[#136f42] font-bold uppercase">rp</span>
                             <Input
@@ -212,7 +212,7 @@ export const TopUp = () => {
 
                     <div>
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-sm font-bold text-gray-700 text-left lowercase">upload bukti transfer</label>
+                            <label className="block text-sm font-bold text-gray-700 text-left lowercase">Upload Bukti Transfer</label>
                             <span className="text-[9px] font-bold text-[#136f42] bg-green-50 px-2 py-0.5 rounded-full uppercase">Auto-Compress 1MB</span>
                         </div>
                         <div onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${previewUrl ? 'border-[#136f42] bg-green-50' : 'border-green-200 hover:bg-green-50'}`}>
@@ -221,7 +221,7 @@ export const TopUp = () => {
                             ) : (
                                 <div className="text-center text-gray-400 py-2">
                                     <UploadCloud size={24} className="mx-auto mb-3 text-[#136f42]" />
-                                    <p className="text-sm font-bold text-gray-600 lowercase">upload foto / screenshot</p>
+                                    <p className="text-sm font-bold text-gray-600 lowercase">Upload foto / screenshot</p>
                                 </div>
                             )}
                             <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />

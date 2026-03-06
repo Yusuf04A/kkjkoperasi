@@ -4,15 +4,15 @@ import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { 
-    ArrowLeft, CreditCard, Banknote, AlertCircle, 
+import {
+    ArrowLeft, CreditCard, Banknote, AlertCircle,
     Wallet, PiggyBank, CheckCircle, Loader2, Landmark,
     Save, School, Gift, Heart, Plane
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah, cn } from '../../lib/utils';
 import { PinModal } from '../../components/PinModal';
-import { SuccessModal } from '../../components/SuccessModal'; 
+import { SuccessModal } from '../../components/SuccessModal';
 
 export const Withdraw = () => {
     const navigate = useNavigate();
@@ -20,15 +20,15 @@ export const Withdraw = () => {
 
     // STATE UTAMA
     const [sourceType, setSourceType] = useState<'tapro' | 'simpanan'>('tapro');
-    const [selectedSimpanan, setSelectedSimpanan] = useState<any>(null);
+    const [selectedSimpanans, setSelectedSimpanans] = useState<any[]>([]);
     const [amount, setAmount] = useState('');
     const [bankName, setBankName] = useState('');
     const [accountNumber, setAccountNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // STATE MODAL
     const [showPinModal, setShowPinModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false); 
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     // 🔥 FUNGSI PEMUTAR SUARA (pop.mp3)
     const playSuccessSound = () => {
@@ -58,8 +58,15 @@ export const Withdraw = () => {
 
     const getActiveBalance = () => {
         if (sourceType === 'tapro') return user?.tapro_balance || 0;
-        if (selectedSimpanan) return user?.[selectedSimpanan.col] || 0;
-        return 0;
+        return selectedSimpanans.reduce((total, sim) => total + (user?.[sim.col] || 0), 0);
+    };
+
+    const toggleSimpanan = (opt: any) => {
+        if (selectedSimpanans.find(s => s.id === opt.id)) {
+            setSelectedSimpanans(prev => prev.filter(s => s.id !== opt.id));
+        } else {
+            setSelectedSimpanans(prev => [...prev, opt]);
+        }
     };
 
     const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,8 +78,8 @@ export const Withdraw = () => {
         e.preventDefault();
         const nominal = parseInt(amount.replace(/\D/g, ''));
 
-        if (sourceType === 'simpanan' && !selectedSimpanan) {
-            return toast.error('pilih jenis simpanan dulu!');
+        if (sourceType === 'simpanan' && selectedSimpanans.length === 0) {
+            return toast.error('pilih minimal satu jenis simpanan!');
         }
         if (!nominal || nominal < 50000) {
             return toast.error('minimal penarikan rp 50.000');
@@ -92,19 +99,43 @@ export const Withdraw = () => {
         const nominal = parseInt(amount.replace(/\D/g, ''));
 
         try {
-            const { error } = await supabase.from('savings_withdrawals').insert({
-                user_id: user?.id,
-                type: sourceType === 'tapro' ? 'tapro' : selectedSimpanan.id,
-                amount: nominal,
-                bank_name: bankName,
-                account_number: accountNumber,
-                status: 'pending'
-            });
+            let inserts = [];
+
+            if (sourceType === 'tapro') {
+                inserts.push({
+                    user_id: user?.id,
+                    type: 'tapro',
+                    amount: nominal,
+                    bank_name: bankName,
+                    account_number: accountNumber,
+                    status: 'pending'
+                });
+            } else {
+                let remainingNominal = nominal;
+                for (const sim of selectedSimpanans) {
+                    if (remainingNominal <= 0) break;
+                    const balance = user?.[sim.col] || 0;
+                    if (balance <= 0) continue;
+
+                    const deduct = Math.min(balance, remainingNominal);
+                    inserts.push({
+                        user_id: user?.id,
+                        type: sim.id,
+                        amount: deduct,
+                        bank_name: bankName,
+                        account_number: accountNumber,
+                        status: 'pending'
+                    });
+                    remainingNominal -= deduct;
+                }
+            }
+
+            const { error } = await supabase.from('savings_withdrawals').insert(inserts);
 
             if (error) throw error;
 
             playSuccessSound();
-            setShowSuccessModal(true); 
+            setShowSuccessModal(true);
 
         } catch (error: any) {
             toast.error('gagal: ' + error.message);
@@ -116,7 +147,7 @@ export const Withdraw = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-24 font-sans text-slate-900 text-left lowercase">
-            
+
             {/* HEADER */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
@@ -128,11 +159,11 @@ export const Withdraw = () => {
             </div>
 
             <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
-                
+
                 {/* 1. KATEGORI SUMBER DANA */}
                 <div className="grid grid-cols-2 gap-3">
-                    <button 
-                        onClick={() => { setSourceType('tapro'); setSelectedSimpanan(null); }}
+                    <button
+                        onClick={() => { setSourceType('tapro'); setSelectedSimpanans([]); }}
                         className={cn(
                             "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
                             sourceType === 'tapro' ? "bg-[#136f42] border-[#136f42] text-white shadow-lg" : "bg-white border-gray-200 text-gray-500"
@@ -141,7 +172,7 @@ export const Withdraw = () => {
                         <Wallet size={24} />
                         <span className="text-[10px] font-black uppercase tracking-widest text-center">saldo tapro</span>
                     </button>
-                    <button 
+                    <button
                         onClick={() => setSourceType('simpanan')}
                         className={cn(
                             "p-4 rounded-2xl border transition-all flex flex-col items-center gap-2",
@@ -158,10 +189,10 @@ export const Withdraw = () => {
                 <div className="rounded-3xl bg-[#136f42] p-6 text-white shadow-xl relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
                     <div className="absolute inset-0 bg-gradient-to-br from-[#136f42] to-[#0f5c35] opacity-90 z-0"></div>
-                    
+
                     <div className="relative z-10">
                         <p className="text-[10px] font-bold text-[#aeea00] uppercase tracking-[0.2em] mb-1">
-                            {sourceType === 'tapro' ? 'saldo dompet tapro' : selectedSimpanan ? selectedSimpanan.name : 'pilih jenis simpanan'}
+                            {sourceType === 'tapro' ? 'saldo dompet tapro' : 'pilih jenis simpanan'}
                         </p>
                         <h2 className="text-3xl font-black tracking-tight uppercase">
                             {formatRupiah(getActiveBalance())}
@@ -169,24 +200,30 @@ export const Withdraw = () => {
 
                         {sourceType === 'simpanan' && (
                             <div className="mt-4 grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                                {simpananOptions.map((opt) => (
-                                    <button 
-                                        key={opt.id}
-                                        onClick={() => setSelectedSimpanan(opt)}
-                                        className={cn(
-                                            "w-full flex justify-between items-center px-4 py-3 rounded-xl border transition-all text-xs font-bold",
-                                            selectedSimpanan?.id === opt.id 
-                                                ? "bg-white text-[#136f42] border-white shadow-lg" 
-                                                : "bg-white/10 border-white/20 text-white hover:bg-white/20"
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <opt.icon size={14} />
-                                            <span className="first-letter:uppercase">{opt.name}</span>
-                                        </div>
-                                        <span className="opacity-80 font-mono uppercase">{formatRupiah(user?.[opt.col] || 0)}</span>
-                                    </button>
-                                ))}
+                                {simpananOptions.map((opt) => {
+                                    const isSelected = selectedSimpanans.some(s => s.id === opt.id);
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => toggleSimpanan(opt)}
+                                            className={cn(
+                                                "w-full flex justify-between items-center px-4 py-3 rounded-xl border transition-all text-xs font-bold",
+                                                isSelected
+                                                    ? "bg-[#0f5c35] text-white border-green-400 shadow-inner"
+                                                    : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <opt.icon size={14} className={isSelected ? "text-green-300" : "text-white"} />
+                                                <span className="first-letter:uppercase">{opt.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="opacity-80 font-mono uppercase">{formatRupiah(user?.[opt.col] || 0)}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -260,7 +297,7 @@ export const Withdraw = () => {
                 title="konfirmasi penarikan"
             />
 
-            <SuccessModal 
+            <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => {
                     setShowSuccessModal(false);

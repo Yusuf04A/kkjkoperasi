@@ -30,7 +30,7 @@ export const AdminTarikSimpanan = () => {
     const [selectedMember, setSelectedMember] = useState<any>(null);
 
     // Step 2: Pilih Simpanan & Nominal
-    const [selectedSimpanan, setSelectedSimpanan] = useState<typeof SIMPANAN_LIST[0] | null>(null);
+    const [selectedSimpanans, setSelectedSimpanans] = useState<typeof SIMPANAN_LIST[0][]>([]);
     const [amount, setAmount] = useState('');
     const [tarikSemua, setTarikSemua] = useState(false);
     const [keterangan, setKeterangan] = useState('');
@@ -64,15 +64,25 @@ export const AdminTarikSimpanan = () => {
     const handleSelectMember = (member: any) => {
         setSelectedMember(member);
         setSearchResults([]);
-        setSelectedSimpanan(null);
+        setSelectedSimpanans([]);
         setAmount('');
         setTarikSemua(false);
         setKeterangan('');
     };
 
     const getBalanceForSelected = () => {
-        if (!selectedMember || !selectedSimpanan) return 0;
-        return selectedMember[selectedSimpanan.col] || 0;
+        if (!selectedMember || selectedSimpanans.length === 0) return 0;
+        return selectedSimpanans.reduce((total, sim) => total + (selectedMember[sim.col] || 0), 0);
+    };
+
+    const toggleSimpanan = (sim: typeof SIMPANAN_LIST[0]) => {
+        if (selectedSimpanans.find(s => s.id === sim.id)) {
+            setSelectedSimpanans(prev => prev.filter(s => s.id !== sim.id));
+        } else {
+            setSelectedSimpanans(prev => [...prev, sim]);
+        }
+        setAmount('');
+        setTarikSemua(false);
     };
 
     const getNominalTarik = () => {
@@ -89,7 +99,7 @@ export const AdminTarikSimpanan = () => {
     const handleOpenConfirm = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedMember) return toast.error('Pilih anggota terlebih dahulu!');
-        if (!selectedSimpanan) return toast.error('Pilih jenis simpanan!');
+        if (selectedSimpanans.length === 0) return toast.error('Pilih minimal satu jenis simpanan!');
         if (getNominalTarik() <= 0) return toast.error('Nominal penarikan harus lebih dari 0!');
         if (getNominalTarik() > getBalanceForSelected()) return toast.error('Saldo tidak mencukupi!');
         if (!keterangan.trim()) return toast.error('Keterangan/alasan wajib diisi!');
@@ -97,45 +107,75 @@ export const AdminTarikSimpanan = () => {
     };
 
     const handleExecute = async () => {
-        if (!selectedMember || !selectedSimpanan) return;
+        if (!selectedMember || selectedSimpanans.length === 0) return;
         setIsProcessing(true);
         const nominal = getNominalTarik();
         const toastId = toast.loading('Memproses penarikan...');
 
         try {
+            // Setup parallel updates & inserts arrays
+            let remainingNominal = nominal;
+            let currentUpdates: Record<string, number> = {};
+            let withdrawalInserts = [];
+            let transcriptMsgs = [];
+
+            // Pre-calculate to ensure there is enough balance across ALL selected
+            let cumulativeBalance = 0;
+            const targetCols = selectedSimpanans.map(s => s.col);
             const { data: freshProfile, error: fetchError } = await supabase
                 .from('profiles')
-                .select(selectedSimpanan.col)
+                .select(targetCols.join(','))
                 .eq('id', selectedMember.id)
                 .single();
 
             if (fetchError) throw fetchError;
-            const freshProfileData = (freshProfile as unknown) as Record<string, number>;
-            const currentBalance: number = freshProfileData[selectedSimpanan.col] || 0;
-            if (currentBalance < nominal) throw new Error('Saldo anggota tidak mencukupi!');
+
+            const profileData = (freshProfile as unknown) as Record<string, number>;
+
+            for (const sim of selectedSimpanans) {
+                cumulativeBalance += (profileData[sim.col] || 0);
+            }
+
+            if (cumulativeBalance < nominal) throw new Error('Saldo anggota tidak mencukupi kombinasi total.');
+
+            for (const sim of selectedSimpanans) {
+                if (remainingNominal <= 0) break;
+
+                const balance = profileData[sim.col] || 0;
+                if (balance <= 0) continue;
+
+                const deduct = Math.min(balance, remainingNominal);
+
+                currentUpdates[sim.col] = balance - deduct;
+
+                withdrawalInserts.push({
+                    user_id: selectedMember.id,
+                    type: sim.id,
+                    amount: deduct,
+                    bank_name: 'Eksekusi Admin',
+                    account_number: '-',
+                    status: 'approved',
+                    admin_note: keterangan,
+                });
+
+                transcriptMsgs.push(`${sim.label} (Rp ${deduct.toLocaleString('id-ID')})`);
+                remainingNominal -= deduct;
+            }
 
             const { error: updateError } = await supabase
                 .from('profiles')
-                .update({ [selectedSimpanan.col]: currentBalance - nominal })
+                .update(currentUpdates)
                 .eq('id', selectedMember.id);
             if (updateError) throw updateError;
 
-            await supabase.from('savings_withdrawals').insert({
-                user_id: selectedMember.id,
-                type: selectedSimpanan.id,
-                amount: nominal,
-                bank_name: 'Eksekusi Admin',
-                account_number: '-',
-                status: 'approved',
-                admin_note: keterangan,
-            });
+            await supabase.from('savings_withdrawals').insert(withdrawalInserts);
 
             await supabase.from('transactions').insert({
                 user_id: selectedMember.id,
                 type: 'withdraw',
                 amount: nominal,
                 status: 'success',
-                description: `[ADMIN] Penarikan ${selectedSimpanan.label} - ${keterangan}`,
+                description: `[ADMIN] Penarikan ${transcriptMsgs.join(' & ')} - ${keterangan}`,
             });
 
             toast.success('Penarikan berhasil dieksekusi!', { id: toastId });
@@ -151,7 +191,7 @@ export const AdminTarikSimpanan = () => {
             setAmount('');
             setTarikSemua(false);
             setKeterangan('');
-            setSelectedSimpanan(null);
+            setSelectedSimpanans([]);
         } catch (err: any) {
             toast.error('Gagal: ' + err.message, { id: toastId });
         } finally {
@@ -264,7 +304,7 @@ export const AdminTarikSimpanan = () => {
                                     <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">{selectedMember.member_id}</p>
                                 </div>
                                 <button
-                                    onClick={() => { setSelectedMember(null); setSelectedSimpanan(null); }}
+                                    onClick={() => { setSelectedMember(null); setSelectedSimpanans([]); }}
                                     className="p-3 rounded-xl hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition-all"
                                 >
                                     <X size={20} />
@@ -286,11 +326,11 @@ export const AdminTarikSimpanan = () => {
                                 {SIMPANAN_LIST.map((s) => {
                                     const balance = selectedMember[s.col] || 0;
                                     const Icon = s.icon;
-                                    const isSelected = selectedSimpanan?.id === s.id;
+                                    const isSelected = selectedSimpanans.find(sim => sim.id === s.id);
                                     return (
                                         <button
                                             key={s.id}
-                                            onClick={() => { setSelectedSimpanan(s); setAmount(''); setTarikSemua(false); }}
+                                            onClick={() => toggleSimpanan(s)}
                                             className={cn(
                                                 "flex items-center gap-4 p-5 rounded-3xl border transition-all text-left group",
                                                 isSelected
@@ -316,7 +356,7 @@ export const AdminTarikSimpanan = () => {
 
                 {/* SISI KANAN: STEP 3 (EKSEKUSI) */}
                 <div className="lg:col-span-5">
-                    {selectedMember && selectedSimpanan ? (
+                    {selectedMember && selectedSimpanans.length > 0 ? (
                         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl p-6 md:p-8 sticky top-8 animate-in fade-in slide-in-from-right-4">
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
@@ -331,7 +371,7 @@ export const AdminTarikSimpanan = () => {
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Saldo Tersedia</p>
                                     <div className="flex items-end justify-between">
                                         <h3 className="text-2xl font-black font-mono tracking-tight">{formatRupiah(getBalanceForSelected())}</h3>
-                                        <selectedSimpanan.icon size={24} className="text-slate-500" />
+                                        <Wallet size={24} className="text-slate-500" />
                                     </div>
                                 </div>
 
@@ -395,7 +435,7 @@ export const AdminTarikSimpanan = () => {
             </div>
 
             {/* --- MODAL KONFIRMASI --- */}
-            {showConfirm && selectedMember && selectedSimpanan && (
+            {showConfirm && selectedMember && selectedSimpanans.length > 0 && (
                 <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl text-center animate-in zoom-in-95 duration-200">
                         <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
@@ -403,7 +443,7 @@ export const AdminTarikSimpanan = () => {
                         </div>
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Konfirmasi Akhir</h3>
                         <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8">
-                            Sistem akan memotong saldo <b>{selectedSimpanan.label}</b> sebesar:
+                            Sistem akan memotong saldo total <b>{selectedSimpanans.length} Simpanan</b> sebesar:
                             <span className="block text-3xl font-black text-[#136f42] my-3">{formatRupiah(getNominalTarik())}</span>
                             Nama Anggota: <span className="font-bold text-slate-900">{selectedMember.full_name}</span>
                         </p>
