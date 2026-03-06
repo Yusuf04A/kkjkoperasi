@@ -282,7 +282,7 @@ export const Register = () => {
                                 <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Nomor Whatsapp</label>
                                 <Input
                                     type="tel"
-                                    placeholder="089676065953"
+                                    placeholder="08xx"
                                     icon={<Phone size={18} className="text-green-600" />}
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

@@ -5,7 +5,7 @@ import {
     Plus, Pencil, ArrowLeft, Building, MapPin,
     Save, X, Image as ImageIcon,
     Trash2, TrendingUp, Package, Loader2, Info,
-    Clock, Archive, CheckCircle, AlertCircle, Check
+    Clock, Archive, CheckCircle, AlertCircle, Check, Eye, EyeOff
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ interface InflipProject {
     duration_months: number;  // Sesuai DB
     image_url: string | null;
     status: string;
+    is_hidden: boolean;
 }
 
 export const AdminInflip = () => {
@@ -65,6 +66,11 @@ export const AdminInflip = () => {
         isOpen: false,
         type: null,
         investment: null
+    });
+
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({
+        isOpen: false,
+        id: null
     });
 
     useEffect(() => {
@@ -154,12 +160,55 @@ export const AdminInflip = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm("Yakin hapus proyek ini? Data investasi user mungkin akan terpengaruh.")) return;
-        const { error } = await supabase.from('inflip_projects').delete().eq('id', id);
-        if (error) toast.error("Gagal menghapus");
-        else {
-            toast.success("Proyek dihapus");
+    const triggerDelete = (id: string) => {
+        setDeleteModal({ isOpen: true, id });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteModal.id) return;
+        setIsSaving(true);
+        const toastId = toast.loading("Menghapus proyek...");
+
+        try {
+            // Cek dulu apakah ada investasi aktif di proyek ini
+            const { data: investments } = await supabase
+                .from('inflip_investments')
+                .select('id')
+                .eq('project_id', deleteModal.id)
+                .limit(1);
+
+            if (investments && investments.length > 0) {
+                toast.error("Gagal menghapus! Proyek ini sudah memiliki data investasi dari anggota.", { id: toastId });
+                setDeleteModal({ isOpen: false, id: null });
+                return;
+            }
+
+            const { error } = await supabase.from('inflip_projects').delete().eq('id', deleteModal.id);
+
+            if (error) {
+                // If it's a foreign key error or constraint, catch it
+                throw error;
+            }
+
+            toast.success("Proyek berhasil dihapus", { id: toastId });
+            fetchProjects();
+        } catch (error: any) {
+            console.error(error);
+            toast.error("Gagal menghapus, data sedang digunakan.", { id: toastId });
+        } finally {
+            setIsSaving(false);
+            setDeleteModal({ isOpen: false, id: null });
+        }
+    };
+
+    const toggleVisibility = async (id: string, currentStatus: boolean) => {
+        const toastId = toast.loading(currentStatus ? "Menampilkan proyek..." : "Menyembunyikan proyek...");
+        const { error } = await supabase.from('inflip_projects').update({ is_hidden: !currentStatus }).eq('id', id);
+
+        if (error) {
+            toast.error("Gagal mengubah status: " + error.message, { id: toastId });
+        } else {
+            toast.success(currentStatus ? "Proyek ditampilkan ke User" : "Proyek disembunyikan dari User", { id: toastId });
             fetchProjects();
         }
     };
@@ -366,10 +415,18 @@ export const AdminInflip = () => {
                                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur text-[#136f42] px-2 py-1 rounded-lg text-xs font-bold shadow-sm flex items-center gap-1">
                                             <TrendingUp size={12} /> ROI {item.roi_percent}%
                                         </div>
-                                        <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute top-3 left-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                            <button onClick={() => toggleVisibility(item.id, item.is_hidden)} className={cn("p-1.5 bg-white rounded-lg shadow transition-colors", item.is_hidden ? "text-amber-500 hover:bg-amber-50" : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-600")}>
+                                                {item.is_hidden ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            </button>
                                             <button onClick={() => handleOpenModal(item)} className="p-1.5 bg-white text-blue-600 rounded-lg shadow hover:bg-blue-50 transition-colors"><Pencil size={14} /></button>
-                                            <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-white text-red-600 rounded-lg shadow hover:bg-red-50 transition-colors"><Trash2 size={14} /></button>
+                                            <button onClick={() => triggerDelete(item.id)} className="p-1.5 bg-white text-red-600 rounded-lg shadow hover:bg-red-50 transition-colors"><Trash2 size={14} /></button>
                                         </div>
+                                        {item.is_hidden && (
+                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                                <span className="bg-slate-900/80 text-white text-[10px] font-black tracking-widest px-3 py-1 rounded-full shadow-lg border border-white/20">DISEMBUNYIKAN</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Card Content */}
@@ -664,6 +721,34 @@ export const AdminInflip = () => {
                             </button>
                             <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isSaving} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 {isSaving ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔥 MODAL DELETE PROYEK 🔥 */}
+            {deleteModal.isOpen && (
+                <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20 text-center">
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-rose-50 text-rose-600">
+                            <AlertCircle size={32} />
+                        </div>
+
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
+                            Hapus Proyek
+                        </h3>
+
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6 px-4 lowercase">
+                            apakah anda yakin ingin menghapus proyek investasi ini? data yang telah dihapus tidak dapat dikembalikan.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setDeleteModal({ isOpen: false, id: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform">
+                                Batal
+                            </button>
+                            <button onClick={confirmDelete} disabled={isSaving} className="py-3.5 text-white bg-rose-600 shadow-rose-900/20 font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform">
+                                {isSaving ? 'Proses...' : 'Ya, Hapus'}
                             </button>
                         </div>
                     </div>

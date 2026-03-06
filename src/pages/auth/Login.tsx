@@ -371,7 +371,7 @@ export const Login = () => {
                                         </label>
                                         <Input
                                             type="text"
-                                            placeholder="Contoh: 0812... atau admin@kkj.id"
+                                            placeholder="08xx"
                                             icon={isAdminMode ? <Mail size={18} className="text-[#136f42]" /> : <Phone size={18} className="text-[#136f42]" />}
                                             value={loginId}
                                             onChange={handleLoginIdChange}

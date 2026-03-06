@@ -284,7 +284,7 @@ export const TopUp = () => {
                         ) : (
                             <>
                                 <div className="flex justify-between items-center mb-6">
-                                    <div className="flex items-center gap-3"><Lock size={20} className="text-[#136f42]" /><h2 className="text-lg font-black text-slate-800">verifikasi pin</h2></div>
+                                    <div className="flex items-center gap-3"><Lock size={20} className="text-[#136f42]" /><h2 className="text-lg font-black text-slate-800">Verifikasi Pin</h2></div>
                                     <button onClick={() => setIsPinModalOpen(false)}><X size={20} /></button>
                                 </div>
 

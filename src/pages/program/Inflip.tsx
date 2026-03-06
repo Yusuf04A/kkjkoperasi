@@ -63,6 +63,7 @@ export const Inflip = () => {
           .from('inflip_projects')
           .select('*')
           .eq('status', 'open')
+          .eq('is_hidden', false)
           .order('created_at', { ascending: false });
         if (error) throw error;
         setProjects(data || []);

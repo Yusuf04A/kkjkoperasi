@@ -49,7 +49,7 @@ export const AdminDashboard = () => {
                 supabase.from('pawn_transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
                 supabase.from('shop_orders').select('*', { count: 'exact', head: true }).eq('status', 'diproses'),
                 supabase.from('lhu_distributions').select('*', { count: 'exact', head: true }).eq('status', 'waiting'),
-                supabase.from('inflip_projects').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+                supabase.from('inflip_investments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
                 supabase.from('savings_withdrawals').select('*', { count: 'exact', head: true }).eq('status', 'pending')
             ]);
 
@@ -194,7 +194,7 @@ export const AdminDashboard = () => {
     useEffect(() => {
         fetchStats(); fetchTransactionTableStats();
         const channel = supabase.channel('admin-dashboard-updates');
-        ['profiles', 'transactions', 'loans', 'tamasa_transactions', 'pawn_transactions', 'shop_orders', 'lhu_distributions', 'inflip_projects', 'savings_withdrawals'].forEach((table) => {
+        ['profiles', 'transactions', 'loans', 'tamasa_transactions', 'pawn_transactions', 'shop_orders', 'lhu_distributions', 'inflip_investments', 'savings_withdrawals'].forEach((table) => {
             channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
                 fetchStats(); fetchTransactionTableStats();
             });
@@ -321,6 +321,7 @@ export const AdminDashboard = () => {
                             {stats.pendingUsers > 0 && <AlertCard to="/admin/verifikasi" title={`${stats.pendingUsers} Verifikasi Anggota`} type="warning" />}
                             {stats.pendingLHU > 0 && <AlertCard to="/admin/lhu" title={`${stats.pendingLHU} Eksekusi LHU`} type="info" />}
                             {stats.pendingOrders > 0 && <AlertCard to="/admin/toko" title={`${stats.pendingOrders} Pesanan Toko Baru`} type="info" />}
+                            {stats.activeInflip > 0 && <AlertCard to="/admin/inflip" title={`${stats.activeInflip} Verifikasi Inflip`} type="info" />}
                         </div>
                     </div>
                 )}

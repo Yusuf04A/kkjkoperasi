@@ -21,13 +21,13 @@ export const PPOB = () => {
             {/* HEADER STICKY - HIJAU KONSISTEN */}
             <div className="sticky top-0 z-30 bg-white border-b border-green-100 shadow-sm">
                 <div className="px-4 py-4 flex items-center gap-3">
-                    <button 
-                        onClick={() => navigate(-1)} 
-                        className="p-2 rounded-full hover:bg-green-50 text-[#136f42] transition-colors"
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 rounded-full hover:bg-slate-100 text-slate-900 transition-colors"
                     >
                         <ArrowLeft size={20} strokeWidth={2.5} />
                     </button>
-                    <h1 className="text-base font-bold text-[#136f42] leading-none">
+                    <h1 className="text-base font-bold text-slate-900 leading-none">
                         Layanan PPOB
                     </h1>
                 </div>
