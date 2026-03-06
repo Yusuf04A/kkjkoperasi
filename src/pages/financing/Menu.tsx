@@ -84,9 +84,9 @@ export const FinancingMenu = () => {
                         <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md border border-white/10">
                             <Wallet size={18} className="text-[#aeea00]" />
                         </div>
-                        <span className="text-[9px] font-black text-[#aeea00] uppercase tracking-[0.2em]">Layanan Digital</span>
+                        <span className="text-[9px] font-black text-[#aeea00] tracking-[0.2em]">Layanan Digital</span>
                     </div>
-                    <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">Pembiayaan</h1>
+                    <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">PEMBIAYAAN</h1>
                     <p className="text-green-50/70 text-sm font-medium max-w-xs leading-snug">
                         Solusi dana cepat dan amanah untuk mendukung kebutuhan Anda.
                     </p>
@@ -94,7 +94,7 @@ export const FinancingMenu = () => {
 
                 <Link
                     to="/pembiayaan/ajukan"
-                    className="relative z-10 bg-[#aeea00] text-[#0f5c35] px-6 py-3 rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 uppercase tracking-wider"
+                    className="relative z-10 bg-[#aeea00] text-[#0f5c35] px-6 py-3 rounded-xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 tracking-wider"
                 >
                     <Plus size={16} strokeWidth={3} /> Ajukan Baru
                 </Link>
@@ -107,7 +107,7 @@ export const FinancingMenu = () => {
                         <button
                             onClick={() => setActiveTab('verifikasi')}
                             className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all",
                                 activeTab === 'verifikasi' ? "bg-amber-500 text-white shadow-md shadow-amber-900/20" : "text-slate-400 hover:text-slate-600"
                             )}
                         >
@@ -118,7 +118,7 @@ export const FinancingMenu = () => {
                     <button
                         onClick={() => setActiveTab('berjalan')}
                         className={cn(
-                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all",
                             activeTab === 'berjalan' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
@@ -128,7 +128,7 @@ export const FinancingMenu = () => {
                     <button
                         onClick={() => setActiveTab('riwayat')}
                         className={cn(
-                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            "flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all",
                             activeTab === 'riwayat' ? "bg-[#136f42] text-white shadow-md shadow-green-900/20" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
@@ -139,7 +139,7 @@ export const FinancingMenu = () => {
 
             {/* --- LIST CONTENT --- */}
             <div className="flex items-center gap-3 px-1 text-left">
-                <h2 className="font-bold text-slate-800 text-base tracking-tight capitalize">
+                <h2 className="font-bold text-slate-800 text-base tracking-tight">
                     {activeTab === 'verifikasi' ? 'Menunggu Konfirmasi Admin' :
                         activeTab === 'berjalan' ? 'Pembiayaan Aktif' : 'Riwayat Pengajuan'}
                 </h2>
@@ -171,14 +171,14 @@ export const FinancingMenu = () => {
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="space-y-0.5 max-w-[70%] text-left">
                                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{loan.type}</p>
+                                            <p className="text-[9px] font-black text-slate-400 tracking-widest capitalize">{loan.type}</p>
                                             {loan.loan_code && (
                                                 <span className="text-[9px] font-black text-[#136f42] bg-green-50 border border-green-200 px-2 py-0.5 rounded-md font-mono tracking-wider">
                                                     {loan.loan_code}
                                                 </span>
                                             )}
                                             {itemName && (
-                                                <span className="text-[9px] font-bold text-[#136f42] uppercase tracking-wider bg-green-50 px-2 py-0.5 rounded border border-green-100 truncate">
+                                                <span className="text-[9px] font-bold text-[#136f42] tracking-wider bg-green-50 px-2 py-0.5 rounded border border-green-100 truncate capitalize">
                                                     - {itemName}
                                                 </span>
                                             )}
@@ -186,7 +186,7 @@ export const FinancingMenu = () => {
                                         <h3 className="text-xl font-black text-slate-900 tracking-tighter">{formatRupiah(loan.amount)}</h3>
                                     </div>
                                     <span className={cn(
-                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase border whitespace-nowrap",
+                                        "px-3 py-1 rounded-full text-[9px] font-black border whitespace-nowrap",
                                         loan.status === 'active' ? 'bg-green-50 text-[#136f42] border-green-100' :
                                             loan.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                                 loan.status === 'paid' ? 'bg-[#136f42] text-white border-transparent' :
@@ -201,7 +201,7 @@ export const FinancingMenu = () => {
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
                                         <Calendar size={12} className="text-[#136f42]" />
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Tenor {loan.duration} Bulan</span>
+                                        <span className="text-[10px] font-bold text-slate-500">Tenor {loan.duration} Bulan</span>
                                     </div>
                                 </div>
 
@@ -216,7 +216,7 @@ export const FinancingMenu = () => {
                                             </div>
                                             <button
                                                 onClick={() => navigate('/pembiayaan/ajukan')}
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
+                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-[10px] font-black tracking-widest flex justify-center items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-all"
                                             >
                                                 Pilih Dari Katalog <ArrowRight size={14} />
                                             </button>
@@ -224,13 +224,13 @@ export const FinancingMenu = () => {
                                     ) : (
                                         <div className="flex justify-between items-center text-left">
                                             <div>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Cicilan / bln</p>
+                                                <p className="text-[9px] font-bold text-slate-400 mb-0.5">Cicilan / bln</p>
                                                 <p className="text-base font-black text-[#136f42] tracking-tighter">
                                                     {loan.status === 'rejected' ? 'Rp 0' : formatRupiah(loan.monthly_payment)}
                                                 </p>
                                             </div>
                                             {(loan.status === 'active' || loan.status === 'paid') && (
-                                                <Link to={`/pembiayaan/${loan.id}`} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#136f42] transition-all shadow-md active:scale-95">
+                                                <Link to={`/pembiayaan/${loan.id}`} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest flex items-center gap-2 hover:bg-[#136f42] transition-all shadow-md active:scale-95">
                                                     Detail <ArrowRight size={14} />
                                                 </Link>
                                             )}
@@ -243,7 +243,7 @@ export const FinancingMenu = () => {
                 </div>
             )}
 
-            <p className="text-center text-slate-300 text-[9px] font-bold uppercase tracking-[0.2em] pt-10">
+            <p className="text-center text-slate-300 text-[9px] font-bold tracking-[0.2em] pt-10">
                 © 2026 Koperasi Pemasaran Karya Kita Jaya
             </p>
 
