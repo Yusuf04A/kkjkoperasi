@@ -3,17 +3,17 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { supabase } from '../../lib/supabase';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { 
-    User, Phone, Mail, Shield, Save, ArrowLeft, Camera, 
+import {
+    User, Phone, Mail, Shield, Save, ArrowLeft, Camera,
     Trash2, ShieldCheck, Lock, HelpCircle, KeyRound, LogOut, Pencil,
     Eye, EyeOff, AlertCircle, CheckCircle2, Info, CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { SuccessModal } from '../../components/SuccessModal'; 
+import { SuccessModal } from '../../components/SuccessModal';
 // 🔥 IMPORT LIBRARY KOMPRESI
-import imageCompression from 'browser-image-compression'; 
+import imageCompression from 'browser-image-compression';
 
 export const Profile = () => {
     const { user, checkSession, logout } = useAuthStore();
@@ -31,14 +31,14 @@ export const Profile = () => {
     });
 
     // State Form PIN
-    const [pin, setPin] = useState(''); 
-    const [oldPin, setOldPin] = useState(''); 
+    const [pin, setPin] = useState('');
+    const [oldPin, setOldPin] = useState('');
     const [pinLoading, setPinLoading] = useState(false);
 
     // STATE BARU: Untuk kontrol lihat/sembunyi PIN dan Modal
     const [showOldPin, setShowOldPin] = useState(false);
     const [showNewPin, setShowNewPin] = useState(false);
-    
+
     // 🔥 STATE BARU UNTUK POPUP TENGAH GAGAL & SUKSES 🔥
     const [isPinSuccess, setIsPinSuccess] = useState(false);
     const [isPinError, setIsPinError] = useState(false);
@@ -83,8 +83,8 @@ export const Profile = () => {
     const checkPinStrength = (value: string) => {
         if (value.length === 0) return null;
         if (value.length < 6) return { label: 'Minimal 6 digit', color: 'text-slate-400' };
-        
-        const isRepeated = /(.)\1{5}/.test(value); 
+
+        const isRepeated = /(.)\1{5}/.test(value);
         const isSequential = "0123456789012345".includes(value) || "9876543210987654".includes(value);
 
         if (isRepeated || isSequential) {
@@ -134,8 +134,10 @@ export const Profile = () => {
             if (uploadError) throw uploadError;
 
             const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            // Tambah cache-busting agar browser tidak menampilkan gambar lama yang ter-cache
+            const avatarUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
-            const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user?.id);
+            const { error: updateError } = await supabase.from('profiles').update({ avatar_url: avatarUrlWithCacheBust }).eq('id', user?.id);
             if (updateError) throw updateError;
 
             await checkSession();
@@ -350,7 +352,7 @@ export const Profile = () => {
 
                 {/* KEAMANAN AKUN (PIN) */}
                 <div className="bg-white rounded-[2.5rem] shadow-xl shadow-green-900/5 border border-green-50 overflow-hidden relative p-8 lg:p-10 mb-8">
-                    
+
                     {/* 🔥 POPUP GAGAL & PROSES BERHASIL (TENGAH AREA) 🔥 */}
                     {(isPinError || isPinSuccess) && (
                         <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
@@ -414,7 +416,7 @@ export const Profile = () => {
                                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">PIN Lama</label>
                                     <div className="relative group">
                                         <input
-                                            type={showOldPin ? "text" : "password"} 
+                                            type={showOldPin ? "text" : "password"}
                                             maxLength={6}
                                             placeholder="******"
                                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-lg font-black tracking-[0.5em] focus:ring-4 focus:ring-green-50 focus:border-[#136f42] outline-none transition-all text-slate-800"
@@ -434,7 +436,7 @@ export const Profile = () => {
                                 </label>
                                 <div className="relative group">
                                     <input
-                                        type={showNewPin ? "text" : "password"} 
+                                        type={showNewPin ? "text" : "password"}
                                         maxLength={6}
                                         placeholder="******"
                                         className={cn(
@@ -480,7 +482,7 @@ export const Profile = () => {
                         <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4", confirmModal.type === 'logout' || confirmModal.type === 'delete_photo' ? 'bg-rose-50 text-rose-600' : 'bg-green-50 text-green-600')}>
                             {confirmModal.type === 'logout' ? <LogOut size={32} /> : confirmModal.type === 'delete_photo' ? <Trash2 size={32} /> : <Info size={32} />}
                         </div>
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'logout' ? 'Keluar aplikasi?' : confirmModal.type === 'delete_photo' ? 'Hapus foto profil?' : 'Ubah PIN transaksi?'}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4">
@@ -494,7 +496,7 @@ export const Profile = () => {
                 </div>
             )}
 
-            <SuccessModal 
+            <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => setShowSuccessModal(false)}
                 title={successConfig.title}

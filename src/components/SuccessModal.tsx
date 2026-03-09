@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, X, XCircle, Download } from 'lucide-react'; 
+import { CheckCircle, X, XCircle, Download } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 
@@ -13,11 +13,11 @@ interface SuccessModalProps {
     onAction?: () => void; // 🔥 Fungsi untuk eksekusi unduh struk
 }
 
-export const SuccessModal: React.FC<SuccessModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    title, 
-    message, 
+export const SuccessModal: React.FC<SuccessModalProps> = ({
+    isOpen,
+    onClose,
+    title,
+    message,
     type = 'success',
     actionLabel,
     onAction
@@ -29,15 +29,15 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
             {/* BACKDROP */}
-            <div 
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" 
-                onClick={onClose} 
+            <div
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+                onClick={onClose}
             />
-            
+
             {/* CONTENT MODAL */}
             <div className="bg-white w-full max-w-xs rounded-[2rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center border border-white/20">
-                <button 
-                    onClick={onClose} 
+                <button
+                    onClick={onClose}
                     className="absolute top-5 right-5 text-slate-300 hover:text-slate-500 transition-colors"
                 >
                     <X size={20} />
@@ -56,13 +56,13 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
                 </div>
 
                 <h3 className={cn(
-                    "text-xl font-[1000] uppercase tracking-tight mb-2",
+                    "text-xl font-[1000] tracking-tight mb-2",
                     isError ? "text-rose-600" : "text-slate-800"
                 )}>
                     {title}
                 </h3>
-                
-                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8 px-2 lowercase">
+
+                <p className="text-sm text-slate-500 font-medium leading-relaxed mb-8 px-2">
                     {message}
                 </p>
 
@@ -83,8 +83,8 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
                         onClick={onClose}
                         className={cn(
                             "w-full text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase text-xs tracking-widest",
-                            isError 
-                                ? "bg-rose-600 shadow-rose-900/20 hover:bg-rose-700" 
+                            isError
+                                ? "bg-rose-600 shadow-rose-900/20 hover:bg-rose-700"
                                 : "bg-[#136f42] shadow-green-900/20 hover:bg-[#0f5c35]"
                         )}
                     >

@@ -21,6 +21,7 @@ interface UserProfile {
     siqurma_balance?: number;
     sihara_balance?: number;
     avatar_url?: string;
+    pin?: string;
     created_at?: string;
 }
 
@@ -64,7 +65,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             if (localOtpSession) {
                 try {
                     const parsedProfile = JSON.parse(localOtpSession);
-                    set({ user: parsedProfile, isLoading: false });
+                    // Re-fetch fresh data dari Supabase agar perubahan (avatar, nama, dll) selalu ter-update
+                    const { data: freshProfile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', parsedProfile.id)
+                        .single();
+
+                    if (freshProfile) {
+                        // Update localStorage dengan data terbaru
+                        localStorage.setItem('kkj_otp_session', JSON.stringify(freshProfile));
+                        set({ user: freshProfile, isLoading: false });
+                    } else {
+                        set({ user: parsedProfile, isLoading: false });
+                    }
                     get().fetchUnreadCount();
                 } catch (e) {
                     set({ user: null, isLoading: false });

@@ -211,7 +211,7 @@ export const Home = () => {
                             <div style="color:white;font-weight:700;font-size:32px;font-family:monospace;letter-spacing:-0.5px">${esc(balanceText)}</div>
                         </div>
                     </div>
-                    <div style="width:110px;height:145px;border-radius:20px;border:4px solid white;overflow:hidden;flex-shrink:0;background:#e8e8e8">
+                    <div style="width:155px;height:195px;border-radius:20px;border:4px solid white;overflow:hidden;flex-shrink:0;background:#e8e8e8">
                         <img src="${avatarUrl}" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover" />
                     </div>
                 </div>
@@ -315,7 +315,7 @@ export const Home = () => {
                                     <p className="text-lg sm:text-3xl font-bold text-white font-mono tracking-tight">{showBalance ? formatRpUpper(userData.taproBalance) : 'Rp ••••••••'}</p>
                                 </div>
                             </div>
-                            <div className="w-16 h-20 sm:w-28 sm:h-36 bg-gray-200 rounded-xl sm:rounded-[24px] border-[2px] sm:border-[4px] border-white shadow-2xl overflow-hidden shrink-0 transform rotate-2">
+                            <div className="w-16 h-20 sm:w-28 sm:h-36 bg-gray-200 rounded-xl sm:rounded-[24px] border-[2px] sm:border-[4px] border-white shadow-2xl overflow-hidden shrink-0">
                                 <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${userData.name}&background=136f42&color=fff&size=300`} className="w-full h-full object-cover" crossOrigin="anonymous" />
                             </div>
                         </div>
