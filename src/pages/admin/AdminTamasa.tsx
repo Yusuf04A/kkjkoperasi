@@ -369,7 +369,7 @@ export const AdminTamasa = () => {
                             {confirmModal.type === 'approve' ? <Info size={32} /> : <AlertCircle size={32} />}
                         </div>
 
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Tolak Transaksi'}
                         </h3>
 

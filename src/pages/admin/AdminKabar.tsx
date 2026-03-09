@@ -113,7 +113,7 @@ export default function AdminKabar() {
 
             <div className="flex flex-col mt-1">
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Kabar KKJ</h1>
-                <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola pengumuman dan berita terbaru untuk anggota</p>
+              <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola pengumuman dan berita terbaru untuk anggota</p>
             </div>
           </div>
 
@@ -233,7 +233,7 @@ export default function AdminKabar() {
               <Trash2 size={32} />
             </div>
 
-            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+            <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
               Hapus kabar ini?
             </h3>
 

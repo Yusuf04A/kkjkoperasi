@@ -266,7 +266,7 @@ export const CheckoutBelanja = () => {
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
                                 <CheckCircle size={48} strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-1">pin benar</h3>
+                            <h3 className="text-lg font-black text-slate-800 tracking-tight mb-1">Pin benar</h3>
                             <p className="text-xs text-slate-400 font-medium">memproses pesanan anda...</p>
                         </div>
                     ) : isPinError ? (
@@ -274,7 +274,7 @@ export const CheckoutBelanja = () => {
                             <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-600 shadow-inner animate-bounce">
                                 <AlertCircle size={48} strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-lg font-black text-rose-600 uppercase tracking-tight mb-1">pin salah!</h3>
+                            <h3 className="text-lg font-black text-rose-600 tracking-tight mb-1">Pin salah!</h3>
                             <p className="text-xs text-slate-400 font-medium">silakan masukkan pin yang benar.</p>
                         </div>
                     ) : (
@@ -321,7 +321,7 @@ export const CheckoutBelanja = () => {
                     setShowSuccessModal(false);
                     navigate('/transaksi/riwayat');
                 }}
-                title="PESANAN TERKIRIM!"
+                title="Pesanan terkirim!"
                 message="Terima kasih! Pesanan Anda sedang diproses dan menunggu konfirmasi admin. Saldo TaPro Anda akan otomatis terpotong saat disetujui."
             />
         </div>

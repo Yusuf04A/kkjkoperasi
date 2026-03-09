@@ -232,7 +232,7 @@ export const AdminDashboard = () => {
                             <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-rose-500">
                                 <LogOut size={40} />
                             </div>
-                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Konfirmasi Logout</h3>
+                            <h3 className="text-xl font-black text-slate-900 tracking-tighter">Konfirmasi Logout</h3>
                             <p className="text-slate-500 font-medium mt-2 leading-relaxed">Apakah Anda yakin ingin mengakhiri sesi Administrator KKJ?</p>
 
                             <div className="grid grid-cols-2 gap-3 mt-8">

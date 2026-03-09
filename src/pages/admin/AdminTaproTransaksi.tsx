@@ -365,7 +365,7 @@ export const AdminTaproTransaksi = () => {
                             <AlertTriangle size={32} />
                         </div>
 
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-2">Konfirmasi Transaksi</h3>
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight mb-2">Konfirmasi Transaksi</h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-2">
                             {mode === 'topup' ? 'Tambah' : mode === 'tarik' ? 'Tarik' : 'Debet'} saldo TaPro
                         </p>

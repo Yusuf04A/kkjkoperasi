@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ShieldAlert, Loader2 } from 'lucide-react'; 
+import { X, Lock, Eye, EyeOff, CheckCircle, AlertCircle, ShieldAlert, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 
 interface PinModalProps {
     isOpen: boolean;
@@ -13,7 +13,7 @@ interface PinModalProps {
 
 export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, title = "Masukkan PIN Transaksi" }) => {
     const { user } = useAuthStore();
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [pin, setPin] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPin, setShowPin] = useState(false);
@@ -36,7 +36,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
             setShowPin(false);
             setIsSuccess(false);
             setIsError(false);
-            setIsNotSet(false); 
+            setIsNotSet(false);
             setLoading(false);
         }
     }, [isOpen]);
@@ -73,16 +73,16 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                 playSuccessSound();
                 setIsSuccess(true);
                 setIsError(false);
-                
+
                 setTimeout(() => {
-                    onSuccess(); 
-                    onClose();   
+                    onSuccess();
+                    onClose();
                 }, 1500);
 
             } else {
                 playSuccessSound();
                 setIsError(true); // Popup merah "PIN SALAH!"
-                
+
                 setTimeout(() => {
                     setIsError(false);
                     setPin('');
@@ -105,11 +105,11 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                     <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 text-amber-500 shadow-inner">
                         <ShieldAlert size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight mb-2">PIN BELUM DIATUR</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 tracking-tight mb-2">Pin belum diatur</h3>
                     <p className="text-[11px] text-gray-500 font-normal leading-relaxed mb-6 capitalize">
                         Segera atur pin untuk mengaktifkan fitur transfer dan penarikan saldo.
                     </p>
-                    <button 
+                    <button
                         onClick={() => {
                             onClose();
                             navigate('/profile'); // Arahkan ke halaman keamanan akun
@@ -131,7 +131,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                     <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
                         <CheckCircle size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 uppercase tracking-tight mb-2">PIN BENAR</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 tracking-tight mb-2">Pin benar</h3>
                     <p className="text-[11px] text-gray-500 font-normal leading-relaxed">Verifikasi keamanan berhasil...</p>
                 </div>
             </div>
@@ -146,8 +146,8 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                     <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-500 shadow-inner animate-bounce">
                         <AlertCircle size={32} strokeWidth={2} />
                     </div>
-                    <h3 className="text-lg font-semibold text-rose-600 uppercase tracking-tight mb-2">PIN SALAH!</h3>
-                    <p className="text-[11px] text-gray-500 font-normal leading-relaxed lowercase">silakan masukkan pin yang benar.</p>
+                    <h3 className="text-lg font-semibold text-rose-600 tracking-tight mb-2">Pin salah!</h3>
+                    <p className="text-[11px] text-gray-500 font-normal leading-relaxed">Silakan masukkan pin yang benar.</p>
                 </div>
             </div>
         );
@@ -157,12 +157,12 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white w-full max-w-xs rounded-2xl p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-gray-100">
-                <button 
+                <button
                     onClick={() => {
                         setPin('');
                         setShowPin(false);
                         onClose();
-                    }} 
+                    }}
                     className="absolute top-4 right-4 text-gray-400 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"
                 >
                     <X size={18} />
@@ -172,7 +172,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                     <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-sm">
                         <Lock size={20} />
                     </div>
-                    <h3 className="text-base font-semibold text-gray-800 lowercase">{title}</h3>
+                    <h3 className="text-base font-semibold text-gray-800">{title}</h3>
                     <p className="text-[10px] text-gray-400 font-normal mt-1 leading-relaxed text-center capitalize">
                         Demi keamanan transaksi, masukkan 6 digit pin anda.
                     </p>
@@ -181,7 +181,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="relative group">
                         <input
-                            type={showPin ? "text" : "password"} 
+                            type={showPin ? "text" : "password"}
                             inputMode="numeric"
                             maxLength={6}
                             className="w-full text-center text-2xl tracking-[0.5em] font-semibold py-3.5 bg-gray-50 border border-gray-200 focus:border-[#136f42] outline-none transition-all rounded-xl text-gray-700 focus:ring-4 focus:ring-green-50"
@@ -190,8 +190,8 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
                             onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
                             autoFocus
                         />
-                        
-                        <button 
+
+                        <button
                             type="button"
                             onClick={() => setShowPin(!showPin)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#136f42] p-1.5 transition-colors bg-white rounded-lg shadow-sm border border-gray-100"
@@ -211,7 +211,7 @@ export const PinModal: React.FC<PinModalProps> = ({ isOpen, onClose, onSuccess, 
 
                 <div className="text-center mt-6">
                     <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed text-center">
-                        Lupa pin transaksi? <br/> Hubungi admin koperasi.
+                        Lupa pin transaksi? <br /> Hubungi admin koperasi.
                     </p>
                 </div>
             </div>

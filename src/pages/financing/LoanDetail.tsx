@@ -299,7 +299,7 @@ export const LoanDetail = () => {
                 onClose={() => {
                     setShowSuccessModal(false);
                 }}
-                title="PEMBAYARAN BERHASIL!"
+                title="Pembayaran berhasil!"
                 message={`angsuran pinjaman anda telah berhasil dibayar. progress pelunasan anda kini telah diperbarui secara otomatis.`}
             />
 

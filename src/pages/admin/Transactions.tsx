@@ -235,7 +235,7 @@ export const AdminTransactions = () => {
                             {confirmModal.type === 'approve' ? <CheckCircle size={32} /> : <AlertTriangle size={32} />}
                         </div>
 
-                        <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Konfirmasi Penolakan'}
                         </h3>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">

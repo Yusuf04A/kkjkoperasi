@@ -250,7 +250,7 @@ export const FinancingMenu = () => {
             <SuccessModal
                 isOpen={showSuccessModal}
                 onClose={() => setShowSuccessModal(false)}
-                title="PENGAJUAN TERKIRIM!"
+                title="Pengajuan terkirim!"
                 message="Pengajuan pembiayaan Anda telah berhasil dikirim. Admin akan segera melakukan verifikasi dan meninjau berkas Anda dalam maksimal 1x24 jam."
             />
         </div>

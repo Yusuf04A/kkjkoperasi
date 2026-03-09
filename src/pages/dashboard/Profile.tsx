@@ -143,7 +143,7 @@ export const Profile = () => {
             await checkSession();
             toast.dismiss(toastId);
             playSuccessSound();
-            setSuccessConfig({ title: 'FOTO DIPERBARUI!', message: 'Foto profil Anda berhasil dikompres dan disimpan secara otomatis.' });
+            setSuccessConfig({ title: 'Foto diperbarui!', message: 'Foto profil Anda berhasil dikompres dan disimpan secara otomatis.' });
             setShowSuccessModal(true);
 
         } catch (error: any) {
@@ -167,7 +167,7 @@ export const Profile = () => {
             toast.dismiss(toastId);
             setConfirmModal({ ...confirmModal, isOpen: false });
             playSuccessSound();
-            setSuccessConfig({ title: 'FOTO DIHAPUS!', message: 'Foto profil Anda telah berhasil dihapus dari sistem.' });
+            setSuccessConfig({ title: 'Foto dihapus!', message: 'Foto profil Anda telah berhasil dihapus dari sistem.' });
             setShowSuccessModal(true);
         } catch (error: any) {
             toast.error('Gagal hapus: ' + error.message, { id: toastId });
@@ -188,7 +188,7 @@ export const Profile = () => {
             if (error) throw error;
             toast.dismiss(toastId);
             playSuccessSound();
-            setSuccessConfig({ title: 'PROFIL DIPERBARUI!', message: 'Perubahan data profil Anda berhasil disimpan.' });
+            setSuccessConfig({ title: 'Profil diperbarui!', message: 'Perubahan data profil Anda berhasil disimpan.' });
             setShowSuccessModal(true);
             setIsEditing(false);
             await checkSession();
@@ -245,7 +245,7 @@ export const Profile = () => {
 
             setTimeout(async () => {
                 setIsPinSuccess(false);
-                setSuccessConfig({ title: 'PIN BERHASIL DISIMPAN!', message: 'Keamanan akun Anda kini lebih terjaga. Gunakan PIN ini untuk setiap transaksi keluar.' });
+                setSuccessConfig({ title: 'Pin berhasil disimpan!', message: 'Keamanan akun Anda kini lebih terjaga. Gunakan PIN ini untuk setiap transaksi keluar.' });
                 setShowSuccessModal(true);
                 setPin('');
                 setOldPin('');
@@ -362,7 +362,7 @@ export const Profile = () => {
                                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 text-rose-600 shadow-inner animate-bounce">
                                             <AlertCircle size={48} strokeWidth={2.5} />
                                         </div>
-                                        <h3 className="text-lg font-black text-rose-600 uppercase tracking-tight mb-1">PIN LAMA SALAH!</h3>
+                                        <h3 className="text-lg font-black text-rose-600 tracking-tight mb-1">Pin lama salah!</h3>
                                         <p className="text-xs text-slate-400 font-medium lowercase">silakan periksa kembali pin lama anda.</p>
                                     </>
                                 ) : (
@@ -370,7 +370,7 @@ export const Profile = () => {
                                         <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4 text-[#136f42] shadow-inner animate-in zoom-in duration-500">
                                             <CheckCircle size={48} strokeWidth={2.5} />
                                         </div>
-                                        <h3 className="text-lg font-black text-[#136f42] uppercase tracking-tight mb-1">PROSES BERHASIL</h3>
+                                        <h3 className="text-lg font-black text-[#136f42] tracking-tight mb-1">Proses berhasil</h3>
                                         <p className="text-xs text-slate-400 font-medium lowercase">mengamankan akun anda...</p>
                                     </>
                                 )}
