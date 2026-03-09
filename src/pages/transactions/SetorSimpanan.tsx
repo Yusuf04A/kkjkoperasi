@@ -60,6 +60,7 @@ export const SetorSimpanan = () => {
 
     const handleInitialSubmit = () => {
         if (totalSetoran > (user?.tapro_balance || 0)) return toast.error("Saldo Tapro tidak mencukupi!");
+        if (depositForm.simpok > 0 && depositForm.simpok < 250000) return toast.error("Simpanan Pokok minimal Rp 250.000");
         if (depositForm.simwa > 0 && depositForm.simwa % 50000 !== 0) return toast.error("Simpanan Wajib harus kelipatan Rp 50.000");
         if (depositForm.donasi < 10000 && depositForm.donasi > 0) return toast.error("Minimal Donasi Rp 10.000");
         setShowPinModal(true);

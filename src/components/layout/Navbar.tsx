@@ -49,13 +49,13 @@ export const Navbar = () => {
                         <Link to={isAdmin ? "/admin/dashboard" : "/"} className="flex items-center gap-3">
                             {/* GANTI DIV KKJ DENGAN GAMBAR LOGO */}
                             <div className="bg-white rounded-lg p-1 border border-gray-100 shadow-sm">
-                                <img 
-                                    src={logoKKJ} 
-                                    alt="Logo KKJ" 
+                                <img
+                                    src={logoKKJ}
+                                    alt="Logo KKJ"
                                     className="h-8 w-auto object-contain"
                                 />
                             </div>
-                            
+
                             <div className="hidden md:block leading-tight">
                                 <span className="block font-extrabold text-[#003366] text-sm uppercase tracking-wide">Koperasi KKJ</span>
                                 <span className="block text-[10px] text-gray-500 font-medium tracking-wider">MITRA SEJAHTERA</span>
@@ -79,8 +79,8 @@ export const Navbar = () => {
                         ))}
 
                         {!isAdmin && (
-                            <div className="relative group">
-                                <button className="flex items-center gap-1 text-gray-700 hover:text-[#003366] font-medium py-2">
+                            <div className="relative group">    
+                                <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 font-medium py-5 border-b-2 border-transparent transition-colors">
                                     Transaksi <ChevronDown size={16} />
                                 </button>
                                 {/* Dropdown Content */}
@@ -140,7 +140,7 @@ export const Navbar = () => {
             {/* MOBILE MENU DRAWER */}
             {isOpen && (
                 <div className="md:hidden bg-white border-t border-gray-100 p-4 shadow-lg absolute w-full left-0 top-16 h-screen overflow-y-auto pb-32 animate-in slide-in-from-top-5 z-40">
-                    
+
                     {/* User Profile Card Mobile */}
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl mb-6 border border-gray-100 shadow-sm">
                         <img
