@@ -397,7 +397,7 @@ export const TransactionHistory = () => {
             <div className="space-y-3">
               <div className="flex justify-between uppercase text-[10px]"><span>Anggota :</span> <span className="font-bold">{user?.full_name}</span></div>
               <div className="flex justify-between uppercase text-[10px]"><span>Tanggal :</span> <span>{new Date(selectedTx.created_at).toLocaleString('id-ID')}</span></div>
-              <div className="flex justify-between uppercase text-[10px]"><span>Status  :</span> <span className="text-emerald-600 font-bold">BERHASIL</span></div>
+              <div className="flex justify-between uppercase text-[10px]"><span>Status  :</span> <span className={`font-bold ${selectedTx.status === 'success' ? 'text-emerald-600' : selectedTx.status === 'pending' ? 'text-amber-600' : 'text-rose-600'}`}>{selectedTx.status === 'success' ? 'BERHASIL' : selectedTx.status === 'pending' ? 'PROSES' : 'GAGAL'}</span></div>
 
               <div className="mt-4 border-y border-dashed border-slate-300 py-4 space-y-2">
                 {/* JIKA SETORAN SIMPANAN (MULTI) */}
