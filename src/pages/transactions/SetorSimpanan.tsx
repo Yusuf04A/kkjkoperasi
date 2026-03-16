@@ -20,9 +20,9 @@ export const SetorSimpanan = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [depositForm, setDepositForm] = useState({
-        simpok: 250000,
-        simwa: 50000,
-        donasi: 10000,
+        simpok: 0,
+        simwa: 0,
+        donasi: 0,
         simade: 0,
         sipena: 0,
         sihara: 0,
@@ -60,9 +60,6 @@ export const SetorSimpanan = () => {
 
     const handleInitialSubmit = () => {
         if (totalSetoran > (user?.tapro_balance || 0)) return toast.error("Saldo Tapro tidak mencukupi!");
-        if (depositForm.simpok > 0 && depositForm.simpok < 250000) return toast.error("Simpanan Pokok minimal Rp 250.000");
-        if (depositForm.simwa > 0 && depositForm.simwa % 50000 !== 0) return toast.error("Simpanan Wajib harus kelipatan Rp 50.000");
-        if (depositForm.donasi < 10000 && depositForm.donasi > 0) return toast.error("Minimal Donasi Rp 10.000");
         setShowPinModal(true);
     };
 
@@ -143,7 +140,6 @@ export const SetorSimpanan = () => {
                     <div className="overflow-x-auto">
                         <div className="w-full flex flex-col gap-2">
                             {[
-                                { id: 'simpok', label: 'Simpanan Pokok' },
                                 { id: 'simwa', label: 'Simpanan Wajib' },
                                 { id: 'simade', label: 'Simpanan Masa Depan' },
                                 { id: 'sipena', label: 'Simpanan Pendidikan' },
