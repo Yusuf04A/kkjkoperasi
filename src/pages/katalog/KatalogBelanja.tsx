@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { formatRupiah } from '../../lib/utils';
+import { formatRupiah, cn } from '../../lib/utils';
 import {
     ShoppingBag, Search, Filter, ShoppingCart,
     ChevronRight, ArrowLeft, Plus, Minus, X, CheckCircle2
@@ -65,6 +65,7 @@ export const KatalogBelanja = () => {
     };
 
     const totalBayar = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    const totalItemsInCart = cart.reduce((sum, item) => sum + item.quantity, 0); // 🔥 Hitung total kuantitas barang
 
     const filteredProducts = products.filter(p =>
         (selectedCategory === 'Semua' || p.category === selectedCategory) &&
@@ -90,9 +91,9 @@ export const KatalogBelanja = () => {
                         className="relative p-3 bg-amber-500 rounded-2xl shadow-lg shadow-amber-600/30 active:scale-90 transition-all"
                     >
                         <ShoppingCart size={22} className="text-white" />
-                        {cart.length > 0 && (
+                        {totalItemsInCart > 0 && (
                             <span className="absolute -top-1 -right-1 bg-white text-[#003366] text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-bounce">
-                                {cart.length}
+                                {totalItemsInCart}
                             </span>
                         )}
                     </button>

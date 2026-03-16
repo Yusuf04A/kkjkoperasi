@@ -73,6 +73,14 @@ export const LoanDetail = () => {
 
             if (error) throw error;
 
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Pembayaran Angsuran Berhasil ✅",
+                message: `Pembayaran angsuran rutin sebesar ${formatRupiah(selectedInstallment.amount)} telah berhasil dipotong dari Saldo TaPro Anda.`,
+                is_read: false
+            });
+
             // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
             playSuccessSound();
             setShowSuccessModal(true);

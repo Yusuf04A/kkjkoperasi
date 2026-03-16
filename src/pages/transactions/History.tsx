@@ -54,6 +54,12 @@ export const TransactionHistory = () => {
         .select(`id, shop_order_items(quantity, price_at_purchase, shop_products(name))`)
         .eq('user_id', currentUser.id);
 
+      const { data: withdrawalData } = await supabase
+        .from('savings_withdrawals')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
       const enrichedTransactions = txData?.map(tx => {
         if (tx.type === 'shop_payment') {
           const orderIdPrefix = tx.description?.split(': ')[1]?.trim();
@@ -69,9 +75,27 @@ export const TransactionHistory = () => {
         }
 
         return tx;
-      });
+      }) || [];
 
-      setTransactions(enrichedTransactions || []);
+      // Memetakan savings_withdrawals agar mirip format transactions
+      const mappedWithdrawals = withdrawalData?.map(w => ({
+        id: w.id,
+        user_id: w.user_id,
+        type: 'withdraw', // Tampilkan sebagai withdraw
+        amount: w.amount,
+        status: w.status === 'approved' ? 'success' : w.status === 'rejected' ? 'failed' : 'pending',
+        description: `Penarikan Tunai (${w.type === 'tapro' ? 'TaPro' : w.type.replace('sim', 'Simpanan ')})`,
+        created_at: w.created_at,
+        admin_note: w.admin_note, // simpan alasan penolakan jika ada
+        is_withdrawal_request: true // flag khusus
+      })) || [];
+
+      // Gabungkan dan urutkan kembali berdasarkan tanggal terbaru
+      const combinedHistory = [...enrichedTransactions, ...mappedWithdrawals].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setTransactions(combinedHistory);
       setLoading(false);
     };
 
@@ -332,6 +356,17 @@ export const TransactionHistory = () => {
                           <p className="text-xs text-slate-600 leading-relaxed font-medium">
                             {tx.description || `Transaksi ${style.name} via Saldo Tapro.`}
                           </p>
+
+                          {tx.status === 'failed' && tx.admin_note && (
+                            <div className="mt-3 bg-rose-50 border border-rose-100 p-3 rounded-lg flex gap-2">
+                              <Info size={14} className="text-rose-500 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[10px] font-bold text-rose-700 uppercase tracking-widest">Alasan Penolakan</p>
+                                <p className="text-xs text-rose-600 mt-1">{tx.admin_note}</p>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="mt-3 pt-3 border-t border-slate-50 flex justify-between items-center">
                             <div className="flex items-center gap-1.5">
                               <Hash size={10} className="text-slate-300" />

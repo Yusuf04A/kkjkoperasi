@@ -36,6 +36,7 @@ export const AdminTokoKatalog = () => {
         type: 'approve',
         order: null
     });
+    const [rejectReason, setRejectReason] = useState('');
 
     const [formData, setFormData] = useState<any>({
         name: '', price: 0, stock: 0, image_url: '', category: '', is_active: true
@@ -131,14 +132,32 @@ export const AdminTokoKatalog = () => {
                 await supabase.from('transactions').update({ status: 'success' }).eq(
                     'user_id', order.user_id).ilike('description', `%${order.id.slice(0, 8)}%`
                     );
+
+                // 🔥 NOTIFIKASI: Pesanan disetujui
+                await supabase.from('notifications').insert({
+                    user_id: order.user_id,
+                    title: "Pesanan Belanja Disetujui ✅",
+                    message: `Pesanan belanja sebesar ${formatRupiah(order.total_amount)} telah disetujui. Silakan ambil barang di toko koperasi.`,
+                    is_read: false
+                });
             }
 
             if (newStatus === 'ditolak') {
+                if (!rejectReason.trim()) throw new Error("Alasan penolakan wajib diisi!");
+
                 const currentBalance = order.profiles?.tapro_balance || 0;
                 await supabase.from('profiles').update({ tapro_balance: currentBalance + order.total_amount }).eq('id', order.user_id);
-                await supabase.from('transactions').update({ status: 'failed' }).eq(
+                await supabase.from('transactions').update({ status: 'failed', description: rejectReason }).eq(
                     'user_id', order.user_id).ilike('description', `%${order.id.slice(0, 8)}%`
                     );
+
+                // 🔥 NOTIFIKASI: Pesanan ditolak & refund + alasan
+                await supabase.from('notifications').insert({
+                    user_id: order.user_id,
+                    title: "Pesanan Belanja Ditolak ❌",
+                    message: `Pesanan belanja sebesar ${formatRupiah(order.total_amount)} ditolak. Alasan: ${rejectReason}. Saldo TaPro Anda telah dikembalikan.`,
+                    is_read: false
+                });
             }
 
             const { error } = await supabase.from('shop_orders').update({ status: newStatus }).eq('id', order.id);
@@ -146,6 +165,7 @@ export const AdminTokoKatalog = () => {
 
             toast.success(`Pesanan berhasil diperbarui`, { id: toastId });
             setConfirmModal({ isOpen: false, type: 'approve', order: null });
+            setRejectReason('');
             fetchOrders();
         } catch (err: any) {
             toast.error(err.message, { id: toastId });
@@ -437,16 +457,26 @@ export const AdminTokoKatalog = () => {
                         <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
                             {confirmModal.type === 'approve' ? 'Konfirmasi Pesanan' : 'Batalkan Pesanan'}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8">
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-6">
                             {confirmModal.type === 'approve' ? (
-                                <>Pesanan akan ditandai <b>Siapi Diambil</b> dan stok barang akan dipotong secara otomatis.</>
+                                <>Pesanan akan ditandai <b>Siap Diambil</b> dan stok barang akan dipotong secara otomatis.</>
                             ) : (
                                 <>Pesanan akan dibatalkan dan saldo Tapro sebesar <b>{formatRupiah(confirmModal.order.total_amount)}</b> akan dikembalikan ke anggota.</>
                             )}
                         </p>
 
+                        {confirmModal.type === 'reject' && (
+                            <textarea
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs mb-6 outline-none focus:border-red-500 transition-all h-20 resize-none font-medium text-left"
+                                placeholder="Tuliskan alasan penolakan pesanan..."
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                autoFocus
+                            />
+                        )}
+
                         <div className="grid grid-cols-2 gap-3 text-center">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: 'approve', order: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform uppercase">
+                            <button onClick={() => { setConfirmModal({ isOpen: false, type: 'approve', order: null }); setRejectReason(''); }} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform uppercase">
                                 Batal
                             </button>
                             <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>

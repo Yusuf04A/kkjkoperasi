@@ -208,6 +208,14 @@ export const Pegadaian = () => {
         description: `tebus gadai: ${itemToRedeem.item_name}`
       });
 
+      // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+      await supabase.from('notifications').insert({
+        user_id: user?.id,
+        title: "Tebus Gadai Berhasil ✅",
+        message: `Penebusan barang "${itemToRedeem.item_name}" telah sukses. Saldo TaPro Anda terpotong ${formatRupiah(totalPay)}.`,
+        is_read: false
+      });
+
       // 🔥 PUTAR SUARA & MODAL SUKSES
       playSuccessSound();
       setSuccessConfig({

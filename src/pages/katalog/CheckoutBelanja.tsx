@@ -133,6 +133,14 @@ export const CheckoutBelanja = () => {
                 description: `belanja toko: ${order.id.slice(0, 8)}`
             });
 
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Pesanan Belanja Diproses 📭",
+                message: `Pesanan belanja sebesar ${formatRupiah(total)} sedang diproses oleh admin. Metode: ${deliveryMethod}.`,
+                is_read: false
+            });
+
             setTimeout(() => {
                 setShowSuccessModal(true);
                 setIsPinSuccess(false);

@@ -42,9 +42,9 @@ export const AdminTransactions = () => {
             .order('created_at', { ascending: false });
 
         if (activeTab === 'pending') {
-            query = query.eq('status', 'pending');
+            query = query.eq('status', 'pending').neq('type', 'shop_payment');
         } else {
-            query = query.neq('status', 'pending');
+            query = query.neq('status', 'pending').neq('type', 'shop_payment');
         }
 
         const { data, error } = await query;
@@ -92,6 +92,16 @@ export const AdminTransactions = () => {
                 let rpcName = tx.type === 'withdraw' ? 'approve_withdraw' : 'approve_topup';
                 const { error } = await supabase.rpc(rpcName, { transaction_id: tx.id });
                 if (error) throw error;
+
+                // 🔥 NOTIFIKASI: Transaksi disetujui
+                const label = tx.type === 'topup' ? 'Top Up' : 'Tarik Tunai';
+                await supabase.from('notifications').insert({
+                    user_id: tx.user_id,
+                    title: `${label} Berhasil ✅`,
+                    message: `${label} sebesar ${formatRupiah(tx.amount)} telah disetujui oleh admin.`,
+                    is_read: false
+                });
+
                 toast.success('Transaksi Berhasil Disetujui!', { id: toastId });
             } else {
                 if (!rejectReason.trim()) throw new Error("Alasan penolakan wajib diisi");
@@ -106,6 +116,16 @@ export const AdminTransactions = () => {
                     .eq('id', tx.id);
 
                 if (error) throw error;
+
+                // 🔥 NOTIFIKASI: Transaksi ditolak + alasan ke Kotak Masuk
+                const label = tx.type === 'topup' ? 'Top Up' : 'Tarik Tunai';
+                await supabase.from('notifications').insert({
+                    user_id: tx.user_id,
+                    title: `${label} Ditolak ❌`,
+                    message: `${label} sebesar ${formatRupiah(tx.amount)} ditolak. Alasan: ${rejectReason}.`,
+                    is_read: false
+                });
+
                 toast.success('Transaksi Telah Ditolak.', { id: toastId });
             }
 

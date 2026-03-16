@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { ArrowLeft, UploadCloud, Copy, CheckCircle, Wallet, Lock, Eye, EyeOff, X, AlertCircle, QrCode, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { formatRupiah } from '../../lib/utils';
 import { SuccessModal } from '../../components/SuccessModal';
 import imageCompression from 'browser-image-compression';
 
@@ -142,6 +143,14 @@ export const TopUp = () => {
                 status: 'pending',
                 description: 'Top Up Saldo Tapro',
                 proof_url: publicUrl
+            });
+
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Top Up Diajukan 💳",
+                message: `Top up saldo TaPro sebesar ${formatRupiah(parseInt(amount.replace(/\./g, '')))} sedang diverifikasi oleh admin.`,
+                is_read: false
             });
 
             setTimeout(() => {

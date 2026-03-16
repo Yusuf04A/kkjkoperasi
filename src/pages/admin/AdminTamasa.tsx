@@ -138,6 +138,15 @@ export const AdminTamasa = () => {
             });
             if (notifErr) throw notifErr;
 
+            // 🔥 Ubah status transaksi pengguna terkait dari pending menjadi success (Berdasarkan jumlah setoran dan user yg sama di hari yg sama)
+            await supabase
+                .from('transactions')
+                .update({ status: 'success' })
+                .eq('user_id', tx.user_id)
+                .eq('type', 'tamasa_buy')
+                .eq('amount', tx.setoran)
+                .eq('status', 'pending');
+
             toast.success("Disetujui!", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, transaction: null });
             fetchData();
@@ -175,6 +184,16 @@ export const AdminTamasa = () => {
                 });
                 if (insertErr) throw insertErr;
             }
+
+            // 🔥 Ubah status transaksi pengguna terkait menjadi failed
+            await supabase
+                .from('transactions')
+                .update({ status: 'failed' })
+                .eq('user_id', tx.user_id)
+                .eq('type', 'tamasa_buy')
+                .eq('amount', tx.setoran)
+                .eq('status', 'pending');
+
             toast.success("Ditolak & Dana Dikembalikan", { id: toastId });
             setConfirmModal({ isOpen: false, type: null, transaction: null });
             fetchData();

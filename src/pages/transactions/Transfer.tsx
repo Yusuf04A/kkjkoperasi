@@ -77,6 +77,14 @@ export const Transfer = () => {
 
             if (error) throw error;
 
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Transfer Berhasil ✅",
+                message: `Transfer saldo sebesar ${formatRupiah(nominal)} ke ${recipientName} telah berhasil.`,
+                is_read: false
+            });
+
             // 🔥 PUTAR SUARA & TAMPILKAN POPUP SUKSES
             playSuccessSound();
             setShowSuccessModal(true);

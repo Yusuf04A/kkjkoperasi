@@ -184,11 +184,19 @@ export const Tamasa = () => {
                     user_id: user?.id,
                     type: 'tamasa_buy',
                     amount: amountToPay,
-                    status: 'success',
+                    status: 'pending', // 🔥 Ubah status transaksi menjadi pending menunggu verifikasi
                     description: `beli emas tamasa ${finalGram} gr`
                 }]);
 
             if (errTrx) throw errTrx;
+
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Pembelian Emas Diajukan ✨",
+                message: `Pembelian emas Tamasa sebesar ${finalGram} gram sedang diverifikasi oleh admin.`,
+                is_read: false
+            });
 
             // 🔥 PUTAR SUARA & TAMPILKAN MODAL SUKSES
             playSuccessSound();

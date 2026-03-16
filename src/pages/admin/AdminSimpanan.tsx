@@ -96,14 +96,15 @@ export const AdminSimpanan = () => {
             if (type === 'approve') {
                 // 1. Ambil Saldo Real-time
                 const { data: profile } = await supabase.from('profiles').select(targetColumn).eq('id', req.user_id).single();
-                const currentBalance = profile ? profile[targetColumn] : 0;
+                const currentBalance = profile ? Number(profile[targetColumn]) : 0;
+                const withdrawAmount = Number(req.amount);
 
-                if (currentBalance < req.amount) throw new Error("Saldo anggota tidak mencukupi.");
+                if (currentBalance < withdrawAmount) throw new Error("Saldo anggota tidak mencukupi.");
 
                 // 2. Kurangi Saldo & Update Status
                 const { error: updateProfileError } = await supabase
                     .from('profiles')
-                    .update({ [targetColumn]: currentBalance - req.amount })
+                    .update({ [targetColumn]: currentBalance - withdrawAmount })
                     .eq('id', req.user_id);
 
                 if (updateProfileError) throw updateProfileError;
@@ -119,6 +120,14 @@ export const AdminSimpanan = () => {
                     description: `Penarikan: ${req.type.toUpperCase()}`
                 });
 
+                // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK (APPROVE)
+                await supabase.from('notifications').insert({
+                    user_id: req.user_id,
+                    title: "Penarikan Disetujui ✅",
+                    message: `Pengajuan penarikan tunai sebesar ${formatRupiah(req.amount)} telah disetujui. Saldo telah ditransfer ke rekening pengajuan Anda.`,
+                    is_read: false
+                });
+
                 toast.success("Penarikan Berhasil Disetujui!", { id: toastId });
             } else {
                 if (!rejectReason.trim()) throw new Error("Alasan penolakan wajib diisi");
@@ -127,6 +136,14 @@ export const AdminSimpanan = () => {
                 await supabase.from('savings_withdrawals')
                     .update({ status: 'rejected', admin_note: rejectReason })
                     .eq('id', req.id);
+
+                // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK (REJECT)
+                await supabase.from('notifications').insert({
+                    user_id: req.user_id,
+                    title: "Penarikan Ditolak ❌",
+                    message: `Maaf, pengajuan penarikan tunai sebesar ${formatRupiah(req.amount)} ditolak. Alasan: ${rejectReason}`,
+                    is_read: false
+                });
 
                 toast.success("Permintaan Telah Ditolak", { id: toastId });
             }

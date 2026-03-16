@@ -130,9 +130,17 @@ export const Withdraw = () => {
                 }
             }
 
-            const { error } = await supabase.from('savings_withdrawals').insert(inserts);
+            const { error: errWithdrawal } = await supabase.from('savings_withdrawals').insert(inserts);
 
-            if (error) throw error;
+            if (errWithdrawal) throw errWithdrawal;
+
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Penarikan Diajukan 💸",
+                message: `Pengajuan penarikan tunai sebesar Rp ${amount} sedang diverifikasi oleh admin.`,
+                is_read: false
+            });
 
             playSuccessSound();
             setShowSuccessModal(true);

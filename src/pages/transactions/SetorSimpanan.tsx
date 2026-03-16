@@ -90,6 +90,14 @@ export const SetorSimpanan = () => {
             });
             if (errTx) console.warn('Catat transaksi gagal:', errTx.message);
 
+            // 🔥 TAMBAH NOTIFIKASI KOTAK MASUK
+            await supabase.from('notifications').insert({
+                user_id: user?.id,
+                title: "Setor Simpanan Berhasil ✅",
+                message: `Setoran simpanan sebesar ${formatRupiah(totalSetoran)} telah berhasil diproses.`,
+                is_read: false
+            });
+
             await checkSession();
             toast.dismiss(toastId);
             setShowPinModal(false);
