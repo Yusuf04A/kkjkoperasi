@@ -65,15 +65,56 @@ export const AdminTransactions = () => {
             toast.error("Tidak ada data untuk di-export");
             return;
         }
-        const excelData = transactions.map((tx) => ({
-            'Tanggal': format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm'),
-            'ID Anggota': tx.profiles?.member_id || '-',
-            'Nama Anggota': tx.profiles?.full_name || 'System',
-            'Tipe': getTypeConfig(tx.type).label,
-            'Nominal': tx.amount,
-            'Status': tx.status.toUpperCase(),
-            'Keterangan': tx.description || '-'
-        }));
+        
+        const excelData = transactions.map((tx) => {
+            const baseData: any = {
+                'Tanggal': format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm'),
+                'ID Anggota': tx.profiles?.member_id || '-',
+                'Nama Anggota': tx.profiles?.full_name || 'System',
+                'Tipe': getTypeConfig(tx.type).label,
+                'Nominal': tx.amount,
+                'Status': tx.status.toUpperCase(),
+                'Keterangan': tx.description || '-'
+            };
+
+            if (tx.description?.startsWith('[SETOR SIMPANAN]')) {
+                const detailsStr = tx.description.replace('[SETOR SIMPANAN]', '').trim();
+                const items = detailsStr.split(',');
+                
+                items.forEach((item: string) => {
+                    const parts = item.split(':');
+                    if (parts.length === 2) {
+                        const name = parts[0].trim();
+                        // Mapping nama simpanan ke nama yang lebih rapi
+                        const nameMap: Record<string, string> = {
+                            'Simpanan pok': 'Simpanan Pokok',
+                            'Simpanan wa': 'Simpanan Wajib',
+                            'donasi': 'Donasi Kebersamaan',
+                            'Simpanan ade': 'Simpanan Masa Depan',
+                            'Simpanan pena': 'Simpanan Pendidikan',
+                            'Simpanan hara': 'Simpanan Hari Raya',
+                            'Simpanan qurma': 'Simpanan Qurban',
+                            'Simpanan uji': 'Simpanan Umroh & Haji',
+                            'Simpanan walima': 'Simpanan Walimah'
+                        };
+                        
+                        let formattedName = nameMap[name] || name;
+                        if (!nameMap[name] && formattedName) {
+                             formattedName = formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+                        }
+
+                        const valueStr = parts[1].trim();
+                        const value = parseInt(valueStr.replace(/\./g, ''), 10);
+                        if (!isNaN(value)) {
+                            baseData[formattedName] = value;
+                        }
+                    }
+                });
+            }
+
+            return baseData;
+        });
+
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Transaksi");
