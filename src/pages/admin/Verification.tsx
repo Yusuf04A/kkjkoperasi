@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Check, X, Loader2, RefreshCw, ArrowLeft, ShieldCheck, KeyRound, Phone, Search, Download, Upload, Trash2, AlertTriangle, Maximize2 } from 'lucide-react';
+import { Check, X, Loader2, RefreshCw, ArrowLeft, ShieldCheck, KeyRound, Phone, Search, Download, Upload, Trash2, AlertTriangle, Maximize2, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { formatRupiah, cn } from '../../lib/utils';
+import * as XLSX from 'xlsx';
 
 export const AdminVerification = () => {
     const [users, setUsers] = useState<any[]>([]);
@@ -179,15 +180,347 @@ export const AdminVerification = () => {
 
     const handleExportCSV = () => {
         if (filteredUsers.length === 0) return toast.error("tidak ada data");
-        const rows = filteredUsers.map(u => `<tr><td>${u.member_id}</td><td>${u.full_name}</td><td>${u.tapro_balance}</td></tr>`).join('');
-        const blob = new Blob([`<html><body><table border="1">${rows}</table></body></html>`], { type: 'application/vnd.ms-excel' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `data_anggota_kkj.xls`;
-        link.click();
+
+        const exportData = filteredUsers.map(u => ({
+            "ID Anggota": u.member_id || '',
+            "Nama Anggota": u.full_name || '',
+            "Kontak": u.phone || '',
+            "Simpanan Pokok": u.simpok_balance || 0,
+            "Simpanan Wajib": u.simwa_balance || 0,
+            "Tapro": u.tapro_balance || 0,
+            "Siqurma": u.siqurma_balance || 0,
+            "Siwalima": u.siwalima_balance || 0,
+            "Siuji": u.siuji_balance || 0,
+            "Simade": u.simade_balance || 0,
+            "Sipena": u.sipena_balance || 0,
+            "Sihara": u.sihara_balance || 0
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data_Anggota");
+        XLSX.writeFile(wb, `Data_Anggota_KKJ.xlsx`);
     };
 
-    const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => { /* implementation */ };
+    const handleDownloadTemplate = () => {
+        const templateData = [
+            {
+                "ID Anggota": "KKJ-24010001",
+                "Nama Anggota": "Ahmad Dani",
+                "Kontak": "08123456789",
+                "Simpanan Pokok": 250000,
+                "Simpanan Wajib": 50000,
+                "Tapro": 100000,
+                "Siqurma": 0,
+                "Siwalima": 0,
+                "Siuji": 0,
+                "Simade": 0,
+                "Sipena": 0,
+                "Sihara": 0
+            }
+        ];
+        const ws = XLSX.utils.json_to_sheet(templateData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Template_Import");
+        XLSX.writeFile(wb, `Template_Import_Anggota_KKJ.xlsx`);
+    };
+
+    const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsProcessing(true);
+        const toastId = toast.loading('Membaca file Excel...');
+
+        try {
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+            if (jsonData.length === 0) {
+                throw new Error("File Excel kosong / format tidak sesuai.");
+            }
+
+            console.log("Parsed Excel Data:", jsonData);
+            console.log("Kolom terdeteksi:", Object.keys(jsonData[0]));
+
+            // --- VALIDASI KOLOM HEADER ---
+            const firstRow = jsonData[0];
+            const colKeys = Object.keys(firstRow);
+
+            // Helper: cari key yang cocok (case-insensitive)
+            const findCol = (candidates: string[]): string | null => {
+                for (const c of candidates) {
+                    const found = colKeys.find(k => k.trim().toLowerCase() === c.toLowerCase());
+                    if (found) return found;
+                }
+                return null;
+            };
+
+            const colNama = findCol(["Nama Anggota", "Nama", "nama anggota", "nama"]);
+            const colKontak = findCol(["Kontak", "No HP", "Phone", "kontak", "no hp", "phone", "no_hp"]);
+            const colMemberId = findCol(["ID Anggota", "NIAK", "id anggota", "niak", "member_id"]);
+            const colSimpok = findCol(["Simpanan Pokok", "simpanan pokok", "Simpok"]);
+            const colSimwa = findCol(["Simpanan Wajib", "simpanan wajib", "Simwa"]);
+            const colTapro = findCol(["Tapro", "tapro"]);
+            const colSiqurma = findCol(["Siqurma", "siqurma"]);
+            const colSiwalima = findCol(["Siwalima", "siwalima"]);
+            const colSiuji = findCol(["Siuji", "siuji"]);
+            const colSimade = findCol(["Simade", "simade"]);
+            const colSipena = findCol(["Sipena", "sipena"]);
+            const colSihara = findCol(["Sihara", "sihara"]);
+
+            if (!colNama && !colMemberId) {
+                throw new Error(
+                    `Format file Excel tidak sesuai! Kolom yang terdeteksi: [${colKeys.join(', ')}]. ` +
+                    `Pastikan file memiliki header kolom minimal: "ID Anggota", "Nama Anggota", "Kontak". ` +
+                    `Gunakan tombol TEMPLATE untuk mengunduh format yang benar.`
+                );
+            }
+
+            toast.loading(`Memproses ${jsonData.length} baris data...`, { id: toastId });
+
+            let newUsersCount = 0;
+            let updatedUsersCount = 0;
+            let skippedCount = 0;
+            let errorCount = 0;
+
+            // Simpan admin session saat ini (untuk dipulihkan setelah membuat akun baru)
+            const { data: { session: adminSession } } = await supabase.auth.getSession();
+
+            for (const row of jsonData) {
+                const rawName = colNama ? row[colNama] : null;
+                const rawPhone = colKontak ? row[colKontak] : null;
+                const rawMemberId = colMemberId ? row[colMemberId] : null;
+
+                if (!rawName && !rawMemberId) {
+                    console.warn("Baris dilewati (Nama & ID kosong):", row);
+                    skippedCount++;
+                    continue;
+                }
+
+                // Normalisasi Phone
+                let phone = '';
+                if (rawPhone) {
+                    phone = String(rawPhone).replace(/\D/g, '');
+                    if (phone.startsWith('62')) {
+                        phone = '0' + phone.substring(2);
+                    } else if (phone.startsWith('8')) {
+                        phone = '0' + phone;
+                    }
+                }
+
+                // Parse Saldo
+                const c_simpok = colSimpok ? (Number(row[colSimpok]) || 0) : 0;
+                const c_simwa = colSimwa ? (Number(row[colSimwa]) || 0) : 0;
+                const c_tapro = colTapro ? (Number(row[colTapro]) || 0) : 0;
+                const c_siqurma = colSiqurma ? (Number(row[colSiqurma]) || 0) : 0;
+                const c_siwalima = colSiwalima ? (Number(row[colSiwalima]) || 0) : 0;
+                const c_siuji = colSiuji ? (Number(row[colSiuji]) || 0) : 0;
+                const c_simade = colSimade ? (Number(row[colSimade]) || 0) : 0;
+                const c_sipena = colSipena ? (Number(row[colSipena]) || 0) : 0;
+                const c_sihara = colSihara ? (Number(row[colSihara]) || 0) : 0;
+
+                // 1. Cari user berdasarkan ID Anggota ATAU Phone
+                let existingUser = null;
+
+                // Coba cari berdasarkan member_id dulu
+                if (rawMemberId && String(rawMemberId).trim() !== '') {
+                    const { data: byMemberId } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('member_id', String(rawMemberId).trim())
+                        .limit(1);
+                    if (byMemberId && byMemberId.length > 0) {
+                        existingUser = byMemberId[0];
+                    }
+                }
+
+                // Kalau belum ketemu, cari berdasarkan phone
+                if (!existingUser && phone) {
+                    const { data: byPhone } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('phone', phone)
+                        .limit(1);
+                    if (byPhone && byPhone.length > 0) {
+                        existingUser = byPhone[0];
+                    }
+                }
+
+                // Kalau masih belum ketemu, coba cari berdasarkan nama (fallback terakhir)
+                if (!existingUser && rawName) {
+                    const { data: byName } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .ilike('full_name', String(rawName).trim())
+                        .limit(1);
+                    if (byName && byName.length > 0) {
+                        existingUser = byName[0];
+                    }
+                }
+
+                if (existingUser) {
+                    // --- UPDATE USER EXISTING ---
+                    console.log(`✅ User ditemukan: ${existingUser.full_name} (${existingUser.member_id})`);
+
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({
+                            tapro_balance: c_tapro,
+                            simpok_balance: c_simpok,
+                            simwa_balance: c_simwa,
+                            siqurma_balance: c_siqurma,
+                            siwalima_balance: c_siwalima,
+                            siuji_balance: c_siuji,
+                            simade_balance: c_simade,
+                            sipena_balance: c_sipena,
+                            sihara_balance: c_sihara
+                        })
+                        .eq('id', existingUser.id);
+
+                    if (!updateError) {
+                        const recordTx = async (amt: number, t: string) => {
+                            if (amt > 0) {
+                                await supabase.from('transactions').insert({
+                                    user_id: existingUser.id, type: 'deposit', amount: amt,
+                                    status: 'completed', description: `Import Excel: Saldo ${t}`,
+                                    payment_method: 'system_import', transaction_type: t
+                                });
+                            }
+                        };
+                        await recordTx(c_tapro, 'tapro');
+                        await recordTx(c_simpok, 'simpanan_pokok');
+                        await recordTx(c_simwa, 'simpanan_wajib');
+                        await recordTx(c_siqurma, 'siqurma');
+                        await recordTx(c_siwalima, 'siwalima');
+                        await recordTx(c_siuji, 'siuji');
+                        await recordTx(c_simade, 'simade');
+                        await recordTx(c_sipena, 'sipena');
+                        await recordTx(c_sihara, 'sihara');
+                        updatedUsersCount++;
+                    } else {
+                        console.error("❌ Gagal update:", existingUser.full_name, updateError);
+                        errorCount++;
+                    }
+                } else {
+                    // --- CREATE NEW USER ---
+                    // Harus signup via auth untuk memenuhi FK constraint profiles.id -> auth.users.id
+                    console.log(`🆕 Membuat akun baru: ${rawName} (${phone})`);
+
+                    if (!phone) {
+                        console.warn("⚠️ Baris dilewati (tidak ada Kontak untuk akun baru):", rawName);
+                        skippedCount++;
+                        continue;
+                    }
+
+                    let newMemberId = rawMemberId ? String(rawMemberId).trim() : '';
+                    if (!newMemberId) {
+                        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).not('member_id', 'is', null);
+                        const seq = (count || 0) + 1;
+                        const yy = String(new Date().getFullYear()).slice(2);
+                        const mm = String(new Date().getMonth() + 1).padStart(2, '0');
+                        newMemberId = `KKJ-${yy}${mm}${String(seq).padStart(4, '0')}`;
+                    }
+
+                    // Buat akun auth dengan email dummy unik dari phone
+                    const dummyEmail = `import_${phone.replace(/\D/g, '')}@kkj.local`;
+                    const dummyPassword = crypto.randomUUID().substring(0, 16);
+
+                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                        email: dummyEmail,
+                        password: dummyPassword,
+                        options: {
+                            data: {
+                                full_name: String(rawName).trim(),
+                                phone_number: phone,
+                            }
+                        }
+                    });
+
+                    // Restore admin session segera setelah signUp
+                    if (adminSession) {
+                        await supabase.auth.setSession({
+                            access_token: adminSession.access_token,
+                            refresh_token: adminSession.refresh_token,
+                        });
+                    }
+
+                    if (signUpError || !signUpData.user) {
+                        console.error("❌ Gagal signup:", rawName, signUpError?.message);
+                        errorCount++;
+                        continue;
+                    }
+
+                    const newUserId = signUpData.user.id;
+
+                    // Upsert profil dengan data lengkap
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: newUserId,
+                            member_id: newMemberId,
+                            full_name: String(rawName).trim(),
+                            phone: phone,
+                            email: dummyEmail,
+                            role: 'member',
+                            status: 'active',
+                            is_verified: true,
+                            tapro_balance: c_tapro,
+                            simpok_balance: c_simpok,
+                            simwa_balance: c_simwa,
+                            siqurma_balance: c_siqurma,
+                            siwalima_balance: c_siwalima,
+                            siuji_balance: c_siuji,
+                            simade_balance: c_simade,
+                            sipena_balance: c_sipena,
+                            sihara_balance: c_sihara
+                        });
+
+                    if (!profileError) {
+                        const recordTxNew = async (amt: number, t: string) => {
+                            if (amt > 0) {
+                                await supabase.from('transactions').insert({
+                                    user_id: newUserId, type: 'deposit', amount: amt,
+                                    status: 'completed', description: `Import Excel (Akun Baru): Saldo ${t}`,
+                                    payment_method: 'system_import', transaction_type: t
+                                });
+                            }
+                        };
+                        await recordTxNew(c_tapro, 'tapro');
+                        await recordTxNew(c_simpok, 'simpanan_pokok');
+                        await recordTxNew(c_simwa, 'simpanan_wajib');
+                        await recordTxNew(c_siqurma, 'siqurma');
+                        await recordTxNew(c_siwalima, 'siwalima');
+                        await recordTxNew(c_siuji, 'siuji');
+                        await recordTxNew(c_simade, 'simade');
+                        await recordTxNew(c_sipena, 'sipena');
+                        await recordTxNew(c_sihara, 'sihara');
+                        newUsersCount++;
+                    } else {
+                        console.error("❌ Gagal upsert profil:", rawName, profileError);
+                        errorCount++;
+                    }
+                }
+            }
+
+            let msg = `Selesai! ${updatedUsersCount} Diperbarui, ${newUsersCount} Ditambahkan.`;
+            if (skippedCount > 0) msg += ` ${skippedCount} Dilewati.`;
+            if (errorCount > 0) msg += ` ${errorCount} Error.`;
+
+            toast.success(msg, { id: toastId, duration: 6000 });
+            fetchUsers();
+
+        } catch (error: any) {
+            console.error(error);
+            toast.error(`Gagal import: ${error.message}`, { id: toastId, duration: 8000 });
+        } finally {
+            setIsProcessing(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
     const filteredUsers = users.filter(u =>
         u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -209,7 +542,7 @@ export const AdminVerification = () => {
                     <div className="flex flex-wrap gap-2">
                         {activeTab === 'active' && (
                             <>
-                                <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv" className="hidden" />
+                                <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv, .xlsx, .xls" className="hidden" />
                                 <button onClick={() => fileInputRef.current?.click()} className="p-2.5 px-6 bg-blue-600 text-white font-medium text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 uppercase tracking-widest shadow-sm"><Upload size={16} /> IMPORT</button>
                                 <button onClick={handleExportCSV} className="p-2.5 px-6 bg-emerald-600 text-white font-medium text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 uppercase tracking-widest shadow-sm"><Download size={16} /> EXPORT</button>
                             </>
@@ -377,7 +710,7 @@ export const AdminVerification = () => {
                             {confirmModal.type === 'reject' ? 'TOLAK ANGGOTA?' : confirmModal.type === 'reset_pin' ? 'RESET PIN?' : 'HAPUS AKUN?'}
                         </h3>
                         <p className="text-xs text-gray-400 font-normal uppercase tracking-wider mb-8 leading-relaxed">
-                        Konfirmasi tindakan untuk anggota <span className="text-gray-700 font-semibold">{confirmModal.userName}</span>. Tindakan ini tidak dapat dibatalkan.
+                            Konfirmasi tindakan untuk anggota <span className="text-gray-700 font-semibold">{confirmModal.userName}</span>. Tindakan ini tidak dapat dibatalkan.
                         </p>
                         <div className="grid grid-cols-2 gap-3">
                             <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3 bg-gray-50 text-gray-400 font-semibold rounded-lg text-[10px] tracking-widest active:scale-95 transition-all">Batal</button>
