@@ -31,7 +31,7 @@ export const SetorSimpanan = () => {
         siwalima: 0
     });
 
-    const isSimwaLunas = (user?.simwa_balance || 0) >= 1200000;
+
 
     useEffect(() => {
         const init = async () => {
@@ -165,22 +165,13 @@ export const SetorSimpanan = () => {
                                         <label className="text-sm md:text-base text-slate-700 font-bold">{item.label}</label>
                                     </div>
                                     <div className="w-1/2 md:w-7/12 flex items-center justify-end md:justify-start gap-2">
-                                        <span className={cn(
-                                            "text-sm md:text-base font-bold",
-                                            item.id === 'simwa' && isSimwaLunas ? "text-emerald-500" : "text-slate-800"
-                                        )}>Rp</span>
+                                        <span className="text-sm md:text-base font-bold text-slate-800">Rp</span>
                                         <input
-                                            disabled={item.id === 'simwa' && isSimwaLunas}
                                             type="text"
                                             placeholder="0"
-                                            value={item.id === 'simwa' && isSimwaLunas ? "LUNAS" : depositForm[item.id as keyof typeof depositForm] === 0 ? '' : depositForm[item.id as keyof typeof depositForm].toLocaleString('id-ID')}
+                                            value={depositForm[item.id as keyof typeof depositForm] === 0 ? '' : depositForm[item.id as keyof typeof depositForm].toLocaleString('id-ID')}
                                             onChange={(e) => handleInputChange(item.id, e.target.value)}
-                                            className={cn(
-                                                "w-full bg-transparent outline-none text-right md:text-left transition-all font-black text-lg md:text-xl",
-                                                item.id === 'simwa' && isSimwaLunas
-                                                    ? "text-emerald-600"
-                                                    : "text-slate-900 focus:text-[#136f42] placeholder:text-slate-400"
-                                            )}
+                                            className="w-full bg-transparent outline-none text-right md:text-left transition-all font-black text-lg md:text-xl text-slate-900 focus:text-[#136f42] placeholder:text-slate-400"
                                         />
                                     </div>
                                 </div>
