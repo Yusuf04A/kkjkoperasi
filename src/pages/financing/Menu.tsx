@@ -222,17 +222,30 @@ export const FinancingMenu = () => {
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex justify-between items-center text-left">
-                                            <div>
-                                                <p className="text-[9px] font-bold text-slate-400 mb-0.5">Cicilan / bln</p>
-                                                <p className="text-base font-black text-[#136f42] tracking-tighter">
-                                                    {loan.status === 'rejected' ? 'Rp 0' : formatRupiah(loan.monthly_payment)}
-                                                </p>
+                                        <div className="flex flex-col gap-3">
+                                            <div className="flex justify-between items-center text-left">
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-slate-400 mb-0.5">Cicilan / bln</p>
+                                                    <p className="text-base font-black text-[#136f42] tracking-tighter">
+                                                        {loan.status === 'rejected' ? 'Rp 0' : formatRupiah(loan.monthly_payment)}
+                                                    </p>
+                                                </div>
+                                                {(loan.status === 'active' || loan.status === 'paid') && (
+                                                    <Link to={`/pembiayaan/${loan.id}`} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest flex items-center gap-2 hover:bg-[#136f42] transition-all shadow-md active:scale-95">
+                                                        Detail <ArrowRight size={14} />
+                                                    </Link>
+                                                )}
                                             </div>
-                                            {(loan.status === 'active' || loan.status === 'paid') && (
-                                                <Link to={`/pembiayaan/${loan.id}`} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest flex items-center gap-2 hover:bg-[#136f42] transition-all shadow-md active:scale-95">
-                                                    Detail <ArrowRight size={14} />
-                                                </Link>
+                                            {loan.status === 'rejected' && loan.reason && (
+                                                <div className="flex items-start gap-2 bg-rose-50 p-2.5 rounded-xl border border-rose-100 mt-2">
+                                                    <AlertCircle size={14} className="text-rose-600 shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-rose-800 uppercase tracking-widest mb-0.5">Alasan Penolakan</p>
+                                                        <p className="text-[10px] text-rose-700 font-medium leading-relaxed normal-case">
+                                                            {loan.reason}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     )}
