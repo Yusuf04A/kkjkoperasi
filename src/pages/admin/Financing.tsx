@@ -6,14 +6,18 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatRupiah, cn } from '../../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
 
 export const AdminFinancing = () => {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialTab = (queryParams.get('tab') as 'pending' | 'active' | 'history' | 'restructure') || 'pending';
+    
     const [loans, setLoans] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'history'>('pending');
+    const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'history' | 'restructure'>(initialTab);
 
     // --- STATE UNTUK MODAL KUSTOM ---
     const [approvalModal, setApprovalModal] = useState<{ isOpen: boolean, loan: any }>({ isOpen: false, loan: null });
@@ -43,6 +47,7 @@ export const AdminFinancing = () => {
 
         if (activeTab === 'pending') query = query.eq('status', 'pending');
         else if (activeTab === 'active') query = query.eq('status', 'active');
+        else if (activeTab === 'restructure') query = query.eq('status', 'active').eq('restructure_status', 'pending');
         else query = query.in('status', ['paid', 'rejected']);
 
         const { data, error } = await query;
@@ -251,7 +256,7 @@ export const AdminFinancing = () => {
                 </div>
 
                 <div className="flex items-center gap-8 border-b border-gray-200 mt-6 overflow-x-auto no-scrollbar">
-                    {[{ id: 'pending', label: 'Menunggu Approval' }, { id: 'active', label: 'Pinjaman Berjalan' }, { id: 'history', label: 'Riwayat Arsip' }].map((tab) => (
+                    {[{ id: 'pending', label: 'Menunggu Approval' }, { id: 'restructure', label: 'Request Tenor' }, { id: 'active', label: 'Pinjaman Berjalan' }, { id: 'history', label: 'Riwayat Arsip' }].map((tab) => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={cn("pb-3 text-sm font-bold transition-all relative whitespace-nowrap", activeTab === tab.id ? 'text-[#136f42]' : 'text-gray-400')}>
                             {tab.label}
                             {activeTab === tab.id && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#136f42] rounded-t-full"></div>}
@@ -299,6 +304,8 @@ export const AdminFinancing = () => {
                                                 <button onClick={() => handleInitApprove(loan)} className={cn("px-4 py-2 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95", loan.details?.is_custom ? 'bg-blue-600 shadow-blue-900/20' : 'bg-emerald-600 shadow-emerald-900/20')}>Setujui</button>
                                                 <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', loan })} className="px-4 py-2 bg-white text-rose-600 border border-rose-100 rounded-xl text-[10px] font-black active:scale-95">Tolak</button>
                                             </>
+                                        ) : activeTab === 'restructure' ? (
+                                            <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black flex items-center gap-1 hover:bg-amber-100 transition-all">Tinjau Request <ChevronRight size={14} /></Link>
                                         ) : (
                                             <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black flex items-center gap-1 hover:bg-slate-100 transition-all">Detail <ChevronRight size={14} /></Link>
                                         )}

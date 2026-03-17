@@ -314,7 +314,7 @@ export const AdminDashboard = () => {
                         <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                             {stats.pendingWithdrawals > 0 && <AlertCard to="/admin/simpanan" title={`${stats.pendingWithdrawals} Request Tarik Tunai`} type="danger" />}
                             {stats.pendingLoans > 0 && <AlertCard to="/admin/pembiayaan" title={`${stats.pendingLoans} Pengajuan Pinjaman`} type="danger" />}
-                            {stats.pendingRestructures > 0 && <AlertCard to={firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
+                            {stats.pendingRestructures > 0 && <AlertCard to={stats.pendingRestructures === 1 && firstRestructureId ? `/admin/pembiayaan/${firstRestructureId}` : '/admin/pembiayaan?tab=restructure'} title={`${stats.pendingRestructures} Request Tenor`} type="danger" />}
                             {stats.pendingTamasa > 0 && <AlertCard to="/admin/tamasa" title={`${stats.pendingTamasa} Request Tamasa`} type="warning" />}
                             {stats.pendingPawn > 0 && <AlertCard to="/admin/pegadaian" title={`${stats.pendingPawn} Pengajuan Gadai`} type="warning" />}
                             {stats.pendingTx > 0 && <AlertCard to="/admin/transaksi" title={`${stats.pendingTx} Transaksi Finance`} type="warning" />}
