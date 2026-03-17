@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    ArrowLeft, UserPlus, Eye, EyeOff, RefreshCw,
-    CheckCircle2, AlertCircle, Loader2, ShieldAlert, User, Mail, Phone, Lock
+    ArrowLeft, UserPlus, RefreshCw,
+    CheckCircle2, AlertCircle, Loader2, ShieldAlert, User, Mail, Phone
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -25,31 +25,18 @@ export const AdminBuatAkun = () => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
 
     // --- UI STATE ---
     const [isLoading, setIsLoading] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-    // --- GENERATE PASSWORD RANDOM ---
-    const generatePassword = () => {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!';
-        const len = 10;
-        let pass = '';
-        for (let i = 0; i < len; i++) {
-            pass += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        setPassword(pass);
-        setShowPassword(true);
-    };
+
 
     // --- VALIDASI FORM ---
     const validateForm = () => {
         if (!fullName.trim()) return 'Nama lengkap wajib diisi.';
         if (!email.trim() || !email.includes('@')) return 'Email tidak valid.';
         if (!phone.trim() || phone.length < 9) return 'Nomor HP tidak valid.';
-        if (!password || password.length < 6) return 'Password minimal 6 karakter.';
         return null;
     };
 
@@ -87,9 +74,11 @@ export const AdminBuatAkun = () => {
             const memberId = `KKJ-${yy}${mm}${nnak}`;
 
             // 1. Buat akun baru (signUp otomatis sign-in user baru)
+            const deterministicPassword = `${phone.trim()}Kkj2026!`;
+            
             const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                 email: email.trim().toLowerCase(),
-                password,
+                password: deterministicPassword,
                 options: {
                     data: {
                         full_name: fullName.trim(),
@@ -151,7 +140,6 @@ export const AdminBuatAkun = () => {
             setFullName('');
             setEmail('');
             setPhone('');
-            setPassword('');
 
         } catch (err: any) {
             setFeedback({ type: 'error', message: err.message || 'Terjadi kesalahan.' });
@@ -309,44 +297,7 @@ export const AdminBuatAkun = () => {
                                 />
                             </div>
 
-                            {/* Password */}
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500 flex items-center gap-1.5">
-                                    <Lock size={11} /> Password
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={password}
-                                        onChange={e => setPassword(e.target.value)}
-                                        placeholder="Minimal 6 karakter"
-                                        className="w-full px-4 py-3.5 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-[#136f42] focus:ring-2 focus:ring-[#136f42]/10 transition-all font-mono"
-                                        disabled={isLoading}
-                                    />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                        <button
-                                            type="button"
-                                            onClick={generatePassword}
-                                            title="Generate password otomatis"
-                                            className="p-1.5 text-slate-400 hover:text-[#136f42] transition-colors"
-                                            disabled={isLoading}
-                                        >
-                                            <RefreshCw size={14} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(v => !v)}
-                                            className="p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
-                                            disabled={isLoading}
-                                        >
-                                            {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <p className="text-[9px] text-slate-400 font-medium pl-1">
-                                    💡 Klik ikon <RefreshCw size={9} className="inline" /> untuk generate password otomatis
-                                </p>
-                            </div>
+
 
                             {/* INFO BOX */}
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">

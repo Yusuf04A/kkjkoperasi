@@ -3,9 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 // 🔥 Icon lengkap sesuai kode awal Anda
 import {
-    User, Phone, Lock, Mail, Loader2, ArrowLeft,
-    Eye, EyeOff, AlertCircle, CheckCircle2, FileUp,
-    MessageCircle, CreditCard, QrCode
+    User, Phone, Mail, Loader2, ArrowLeft,
+    CheckCircle2, FileUp, CreditCard, QrCode
 } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { cn } from '../../lib/utils';
@@ -16,7 +15,6 @@ import logoKKJ from '/src/assets/Logo-kkj.png';
 export const Register = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
 
     // 🔥 State File KTP mandatori
     const [ktpFile, setKtpFile] = useState<File | null>(null);
@@ -37,8 +35,7 @@ export const Register = () => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        phone: '',
-        password: ''
+        phone: ''
     });
 
     // 🔥 FUNGSI PEMUTAR SUARA
@@ -52,22 +49,7 @@ export const Register = () => {
         }
     };
 
-    const checkPasswordStrength = (value: string) => {
-        if (value.length === 0) return null;
-        if (value.length < 6) return { label: 'Minimal 6 karakter', color: 'text-slate-400', isWeak: true };
 
-        const hasNumber = /\d/.test(value);
-        const hasUpper = /[A-Z]/.test(value);
-        const isVeryWeak = "1234567890".includes(value) || value.toLowerCase() === "password";
-
-        if (isVeryWeak) return { label: 'Password terlalu mudah ditebak', color: 'text-rose-500', isWeak: true };
-        if (hasNumber && hasUpper && value.length >= 8) {
-            return { label: 'Keamanan sangat baik', color: 'text-emerald-500', isWeak: false };
-        }
-        return { label: 'Keamanan cukup', color: 'text-amber-500', isWeak: false };
-    };
-
-    const strength = checkPasswordStrength(formData.password);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -87,13 +69,8 @@ export const Register = () => {
         e.preventDefault();
 
         // 🛑 VALIDASI KTP WAJIB
-        if (!formData.name || !formData.email || !formData.phone || !formData.password || !ktpFile) {
+        if (!formData.name || !formData.email || !formData.phone || !ktpFile) {
             toast.error('Mohon lengkapi semua data dan upload KTP Anda');
-            return;
-        }
-
-        if (strength?.isWeak) {
-            toast.error('Mohon perkuat password Anda');
             return;
         }
 
@@ -124,9 +101,11 @@ export const Register = () => {
 
             // 2. REGISTER DENGAN METADATA LENGKAP
             // 🔥 PERBAIKAN: uploadData.path dipastikan masuk ke objek metadata data
+            const deterministicPassword = `${formData.phone}Kkj2026!`;
+            
             const { data, error } = await supabase.auth.signUp({
                 email: formData.email,
-                password: formData.password,
+                password: deterministicPassword,
                 options: {
                     data: {
                         full_name: formData.name,
@@ -310,29 +289,7 @@ export const Register = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-1.5 uppercase">
-                            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider ml-1">Password</label>
-                            <div className="relative">
-                                <Input
-                                    type={showPassword ? "text" : "password"}
-                                    placeholder="Minimal 6 karakter"
-                                    icon={<Lock size={18} className="text-green-600" />}
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    required
-                                    className={cn("focus:ring-[#5db930] focus:border-[#5db930] bg-gray-50 border-gray-200 pl-10 pr-12 py-4 rounded-xl text-sm text-slate-800", strength?.isWeak && formData.password.length > 0 && "border-rose-300")}
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                </button>
-                            </div>
-                            {strength && (
-                                <div className={cn("flex items-center gap-1.5 mt-1.5 ml-1", strength.color)}>
-                                    {strength.isWeak ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-                                    <span className="text-[10px] font-bold uppercase">{strength.label}</span>
-                                </div>
-                            )}
-                        </div>
+
 
                         <button
                             type="submit"

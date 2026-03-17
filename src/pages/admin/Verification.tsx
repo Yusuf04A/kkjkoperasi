@@ -427,7 +427,7 @@ export const AdminVerification = () => {
 
                     // Buat akun auth dengan email dummy unik dari phone
                     const dummyEmail = `import_${phone.replace(/\D/g, '')}@kkj.local`;
-                    const dummyPassword = crypto.randomUUID().substring(0, 16);
+                    const dummyPassword = `${phone}Kkj2026!`;
 
                     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                         email: dummyEmail,

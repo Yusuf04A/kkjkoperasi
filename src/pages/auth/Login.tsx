@@ -221,6 +221,18 @@ export const Login = () => {
                 const parsedProfile = savedSession ? JSON.parse(savedSession) : { role: 'user' };
                 setUserRole(parsedProfile.role || 'user');
 
+                // 🔥 ESTABLISH REAL SUPABASE SESSION IN BACKGROUND
+                if (parsedProfile && parsedProfile.email && parsedProfile.phone) {
+                    try {
+                        await supabase.auth.signInWithPassword({
+                            email: parsedProfile.email,
+                            password: `${parsedProfile.phone}Kkj2026!`
+                        });
+                    } catch (e) {
+                        console.error('Background login failed, but continuing with OTP session:', e);
+                    }
+                }
+
                 setModalConfig({
                     isOpen: true,
                     title: "Berhasil Masuk!",
