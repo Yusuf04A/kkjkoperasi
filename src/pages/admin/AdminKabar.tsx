@@ -113,13 +113,13 @@ export default function AdminKabar() {
 
             <div className="flex flex-col mt-1">
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Kabar KKJ</h1>
-              <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola pengumuman dan berita terbaru untuk anggota</p>
+              <p className="text-xs font-bold text-slate-500">Kelola pengumuman dan berita terbaru untuk anggota</p>
             </div>
           </div>
 
           <Link
             to="/admin/kabar/tambah"
-            className="bg-[#136f42] text-white text-xs font-black uppercase tracking-widest px-6 py-3.5 rounded-xl hover:bg-[#0f5c35] transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 active:scale-95"
+            className="bg-[#136f42] text-white text-xs font-black px-6 py-3.5 rounded-xl hover:bg-[#0f5c35] transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 active:scale-95"
           >
             <Plus size={18} strokeWidth={3} /> tambah kabar kkj
           </Link>
@@ -157,12 +157,12 @@ export default function AdminKabar() {
                   )}
 
                   <div className="absolute top-5 left-5 z-10">
-                    <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-lg border border-white/20 tracking-[0.2em] uppercase shadow-lg">
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-3 py-1.5 rounded-lg border border-white/20 tracking-[0.2em] shadow-lg">
                       {item.type}
                     </span>
                   </div>
 
-                  <div className="absolute bottom-4 left-5 z-10 flex items-center gap-1.5 text-white/90 text-[10px] font-bold tracking-wider uppercase">
+                  <div className="absolute bottom-4 left-5 z-10 flex items-center gap-1.5 text-white/90 text-[10px] font-bold">
                     <Clock size={12} className="text-[#aeea00]" />
                     {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
@@ -170,7 +170,7 @@ export default function AdminKabar() {
 
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex justify-between items-start gap-4 mb-3">
-                    <h3 className="font-bold text-slate-800 leading-tight text-base line-clamp-2 min-h-[2.75rem] group-hover:text-[#136f42] transition-colors uppercase tracking-tight">
+                    <h3 className="font-bold text-slate-800 leading-tight text-base line-clamp-2 min-h-[2.75rem] group-hover:text-[#136f42] transition-colors tracking-tight">
                       {item.title}
                     </h3>
                     <div className={cn(
@@ -191,7 +191,7 @@ export default function AdminKabar() {
                         "w-2 h-2 rounded-full",
                         item.is_active ? "bg-[#136f42] animate-pulse shadow-[0_0_8px_rgba(19,111,66,0.5)]" : "bg-gray-300"
                       )} />
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <span className="text-[10px] font-black text-slate-500">
                         {item.is_active ? 'tampil' : 'draft'}
                       </span>
                     </div>
@@ -244,14 +244,14 @@ export default function AdminKabar() {
             <div className="grid grid-cols-2 gap-3 text-center">
               <button
                 onClick={() => setConfirmModal({ isOpen: false, kabarId: '', kabarTitle: '' })}
-                className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform"
+                className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] active:scale-95 transition-transform"
               >
                 batal
               </button>
               <button
                 onClick={executeDelete}
                 disabled={isDeleting}
-                className="py-3.5 bg-rose-600 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-rose-900/20 active:scale-95 transition-transform disabled:opacity-50"
+                className="py-3.5 bg-rose-600 text-white font-black rounded-2xl text-[10px] shadow-lg shadow-rose-900/20 active:scale-95 transition-transform disabled:opacity-50"
               >
                 {isDeleting ? 'memproses...' : 'ya, hapus'}
               </button>

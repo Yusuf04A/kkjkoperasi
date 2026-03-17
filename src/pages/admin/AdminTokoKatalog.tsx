@@ -235,11 +235,11 @@ export const AdminTokoKatalog = () => {
                         </div>
                         <div>
                             <h3 className="text-lg font-bold">{o.profiles?.full_name || 'Anggota'}</h3>
-                            <p className="text-xs text-gray-500 font-mono tracking-wider">{o.profiles?.member_id}</p>
+                            <p className="text-xs text-gray-500 font-mono">{o.profiles?.member_id}</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold tracking-wider",
+                        <span className={cn("px-3 py-1 rounded-full text-[10px] font-bold",
                             o.status === 'diproses' ? 'bg-orange-100 text-orange-700' :
                                 o.status === 'ditolak' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700')}>
                             {o.status.replace('_', ' ')}
@@ -283,7 +283,7 @@ export const AdminTokoKatalog = () => {
                 )}
 
                 <div className="bg-white border border-gray-100 p-4 rounded-xl">
-                    <h4 className="text-[10px] font-bold text-gray-400 tracking-widest mb-3 flex items-center gap-2">
+                    <h4 className="text-[10px] font-bold text-gray-400 mb-3 flex items-center gap-2">
                         <ListOrdered size={12} /> Daftar Barang Dipesan
                     </h4>
                     <div className="space-y-2">
@@ -302,10 +302,10 @@ export const AdminTokoKatalog = () => {
 
             {!isHistory && (
                 <div className="flex flex-col justify-center gap-3 md:border-l md:pl-6 border-gray-100 min-w-[200px]">
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', order: o })} className="w-full py-4 bg-[#136f42] text-white rounded-xl font-black text-[10px] tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', order: o })} className="w-full py-4 bg-[#136f42] text-white rounded-xl font-black text-[10px] shadow-lg shadow-green-900/10 active:scale-95 transition-all">
                         Setujui Pesanan
                     </button>
-                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', order: o })} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-xl font-black text-[10px] tracking-widest active:scale-95 transition-all">
+                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', order: o })} className="w-full py-4 bg-white text-rose-600 border border-rose-100 rounded-xl font-black text-[10px] active:scale-95 transition-all">
                         Tolak & Refund
                     </button>
                 </div>
@@ -322,7 +322,7 @@ export const AdminTokoKatalog = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Toko</h1>
-                        <p className="text-xs font-bold text-slate-500 tracking-widest">Verifikasi belanja & kontrol inventaris gudang</p>
+                        <p className="text-xs font-bold text-slate-500">Verifikasi belanja & kontrol inventaris gudang</p>
                     </div>
                     <button onClick={() => activeTab === 'katalog' ? fetchProducts() : fetchOrders()} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#136f42]")} />
@@ -353,7 +353,7 @@ export const AdminTokoKatalog = () => {
                 ) : (
                     <div className="space-y-6">
                         <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm gap-4">
-                            <h3 className="text-xs font-black tracking-widest flex items-center gap-2">
+                            <h3 className="text-xs font-black flex items-center gap-2">
                                 <Archive size={18} className="text-[#136f42]" /> Stok Barang Gudang
                             </h3>
                             <div className="flex w-full md:w-auto gap-2">
@@ -381,7 +381,7 @@ export const AdminTokoKatalog = () => {
                                             <p className="text-xs font-black text-slate-800 mt-1 tracking-tighter">{formatRupiah(p.price)}</p>
                                         </div>
                                         <div className="flex gap-1.5 mt-3">
-                                            <button onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="flex-1 bg-slate-50 py-2 rounded-lg text-[10px] font-black text-slate-500 hover:bg-[#136f42] hover:text-white transition-all tracking-widest border border-slate-100">Edit</button>
+                                            <button onClick={() => { setFormData(p); setEditingId(p.id); setIsModalOpen(true); }} className="flex-1 bg-slate-50 py-2 rounded-lg text-[10px] font-black text-slate-500 hover:bg-[#136f42] hover:text-white transition-all border border-slate-100">Edit</button>
                                             <button onClick={() => toggleProductStatus(p.id, p.is_active)} className={cn("px-3 py-2 rounded-lg transition-all border", p.is_active ? "bg-white text-rose-500 border-rose-100" : "bg-emerald-500 text-white border-emerald-500")}>
                                                 {p.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
                                             </button>
@@ -405,7 +405,7 @@ export const AdminTokoKatalog = () => {
 
                         <div className="space-y-4">
                             <div className="flex justify-between items-center px-1">
-                                <label className="text-[10px] font-black text-slate-400 tracking-widest flex items-center gap-2">
+                                <label className="text-[10px] font-black text-slate-400 flex items-center gap-2">
                                     <ImageIcon size={14} className="text-[#136f42]" /> Foto Produk
                                 </label>
                                 <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg">Maks 10MB</span>
@@ -418,7 +418,7 @@ export const AdminTokoKatalog = () => {
                                 ) : (
                                     <div className="text-center group-hover:scale-105 transition-transform duration-300">
                                         <ImageIcon className="mx-auto text-slate-300 mb-2" size={32} />
-                                        <p className="text-[10px] font-black text-slate-400 tracking-widest">Pilih Foto Produk</p>
+                                        <p className="text-[10px] font-black text-slate-400">Pilih Foto Produk</p>
                                         <div className="mt-2 flex flex-col gap-1">
                                             <p className="text-[10px] font-bold text-slate-400 tracking-tighter flex items-center justify-center gap-1">
                                                 <Info size={10} /> jpg, png, webp
@@ -428,19 +428,19 @@ export const AdminTokoKatalog = () => {
                                     </div>
                                 )}
                             </label>
-                            <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Nama Produk</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                            <div><label className="text-[10px] font-black text-slate-400 ml-1 mb-1 block">Nama Produk</label><input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Harga Jual</label><input type="text" required value={formData.price ? formData.price.toLocaleString('id-ID') : ''} onChange={handlePriceChange} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
-                                <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Stok Awal</label><input type="number" required value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 ml-1 mb-1 block">Harga Jual</label><input type="text" required value={formData.price ? formData.price.toLocaleString('id-ID') : ''} onChange={handlePriceChange} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 ml-1 mb-1 block">Stok Awal</label><input type="number" required value={formData.stock || ''} onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                             </div>
-                            <div><label className="text-[10px] font-black text-slate-400 tracking-widest ml-1 mb-1 block">Kategori</label><input required placeholder="Contoh: Sembako" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
+                            <div><label className="text-[10px] font-black text-slate-400 ml-1 mb-1 block">Kategori</label><input required placeholder="Contoh: Sembako" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-slate-50 border border-slate-100 p-3.5 rounded-xl font-bold text-slate-800 outline-none focus:bg-white focus:border-[#136f42] transition-all" /></div>
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t text-center">
-                            <button type="submit" disabled={uploading} className="flex-1 bg-[#136f42] text-white py-4 rounded-xl font-black text-[10px] tracking-widest shadow-xl shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50">
+                            <button type="submit" disabled={uploading} className="flex-1 bg-[#136f42] text-white py-4 rounded-xl font-black text-[10px] shadow-xl shadow-green-900/20 active:scale-95 transition-all disabled:opacity-50">
                                 {editingId ? 'Perbarui Data' : 'Simpan Katalog'}
                             </button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 border border-slate-100 rounded-xl font-black text-slate-300 text-[10px] tracking-widest">Batal</button>
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 border border-slate-100 rounded-xl font-black text-slate-300 text-[10px]">Batal</button>
                         </div>
                     </form>
                 </div>
@@ -476,10 +476,10 @@ export const AdminTokoKatalog = () => {
                         )}
 
                         <div className="grid grid-cols-2 gap-3 text-center">
-                            <button onClick={() => { setConfirmModal({ isOpen: false, type: 'approve', order: null }); setRejectReason(''); }} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform uppercase">
+                            <button onClick={() => { setConfirmModal({ isOpen: false, type: 'approve', order: null }); setRejectReason(''); }} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={handleConfirmAction} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 Ya, {confirmModal.type === 'approve' ? 'Setujui' : 'Refund'}
                             </button>
                         </div>

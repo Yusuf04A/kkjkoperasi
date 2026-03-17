@@ -215,7 +215,7 @@ export const AdminTamasa = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen TAMASA</h1>
-                        <p className="text-xs font-bold text-slate-500 tracking-widest">Kontrol harga emas & verifikasi setoran anggota</p>
+                        <p className="text-xs font-bold text-slate-500">Kontrol harga emas & verifikasi setoran anggota</p>
                     </div>
                     <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition-all active:scale-95">
                         <RefreshCw size={20} className={cn(loading && "animate-spin text-[#003366]")} />
@@ -234,7 +234,7 @@ export const AdminTamasa = () => {
                         <h2 className="text-4xl font-black tracking-tighter">{formatRupiah(currentGoldPrice)}<span className="text-sm font-bold text-blue-300 ml-2">/gram</span></h2>
                         <div className="mt-4 flex items-center gap-2 bg-white/10 w-fit px-3 py-1 rounded-full border border-white/10">
                             <Clock size={12} className="text-blue-300" />
-                            <span className="text-[10px] font-bold text-blue-100 tracking-widest">Update: {format(new Date(), 'dd MMM yyyy')}</span>
+                            <span className="text-[10px] font-bold text-blue-100">Update: {format(new Date(), 'dd MMM yyyy')}</span>
                         </div>
                     </div>
                     <div className="hidden lg:block relative z-10">
@@ -243,7 +243,7 @@ export const AdminTamasa = () => {
                 </div>
 
                 <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm flex flex-col justify-center">
-                    <h3 className="text-sm font-black text-slate-400 tracking-widest mb-4">Perbarui Harga Pasar</h3>
+                    <h3 className="text-sm font-black text-slate-400 mb-4">Perbarui Harga Pasar</h3>
                     <form onSubmit={handleUpdateGoldPrice} className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">Rp</span>
@@ -257,7 +257,7 @@ export const AdminTamasa = () => {
                         </div>
                         <button
                             disabled={isUpdatingPrice || !newPriceInput}
-                            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
+                            className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-black transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
                         >
                             <Save size={18} /> Update
                         </button>
@@ -318,7 +318,7 @@ export const AdminTamasa = () => {
                                         </div>
                                         <div className="text-right">
                                             <div className={cn(
-                                                "px-3 py-1 rounded-lg text-[10px] font-black tracking-widest mb-1",
+                                                "px-3 py-1 rounded-lg text-[10px] font-black mb-1",
                                                 tx.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
                                                     tx.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
                                                         'bg-amber-50 text-amber-600'
@@ -333,11 +333,11 @@ export const AdminTamasa = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                            <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Setoran Tunai</p>
+                                            <p className="text-[9px] text-slate-400 font-black mb-1">Setoran Tunai</p>
                                             <p className="text-2xl font-black text-[#003366] tracking-tighter">{formatRupiah(tx.setoran)}</p>
                                         </div>
                                         <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                            <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Perolehan Emas</p>
+                                            <p className="text-[9px] text-slate-400 font-black mb-1">Perolehan Emas</p>
                                             <p className="text-2xl font-black text-yellow-600 tracking-tighter">
                                                 {tx.estimasi_gram.toFixed(4)} <span className="text-xs font-bold text-slate-300">gr</span>
                                             </p>
@@ -345,7 +345,7 @@ export const AdminTamasa = () => {
                                     </div>
 
                                     {tx.approved_at && (
-                                        <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-black tracking-widest bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
+                                        <div className="flex items-center gap-2 text-[10px] text-emerald-600 font-black bg-emerald-50 w-fit px-3 py-1 rounded-full border border-emerald-100">
                                             <CheckCircle size={12} /> Selesai pada {format(new Date(tx.approved_at), 'dd MMM yyyy', { locale: indonesia })}
                                         </div>
                                     )}
@@ -370,7 +370,7 @@ export const AdminTamasa = () => {
                                     ) : (
                                         <div className="bg-slate-50 p-6 rounded-[1.5rem] border border-slate-100 flex flex-col items-center justify-center text-center opacity-60">
                                             <FileText size={32} className="text-slate-300 mb-2" />
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Data Transaksi<br />Telah Diarsipkan</p>
+                                            <p className="text-[10px] font-black text-slate-400 leading-tight">Data Transaksi<br />Telah Diarsipkan</p>
                                         </div>
                                     )}
                                 </div>
@@ -400,10 +400,10 @@ export const AdminTamasa = () => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, transaction: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, transaction: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isProcessing} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isProcessing} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 {isProcessing ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
                             </button>
                         </div>

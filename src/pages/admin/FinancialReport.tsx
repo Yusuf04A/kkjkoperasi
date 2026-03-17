@@ -141,8 +141,8 @@ export const AdminFinancialReport = () => {
 
             <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight leading-none mb-1">Laporan Keuangan</h1>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Ringkasan Aset & Arus Kas Koperasi.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Laporan Keuangan</h1>
+                    <p className="text-xs font-bold text-slate-500">Ringkasan Aset & Arus Kas Koperasi.</p>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={handleExportMergedCSV} className="bg-kkj-blue text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-800 shadow-md">
@@ -158,19 +158,19 @@ export const AdminFinancialReport = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10"><Wallet size={80} className="text-blue-600" /></div>
-                    <p className="text-sm font-bold text-gray-400 uppercase">Total Simpanan</p>
+                    <p className="text-sm font-bold text-gray-400">Total Simpanan</p>
                     <h3 className="text-3xl font-bold text-gray-900 mt-2">{formatRupiah(summary.totalSimpanan)}</h3>
                     <p className="text-xs text-blue-600 mt-2 bg-blue-50 px-2 py-1 rounded w-fit font-bold">KEWAJIBAN</p>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="text-orange-600" /></div>
-                    <p className="text-sm font-bold text-gray-400 uppercase">Pinjaman Beredar</p>
+                    <p className="text-sm font-bold text-gray-400">Pinjaman Beredar</p>
                     <h3 className="text-3xl font-bold text-gray-900 mt-2">{formatRupiah(summary.totalPinjaman)}</h3>
                     <p className="text-xs text-orange-600 mt-2 bg-orange-50 px-2 py-1 rounded w-fit font-bold">PIUTANG</p>
                 </div>
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={80} className="text-green-600" /></div>
-                    <p className="text-sm font-bold text-gray-400 uppercase">Total Denda</p>
+                    <p className="text-sm font-bold text-gray-400">Total Denda</p>
                     <h3 className="text-3xl font-bold text-green-600 mt-2">{formatRupiah(summary.totalDenda)}</h3>
                     <p className="text-xs text-green-600 mt-2 bg-green-50 px-2 py-1 rounded w-fit font-bold">PROFIT</p>
                 </div>
@@ -184,7 +184,7 @@ export const AdminFinancialReport = () => {
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase text-xs">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs">
                             <tr>
                                 <th className="p-4 font-bold">Waktu</th>
                                 <th className="p-4 font-bold">Member</th>
@@ -202,7 +202,7 @@ export const AdminFinancialReport = () => {
                                     </td>
                                     <td className="p-4 font-medium text-gray-900">{m.user}</td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${m.category === 'LOAN_DISBURSEMENT' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${m.category === 'LOAN_DISBURSEMENT' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             {m.type.replace(/_/g, ' ')}
                                         </span>

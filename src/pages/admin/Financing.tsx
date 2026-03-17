@@ -238,7 +238,7 @@ export const AdminFinancing = () => {
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen Pembiayaan</h1>
-                        <p className="text-xs font-bold text-slate-500 tracking-widest">Monitoring pengajuan dan penambahan barang kustom ke katalog.</p>
+                        <p className="text-xs font-bold text-slate-500">Monitoring pengajuan dan penambahan barang kustom ke katalog.</p>
                     </div>
                     <div className="flex gap-2">
                         <button onClick={handleExportExcel} className="p-2.5 px-4 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 shadow-sm transition-all active:scale-95 flex items-center gap-2">
@@ -290,17 +290,17 @@ export const AdminFinancing = () => {
 
                                 <div className="flex items-center justify-between md:justify-end gap-8 w-full md:w-auto pt-3 md:pt-0">
                                     <div className="text-left md:text-right">
-                                        <p className="text-[9px] text-slate-400 font-black tracking-widest">{loan.details?.is_custom ? 'Perkiraan' : 'Nominal'}</p>
+                                        <p className="text-[9px] text-slate-400 font-black">{loan.details?.is_custom ? 'Perkiraan' : 'Nominal'}</p>
                                         <p className="font-black text-slate-900 text-sm md:text-base tracking-tight">{formatRupiah(loan.amount)}</p>
                                     </div>
                                     <div className="flex items-center gap-2 md:pl-4 md:border-l border-slate-100">
                                         {loan.status === 'pending' ? (
                                             <>
-                                                <button onClick={() => handleInitApprove(loan)} className={cn("px-4 py-2 text-white rounded-xl text-[10px] font-black tracking-widest transition-all shadow-lg active:scale-95", loan.details?.is_custom ? 'bg-blue-600 shadow-blue-900/20' : 'bg-emerald-600 shadow-emerald-900/20')}>Setujui</button>
-                                                <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', loan })} className="px-4 py-2 bg-white text-rose-600 border border-rose-100 rounded-xl text-[10px] font-black tracking-widest active:scale-95">Tolak</button>
+                                                <button onClick={() => handleInitApprove(loan)} className={cn("px-4 py-2 text-white rounded-xl text-[10px] font-black transition-all shadow-lg active:scale-95", loan.details?.is_custom ? 'bg-blue-600 shadow-blue-900/20' : 'bg-emerald-600 shadow-emerald-900/20')}>Setujui</button>
+                                                <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', loan })} className="px-4 py-2 bg-white text-rose-600 border border-rose-100 rounded-xl text-[10px] font-black active:scale-95">Tolak</button>
                                             </>
                                         ) : (
-                                            <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black tracking-widest flex items-center gap-1 hover:bg-slate-100 transition-all">Detail <ChevronRight size={14} /></Link>
+                                            <Link to={`/admin/pembiayaan/${loan.id}`} className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black flex items-center gap-1 hover:bg-slate-100 transition-all">Detail <ChevronRight size={14} /></Link>
                                         )}
                                     </div>
                                 </div>
@@ -336,8 +336,8 @@ export const AdminFinancing = () => {
                             />
                         )}
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => { setConfirmModal({ isOpen: false, type: 'approve', loan: null }); setRejectReason(""); }} className="py-3 bg-slate-100 text-slate-600 font-black rounded-xl text-[10px] tracking-widest active:scale-95">Batal</button>
-                            <button onClick={confirmModal.type === 'approve' ? executeApproval : executeReject} disabled={isProcessing} className={cn("py-3 text-white font-black rounded-xl text-[10px] tracking-widest shadow-lg active:scale-95", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={() => { setConfirmModal({ isOpen: false, type: 'approve', loan: null }); setRejectReason(""); }} className="py-3 bg-slate-100 text-slate-600 font-black rounded-xl text-[10px] active:scale-95">Batal</button>
+                            <button onClick={confirmModal.type === 'approve' ? executeApproval : executeReject} disabled={isProcessing} className={cn("py-3 text-white font-black rounded-xl text-[10px] shadow-lg active:scale-95", confirmModal.type === 'approve' ? 'bg-[#136f42] shadow-green-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 {isProcessing ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
                             </button>
                         </div>
@@ -354,20 +354,20 @@ export const AdminFinancing = () => {
                             <button onClick={() => setApprovalModal({ isOpen: false, loan: null })} className="p-2 bg-gray-50 rounded-full text-gray-400"><X size={20} /></button>
                         </div>
                         <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 mb-6 space-y-1">
-                            <p className="text-[10px] text-blue-600 font-black tracking-widest">Nama barang anggota:</p>
+                            <p className="text-[10px] text-blue-600 font-black">Nama barang anggota:</p>
                             <p className="text-sm font-black text-blue-900 leading-tight">{approvalModal.loan?.details?.item}</p>
                         </div>
                         <form onSubmit={submitCustomApproval} className="space-y-5">
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 tracking-widest mb-1.5 block ml-1">Harga beli asli (Rp)</label>
+                                <label className="text-[10px] font-black text-slate-400 mb-1.5 block ml-1">Harga beli asli (Rp)</label>
                                 <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold focus:border-blue-600 outline-none" value={finalPrice} onChange={(e) => handleCurrencyInput(e, setFinalPrice)} placeholder="0" required />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 tracking-widest mb-1.5 block ml-1">Syarat DP anggota (Rp)</label>
+                                <label className="text-[10px] font-black text-slate-400 mb-1.5 block ml-1">Syarat DP anggota (Rp)</label>
                                 <input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold focus:border-blue-600 outline-none" value={finalDp} onChange={(e) => handleCurrencyInput(e, setFinalDp)} placeholder="0" required />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 tracking-widest mb-2 block ml-1">Pilihan tenor (bulan)</label>
+                                <label className="text-[10px] font-black text-slate-400 mb-2 block ml-1">Pilihan tenor (bulan)</label>
                                 <div className="flex flex-wrap gap-2">
                                     {[3, 6, 12, 18, 24].map(t => (
                                         <button type="button" key={t} onClick={() => toggleTenor(t)} className={cn("px-3.5 py-1.5 rounded-full border text-[10px] font-black transition-all", selectedTenors.includes(t) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400 border-slate-200')}> {t} </button>
@@ -375,7 +375,7 @@ export const AdminFinancing = () => {
                                 </div>
                             </div>
                             <div className="flex gap-3 pt-4">
-                                <button type="submit" disabled={isProcessing} className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-[10px] tracking-widest shadow-lg shadow-blue-900/20 active:scale-95">Update Katalog</button>
+                                <button type="submit" disabled={isProcessing} className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-[10px] shadow-lg shadow-blue-900/20 active:scale-95">Update Katalog</button>
                                 <button type="button" onClick={() => setApprovalModal({ isOpen: false, loan: null })} className="px-6 py-3.5 border border-slate-100 rounded-2xl font-black text-slate-300 text-[10px]">Batal</button>
                             </div>
                         </form>

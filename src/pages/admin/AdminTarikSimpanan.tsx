@@ -210,7 +210,7 @@ export const AdminTarikSimpanan = () => {
                     <div className="p-2 rounded-xl group-hover:bg-green-50 transition-colors">
                         <ArrowLeft size={18} />
                     </div>
-                    <span className="text-sm font-bold uppercase tracking-widest">Kembali</span>
+                    <span className="text-sm font-bold">Kembali</span>
                 </Link>
 
                 <div className="bg-[#136f42] rounded-[2.5rem] p-8 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-green-900/20">
@@ -223,10 +223,10 @@ export const AdminTarikSimpanan = () => {
                                 <Banknote size={32} strokeWidth={2.5} className="text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-4xl font-black text-white uppercase tracking-tight leading-none mb-1">
+                                <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight leading-none mb-1">
                                     TARIK SIMPANAN
                                 </h1>
-                                <p className="text-[10px] md:text-xs text-green-200/80 font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
+                                <p className="text-[10px] md:text-xs text-green-200/80 font-bold mt-2 flex items-center gap-2">
                                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                                     Otoritas Admin • Eksekusi Instan
                                 </p>
@@ -248,7 +248,7 @@ export const AdminTarikSimpanan = () => {
                             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
                                 <Search size={18} strokeWidth={3} />
                             </div>
-                            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 1: Identifikasi Anggota</h2>
+                            <h2 className="text-xs font-black text-slate-400 tracking-[0.2em]">Tahap 1: Identifikasi Anggota</h2>
                         </div>
 
                         <div className="flex gap-2">
@@ -266,7 +266,7 @@ export const AdminTarikSimpanan = () => {
                             <button
                                 onClick={handleSearch}
                                 disabled={isSearching}
-                                className="h-14 px-6 bg-[#136f42] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#0f5c35] transition-all active:scale-95 disabled:opacity-50"
+                                className="h-14 px-6 bg-[#136f42] text-white rounded-2xl font-black text-xs hover:bg-[#0f5c35] transition-all active:scale-95 disabled:opacity-50"
                             >
                                 {isSearching ? <Loader2 size={18} className="animate-spin" /> : "Cari"}
                             </button>
@@ -286,7 +286,7 @@ export const AdminTarikSimpanan = () => {
                                         </div>
                                         <div className="flex-1">
                                             <p className="font-bold text-slate-900">{m.full_name}</p>
-                                            <p className="text-[10px] font-mono text-slate-400 uppercase">{m.member_id}</p>
+                                            <p className="text-[10px] font-mono text-slate-400">{m.member_id}</p>
                                         </div>
                                         <ChevronRight size={18} className="text-slate-300 group-hover:text-[#136f42] transition-colors" />
                                     </button>
@@ -301,7 +301,7 @@ export const AdminTarikSimpanan = () => {
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-black text-lg text-slate-900 leading-tight">{selectedMember.full_name}</p>
-                                    <p className="text-xs font-mono text-slate-500 uppercase tracking-widest">{selectedMember.member_id}</p>
+                                    <p className="text-xs font-mono text-slate-500">{selectedMember.member_id}</p>
                                 </div>
                                 <button
                                     onClick={() => { setSelectedMember(null); setSelectedSimpanans([]); }}
@@ -320,7 +320,7 @@ export const AdminTarikSimpanan = () => {
                                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
                                     <Wallet size={18} strokeWidth={3} />
                                 </div>
-                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 2: Sumber Dana</h2>
+                                <h2 className="text-xs font-black text-slate-400 tracking-[0.2em]">Tahap 2: Sumber Dana</h2>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {SIMPANAN_LIST.map((s) => {
@@ -342,7 +342,7 @@ export const AdminTarikSimpanan = () => {
                                                 <Icon size={20} className={isSelected ? "text-white" : s.color} />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={cn("text-[10px] font-black uppercase tracking-widest", isSelected ? "text-green-100" : "text-slate-400")}>{s.label}</p>
+                                                <p className={cn("text-[10px] font-black", isSelected ? "text-green-100" : "text-slate-400")}>{s.label}</p>
                                                 <p className={cn("text-sm font-bold font-mono mt-0.5", isSelected ? "text-white" : "text-slate-900")}>{formatRupiah(balance)}</p>
                                             </div>
                                             {isSelected && <CheckCircle size={20} className="text-white animate-in zoom-in" />}
@@ -362,13 +362,13 @@ export const AdminTarikSimpanan = () => {
                                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#136f42] shadow-inner">
                                     <Banknote size={18} strokeWidth={3} />
                                 </div>
-                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Tahap 3: Finalisasi</h2>
+                                <h2 className="text-xs font-black text-slate-400 tracking-[0.2em]">Tahap 3: Finalisasi</h2>
                             </div>
 
                             <form onSubmit={handleOpenConfirm} className="space-y-6">
                                 <div className="bg-slate-900 rounded-[2rem] p-6 text-white overflow-hidden relative">
                                     <div className="absolute right-0 bottom-0 w-24 h-24 bg-white/5 rounded-full -mb-10 -mr-10" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Saldo Tersedia</p>
+                                    <p className="text-[10px] font-black text-slate-400 tracking-[0.2em] mb-2">Saldo Tersedia</p>
                                     <div className="flex items-end justify-between">
                                         <h3 className="text-2xl font-black font-mono tracking-tight">{formatRupiah(getBalanceForSelected())}</h3>
                                         <Wallet size={24} className="text-slate-500" />
@@ -376,7 +376,7 @@ export const AdminTarikSimpanan = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-center block">Nominal Penarikan</label>
+                                    <label className="text-[10px] font-black text-slate-400 ml-1 text-center block">Nominal Penarikan</label>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -393,7 +393,7 @@ export const AdminTarikSimpanan = () => {
                                         type="button"
                                         onClick={() => { setTarikSemua(!tarikSemua); if (!tarikSemua) setAmount(''); }}
                                         className={cn(
-                                            "w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                            "w-full py-3 rounded-xl text-[10px] font-black transition-all border",
                                             tarikSemua
                                                 ? "bg-green-50 border-green-200 text-[#136f42]"
                                                 : "bg-white border-slate-100 text-slate-400 hover:bg-slate-50"
@@ -404,7 +404,7 @@ export const AdminTarikSimpanan = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Keterangan Admin</label>
+                                    <label className="text-[10px] font-black text-slate-400 ml-1">Keterangan Admin</label>
                                     <textarea
                                         placeholder="Alasan penarikan..."
                                         className="w-full bg-slate-50 border-none rounded-[1.5rem] p-5 text-sm font-bold focus:ring-4 focus:ring-[#136f42]/10 focus:bg-white transition-all min-h-[120px] resize-none"
@@ -416,7 +416,7 @@ export const AdminTarikSimpanan = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full h-16 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-green-900/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                                    className="w-full h-16 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-green-900/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                                 >
                                     <Banknote size={20} />
                                     Eksekusi Sekarang
@@ -451,14 +451,14 @@ export const AdminTarikSimpanan = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <button
                                 onClick={() => setShowConfirm(false)}
-                                className="h-14 bg-slate-100 text-slate-600 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                                className="h-14 bg-slate-100 text-slate-600 font-black rounded-2xl text-xs hover:bg-slate-200 transition-all"
                             >
                                 Batalkan
                             </button>
                             <button
                                 onClick={handleExecute}
                                 disabled={isProcessing}
-                                className="h-14 bg-[#136f42] text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                                className="h-14 bg-[#136f42] text-white font-black rounded-2xl text-xs shadow-lg shadow-green-900/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
                                 {isProcessing && <Loader2 size={16} className="animate-spin" />}
                                 Proses Sekarang

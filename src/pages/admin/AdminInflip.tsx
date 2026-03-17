@@ -342,7 +342,7 @@ export const AdminInflip = () => {
                 <div className="flex justify-between items-end">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Manajemen INFLIP</h1>
-                        <p className="text-xs font-bold text-slate-500 tracking-widest">Kelola portofolio investasi properti koperasi & Verifikasi Data Proyek Menunggu Konfirmasi</p>
+                        <p className="text-xs font-bold text-slate-500">Kelola portofolio investasi properti koperasi & Verifikasi Data Proyek Menunggu Konfirmasi</p>
                     </div>
                 </div>
             </div>
@@ -424,7 +424,7 @@ export const AdminInflip = () => {
                                         </div>
                                         {item.is_hidden && (
                                             <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                                                <span className="bg-slate-900/80 text-white text-[10px] font-black tracking-widest px-3 py-1 rounded-full shadow-lg border border-white/20">DISEMBUNYIKAN</span>
+                                                <span className="bg-slate-900/80 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg border border-white/20">DISEMBUNYIKAN</span>
                                             </div>
                                         )}
                                     </div>
@@ -503,7 +503,7 @@ export const AdminInflip = () => {
                                             </div>
                                             <div className="text-right">
                                                 <div className={cn(
-                                                    "px-3 py-1 rounded-lg text-[10px] font-black tracking-widest mb-1",
+                                                    "px-3 py-1 rounded-lg text-[10px] font-black mb-1",
                                                     inv.status === 'active' || inv.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                                                         inv.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
                                                             'bg-amber-50 text-amber-600'
@@ -518,11 +518,11 @@ export const AdminInflip = () => {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100">
-                                                <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Nominal Investasi</p>
+                                                <p className="text-[9px] text-slate-400 font-black mb-1">Nominal Investasi</p>
                                                 <p className="text-2xl font-black text-[#136f42] tracking-tighter">{formatRupiah(inv.amount)}</p>
                                             </div>
                                             <div className="bg-slate-50 p-5 rounded-[1.5rem] border border-slate-100 relative overflow-hidden">
-                                                <p className="text-[9px] text-slate-400 font-black tracking-widest mb-1">Target Proyek</p>
+                                                <p className="text-[9px] text-slate-400 font-black mb-1">Target Proyek</p>
                                                 <p className="font-bold text-slate-700 tracking-tight truncate pr-8">{inv.inflip_projects?.title}</p>
                                                 <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[8px] px-2 py-0.5 rounded font-bold">ROI {inv.inflip_projects?.roi_percent}%</div>
                                             </div>
@@ -567,7 +567,7 @@ export const AdminInflip = () => {
                             {/* KIRI: Gambar & Status */}
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center px-1">
-                                    <label className="text-[10px] font-black text-slate-400 tracking-widest flex items-center gap-2">
+                                    <label className="text-[10px] font-black text-slate-400 flex items-center gap-2">
                                         <ImageIcon size={14} className="text-[#136f42]" /> Foto Properti
                                     </label>
                                     <span className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-lg">Maks 10MB</span>
@@ -578,12 +578,12 @@ export const AdminInflip = () => {
                                     {imagePreview ? (
                                         <>
                                             <img src={imagePreview} className="w-full h-full object-cover animate-in fade-in" alt="Preview" />
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black tracking-widest">Ganti Foto Proyek</div>
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-[10px] font-black">Ganti Foto Proyek</div>
                                         </>
                                     ) : (
                                         <div className="text-center group-hover:scale-105 transition-transform duration-300 px-4">
                                             <ImageIcon className="mx-auto text-gray-300 mb-2" size={40} />
-                                            <p className="text-sm font-bold text-gray-600 first-letter:uppercase">Pilih foto properti</p>
+                                            <p className="text-sm font-bold text-gray-600 first-letter:">Pilih foto properti</p>
                                             <div className="mt-2 flex flex-col gap-1">
                                                 <p className="text-[10px] font-bold text-slate-400 tracking-tighter flex items-center justify-center gap-1">
                                                     <Info size={10} /> jpg, png, webp
@@ -687,7 +687,7 @@ export const AdminInflip = () => {
                             <button type="submit" disabled={isSaving} className="flex-1 bg-[#136f42] text-white py-4 rounded-2xl font-black tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-green-700 disabled:opacity-50">
                                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {isSaving ? 'Menyimpan...' : 'Simpan Proyek'}
                             </button>
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-gray-200 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all text-[10px] tracking-widest">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 border border-gray-200 rounded-2xl font-black text-gray-400 hover:bg-gray-50 transition-all text-[10px]">
                                 Batal
                             </button>
                         </div>
@@ -716,10 +716,10 @@ export const AdminInflip = () => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, investment: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform">
+                            <button onClick={() => setConfirmModal({ isOpen: false, type: null, investment: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isSaving} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
+                            <button onClick={confirmModal.type === 'approve' ? executeApprove : executeReject} disabled={isSaving} className={cn("py-3.5 text-white font-black rounded-2xl text-[10px] shadow-lg active:scale-95 transition-transform", confirmModal.type === 'approve' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-rose-600 shadow-rose-900/20')}>
                                 {isSaving ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
                             </button>
                         </div>
@@ -744,10 +744,10 @@ export const AdminInflip = () => {
                         </p>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setDeleteModal({ isOpen: false, id: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] tracking-widest active:scale-95 transition-transform">
+                            <button onClick={() => setDeleteModal({ isOpen: false, id: null })} className="py-3.5 bg-slate-100 text-slate-600 font-black rounded-2xl text-[10px] active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={confirmDelete} disabled={isSaving} className="py-3.5 text-white bg-rose-600 shadow-rose-900/20 font-black rounded-2xl text-[10px] tracking-widest shadow-lg active:scale-95 transition-transform">
+                            <button onClick={confirmDelete} disabled={isSaving} className="py-3.5 text-white bg-rose-600 shadow-rose-900/20 font-black rounded-2xl text-[10px] shadow-lg active:scale-95 transition-transform">
                                 {isSaving ? 'Proses...' : 'Ya, Hapus'}
                             </button>
                         </div>

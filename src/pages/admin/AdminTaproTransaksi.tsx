@@ -178,8 +178,8 @@ export const AdminTaproTransaksi = () => {
                             <Wallet size={20} />
                         </div>
                         <div>
-                            <h1 className="text-xl md:text-2xl font-black tracking-tight uppercase leading-none mb-1">Transaksi TaPro Anggota</h1>
-                            <p className="text-[10px] text-green-200/80 font-bold uppercase tracking-widest">Admin Dapat Mentransaksikan Atas Nama Anggota</p>
+                            <h1 className="text-xl md:text-2xl font-black tracking-tight leading-none mb-1">Transaksi TaPro Anggota</h1>
+                            <p className="text-[10px] text-green-200/80 font-bold">Admin Dapat Mentransaksikan Atas Nama Anggota</p>
                         </div>
                     </div>
                 </div>
@@ -187,7 +187,7 @@ export const AdminTaproTransaksi = () => {
 
             {/* === STEP 1: CARI ANGGOTA === */}
             <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Step 1 · Cari Anggota</h2>
+                <h2 className="text-xs font-black text-slate-400 tracking-[0.3em] mb-4">Step 1 · Cari Anggota</h2>
                 <div className="flex gap-2">
                     <div className="relative flex-1">
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -203,7 +203,7 @@ export const AdminTaproTransaksi = () => {
                     <button
                         onClick={handleSearch}
                         disabled={isSearching}
-                        className="h-12 px-5 bg-[#136f42] text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#0f5c35] transition-colors disabled:opacity-60 flex items-center gap-2"
+                        className="h-12 px-5 bg-[#136f42] text-white rounded-xl font-black text-xs hover:bg-[#0f5c35] transition-colors disabled:opacity-60 flex items-center gap-2"
                     >
                         {isSearching ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
                         Cari
@@ -224,10 +224,10 @@ export const AdminTaproTransaksi = () => {
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-bold text-sm text-slate-900">{m.full_name}</p>
-                                    <p className="text-[10px] font-mono text-slate-400 uppercase">{m.member_id}</p>
+                                    <p className="text-[10px] font-mono text-slate-400">{m.member_id}</p>
                                 </div>
                                 <div className="text-right mr-2">
-                                    <p className="text-[9px] text-slate-400 font-bold uppercase">Saldo TaPro</p>
+                                    <p className="text-[9px] text-slate-400 font-bold">Saldo TaPro</p>
                                     <p className="text-sm font-black text-[#136f42]">{formatRupiah(m.tapro_balance || 0)}</p>
                                 </div>
                                 <ChevronRight size={16} className="text-slate-300" />
@@ -245,10 +245,10 @@ export const AdminTaproTransaksi = () => {
                             </div>
                             <div className="flex-1">
                                 <p className="font-black text-slate-900">{selectedMember.full_name}</p>
-                                <p className="text-[10px] font-mono text-slate-400 uppercase">{selectedMember.member_id}</p>
+                                <p className="text-[10px] font-mono text-slate-400">{selectedMember.member_id}</p>
                             </div>
                             <div className="text-right mr-2">
-                                <p className="text-[9px] text-[#136f42] font-bold uppercase tracking-widest">Saldo TaPro</p>
+                                <p className="text-[9px] text-[#136f42] font-bold">Saldo TaPro</p>
                                 <p className="text-xl font-black text-[#136f42]">{formatRupiah(selectedMember.tapro_balance || 0)}</p>
                             </div>
                             <button
@@ -265,7 +265,7 @@ export const AdminTaproTransaksi = () => {
             {/* === STEP 2: PILIH MODE TRANSAKSI === */}
             {selectedMember && (
                 <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Step 2 · Jenis Transaksi</h2>
+                    <h2 className="text-xs font-black text-slate-400 tracking-[0.3em] mb-4">Step 2 · Jenis Transaksi</h2>
                     <div className="grid grid-cols-3 gap-3">
                         {MODES.map((m) => {
                             const isActive = mode === m.id;
@@ -284,7 +284,7 @@ export const AdminTaproTransaksi = () => {
                                         <span className={isActive ? "text-white" : "text-[#136f42]"}>{m.icon}</span>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-[10px] font-black uppercase tracking-wide leading-none">{m.label}</p>
+                                        <p className="text-[10px] font-black tracking-wide leading-none">{m.label}</p>
                                         <p className={cn("text-[9px] mt-1 leading-tight", isActive ? "text-green-200/80" : "text-gray-400")}>{m.desc}</p>
                                     </div>
                                 </button>
@@ -297,12 +297,12 @@ export const AdminTaproTransaksi = () => {
             {/* === STEP 3: FORM TRANSAKSI === */}
             {selectedMember && (
                 <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 mb-5">
-                    <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-5">Step 3 · Detail Transaksi</h2>
+                    <h2 className="text-xs font-black text-slate-400 tracking-[0.3em] mb-5">Step 3 · Detail Transaksi</h2>
 
                     <form onSubmit={handleOpenConfirm} className="space-y-4">
                         {/* Nominal */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nominal</label>
+                            <label className="text-[10px] font-black text-slate-400">Nominal</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">Rp</span>
                                 <input
@@ -328,7 +328,7 @@ export const AdminTaproTransaksi = () => {
 
                         {/* Keterangan */}
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <label className="text-[10px] font-black text-slate-400">
                                 Keterangan / Alasan <span className="text-rose-500">*</span>
                             </label>
                             <textarea
@@ -346,7 +346,7 @@ export const AdminTaproTransaksi = () => {
 
                         <button
                             type="submit"
-                            className="w-full h-14 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-lg shadow-green-900/15 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full h-14 bg-[#136f42] hover:bg-[#0f5c35] text-white font-black text-sm rounded-2xl shadow-lg shadow-green-900/15 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {MODES.find(m => m.id === mode)?.icon}
                             {mode === 'topup' ? 'Top Up TaPro Anggota'
@@ -375,21 +375,21 @@ export const AdminTaproTransaksi = () => {
                         <p className="text-xs font-bold text-slate-500 mb-4">milik <b>{selectedMember.full_name}</b></p>
 
                         <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-6 text-left">
-                            <p className="text-[10px] font-black text-[#136f42] uppercase tracking-widest mb-1">Keterangan:</p>
+                            <p className="text-[10px] font-black text-[#136f42] mb-1">Keterangan:</p>
                             <p className="text-xs text-slate-700 font-medium">{keterangan}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => setShowConfirm(false)}
-                                className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-transform"
+                                className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs active:scale-95 transition-transform"
                             >
                                 Batal
                             </button>
                             <button
                                 onClick={handleExecute}
                                 disabled={isProcessing}
-                                className="py-3 bg-[#136f42] hover:bg-[#0f5c35] text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-green-900/20 active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1"
+                                className="py-3 bg-[#136f42] hover:bg-[#0f5c35] text-white font-bold rounded-xl text-xs shadow-lg shadow-green-900/20 active:scale-95 transition-transform disabled:opacity-60 flex items-center justify-center gap-1"
                             >
                                 {isProcessing ? <Loader2 size={14} className="animate-spin" /> : null}
                                 Ya, Proses

@@ -166,7 +166,7 @@ export const AdminBuatAkun = () => {
             <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 size={40} className="animate-spin text-[#136f42]" />
-                    <p className="text-[10px] font-black text-slate-400 tracking-widest">Memproses akun...</p>
+                    <p className="text-[10px] font-black text-slate-400">Memproses akun...</p>
                 </div>
             </div>
         );
@@ -186,7 +186,7 @@ export const AdminBuatAkun = () => {
                     </p>
                     <button
                         onClick={() => navigate('/admin/dashboard')}
-                        className="mt-8 w-full py-3.5 bg-[#136f42] hover:bg-[#0f5a35] text-white font-black rounded-2xl text-[10px] tracking-widest transition-all"
+                        className="mt-8 w-full py-3.5 bg-[#136f42] hover:bg-[#0f5a35] text-white font-black rounded-2xl text-[10px] transition-all"
                     >
                         Kembali ke Dashboard
                     </button>
@@ -231,7 +231,7 @@ export const AdminBuatAkun = () => {
                                 <h2 className="text-xl font-black text-white tracking-tighter leading-tight">
                                     Buat Akun Manual
                                 </h2>
-                                <p className="text-green-100/70 text-[10px] font-bold tracking-widest mt-1">
+                                <p className="text-green-100/70 text-[10px] font-bold mt-1">
                                     Akun langsung aktif tanpa perlu verifikasi
                                 </p>
                             </div>
@@ -266,7 +266,7 @@ export const AdminBuatAkun = () => {
 
                             {/* Nama Lengkap */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 flex items-center gap-1.5">
                                     <User size={11} /> Nama Lengkap
                                 </label>
                                 <input
@@ -281,7 +281,7 @@ export const AdminBuatAkun = () => {
 
                             {/* Email */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 flex items-center gap-1.5">
                                     <Mail size={11} /> Email
                                 </label>
                                 <input
@@ -296,7 +296,7 @@ export const AdminBuatAkun = () => {
 
                             {/* Nomor HP */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 flex items-center gap-1.5">
                                     <Phone size={11} /> Nomor HP / WhatsApp
                                 </label>
                                 <input
@@ -311,7 +311,7 @@ export const AdminBuatAkun = () => {
 
                             {/* Password */}
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-500 tracking-widest flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 flex items-center gap-1.5">
                                     <Lock size={11} /> Password
                                 </label>
                                 <div className="relative">
@@ -361,7 +361,7 @@ export const AdminBuatAkun = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full py-4 bg-[#136f42] hover:bg-[#0f5a35] disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-2xl text-[10px] tracking-widest transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-[#136f42] hover:bg-[#0f5a35] disabled:opacity-60 disabled:cursor-not-allowed text-white font-black rounded-2xl text-[10px] transition-all shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
                             >
                                 {isLoading ? (
                                     <>
@@ -378,7 +378,7 @@ export const AdminBuatAkun = () => {
                         </form>
                     </div>
 
-                    <p className="text-center text-[9px] font-bold text-slate-300 tracking-widest pb-4">
+                    <p className="text-center text-[9px] font-bold text-slate-300 pb-4">
                         Super Admin Exclusive • KKJ Internal Tools
                     </p>
                 </div>

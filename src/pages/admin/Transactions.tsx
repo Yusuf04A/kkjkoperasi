@@ -197,7 +197,7 @@ export const AdminTransactions = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none mb-1">Data Transaksi Admin</h1>
-                        <p className="text-xs font-bold text-slate-500 tracking-widest">Monitoring Top Up, Penarikan, dan Pembayaran</p>
+                        <p className="text-xs font-medium text-slate-500">Monitoring Top Up, Penarikan, dan Pembayaran</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={exportToExcel} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm transition-all text-sm font-bold">
@@ -226,12 +226,12 @@ export const AdminTransactions = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Anggota</th>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Tipe</th>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Nominal</th>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Bukti</th>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest">Status</th>
-                                <th className="p-4 text-[10px] font-black text-slate-400 tracking-widest text-right">Aksi</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400">Anggota</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400">Tipe</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400">Nominal</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400">Bukti</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400">Status</th>
+                                <th className="p-4 text-[10px] font-semibold text-slate-400 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
@@ -244,7 +244,7 @@ export const AdminTransactions = () => {
                                     <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="p-4">
                                             <p className="font-bold text-gray-900">{tx.profiles?.full_name}</p>
-                                            <p className="text-[10px] text-gray-400 font-mono uppercase">{tx.profiles?.member_id}</p>
+                                            <p className="text-[10px] text-gray-400 font-mono">{tx.profiles?.member_id}</p>
                                         </td>
                                         <td className="p-4">
                                             <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full w-fit text-[10px] font-black tracking-tighter ${getTypeConfig(tx.type).color}`}>
@@ -260,9 +260,9 @@ export const AdminTransactions = () => {
                                             ) : <span className="text-[10px] text-gray-300 font-bold">N/A</span>}
                                         </td>
                                         <td className="p-4">
-                                            {tx.status === 'pending' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500 uppercase tracking-wider"><Clock size={12} /> Pending</span>}
-                                            {tx.status === 'success' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-600 uppercase tracking-wider"><CheckCircle size={12} /> Sukses</span>}
-                                            {tx.status === 'failed' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-red-500 uppercase tracking-wider"><XCircle size={12} /> Ditolak</span>}
+                                            {tx.status === 'pending' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-orange-500"><Clock size={12} /> Pending</span>}
+                                            {tx.status === 'success' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-green-600"><CheckCircle size={12} /> Sukses</span>}
+                                            {tx.status === 'failed' && <span className="flex items-center gap-1.5 text-[10px] font-bold text-red-500"><XCircle size={12} /> Ditolak</span>}
                                         </td>
                                         <td className="p-4 text-right">
                                             {activeTab === 'pending' ? (
@@ -270,7 +270,7 @@ export const AdminTransactions = () => {
                                                     <button onClick={() => setConfirmModal({ isOpen: true, type: 'reject', tx })} className="p-2 text-red-400 hover:text-red-600">
                                                         <X size={18} />
                                                     </button>
-                                                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', tx })} className="px-4 py-2 bg-green-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                                                    <button onClick={() => setConfirmModal({ isOpen: true, type: 'approve', tx })} className="px-4 py-2 bg-green-600 text-white rounded-lg text-[10px] font-semibold shadow-sm">
                                                         <Check size={14} className="inline mr-1" /> Setujui
                                                     </button>
                                                 </div>
@@ -317,10 +317,10 @@ export const AdminTransactions = () => {
                             <button onClick={() => {
                                 setConfirmModal({ isOpen: false, type: 'approve', tx: null });
                                 setRejectReason('');
-                            }} className="py-3 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-transform">
+                            }} className="py-3 bg-slate-100 text-slate-600 font-semibold rounded-xl text-xs active:scale-95 transition-transform">
                                 Batal
                             </button>
-                            <button onClick={handleConfirmAction} className={`py-3 text-white font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform ${confirmModal.type === 'approve' ? 'bg-green-600 shadow-green-900/20' : 'bg-red-600 shadow-red-900/20'}`}>
+                            <button onClick={handleConfirmAction} className={`py-3 text-white font-semibold rounded-xl text-xs shadow-lg active:scale-95 transition-transform ${confirmModal.type === 'approve' ? 'bg-green-600 shadow-green-900/20' : 'bg-red-600 shadow-red-900/20'}`}>
                                 Ya, {confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}
                             </button>
                         </div>
