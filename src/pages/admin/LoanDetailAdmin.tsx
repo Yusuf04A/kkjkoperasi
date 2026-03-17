@@ -20,6 +20,16 @@ export const AdminLoanDetail = () => {
     const [installments, setInstallments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // --- STATE UNTUK MODAL KONFIRMASI (RESTRUKTURISASI) ---
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        type: 'approve' | 'reject';
+    }>({
+        isOpen: false,
+        type: 'approve'
+    });
+    const [isProcessing, setIsProcessing] = useState(false);
+
     // === 1. FETCH DATA ===
     const fetchData = async () => {
         setLoading(true);
@@ -52,28 +62,44 @@ export const AdminLoanDetail = () => {
 
     useEffect(() => { fetchData(); }, [id]);
 
-    // === 2. LOGIC RESTRUKTURISASI ===
-    const handleApproveRestructure = async () => {
-        const confirm = window.confirm(`Setujui perpanjangan menjadi ${loan.restructure_req_duration} bulan?`);
-        if (!confirm) return;
+    const triggerApproveRestructure = () => {
+        setConfirmModal({ isOpen: true, type: 'approve' });
+    };
 
-        const toastId = toast.loading('Memproses...');
+    const handleApproveRestructure = async () => {
+        setIsProcessing(true);
+        const toastId = toast.loading('Memproses persetujuan...');
         try {
             const { error } = await supabase.rpc('approve_restructure', { loan_id_param: loan.id });
             if (error) throw error;
             toast.success('Berhasil diperpanjang!', { id: toastId });
+            setConfirmModal({ isOpen: false, type: 'approve' });
             fetchData();
         } catch (err: any) {
             toast.error('Gagal: ' + err.message, { id: toastId });
+        } finally {
+            setIsProcessing(false);
         }
     };
 
+    const triggerRejectRestructure = () => {
+        setConfirmModal({ isOpen: true, type: 'reject' });
+    };
+
     const handleRejectRestructure = async () => {
-        if (!window.confirm("Tolak pengajuan?")) return;
-        const toastId = toast.loading('Menolak...');
-        await supabase.from('loans').update({ restructure_status: 'rejected', restructure_req_duration: null }).eq('id', loan.id);
-        toast.success('Ditolak', { id: toastId });
-        fetchData();
+        setIsProcessing(true);
+        const toastId = toast.loading('Menolak pengajuan...');
+        try {
+            const { error } = await supabase.from('loans').update({ restructure_status: 'rejected', restructure_req_duration: null }).eq('id', loan.id);
+            if (error) throw error;
+            toast.success('Pengajuan ditolak', { id: toastId });
+            setConfirmModal({ isOpen: false, type: 'reject' });
+            fetchData();
+        } catch (err: any) {
+            toast.error('Gagal: ' + err.message, { id: toastId });
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     // === 3. LOGIC KIRIM WA ===
@@ -217,10 +243,10 @@ Terima kasih. 🙏
                                 "{loan.restructure_reason}"
                             </div>
                             <div className="flex gap-2 mt-4">
-                                <button onClick={handleApproveRestructure} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition-all">
+                                <button onClick={triggerApproveRestructure} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-bold shadow-md transition-all">
                                     Setujui
                                 </button>
-                                <button onClick={handleRejectRestructure} className="flex-1 bg-white border border-amber-200 text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-bold transition-all">
+                                <button onClick={triggerRejectRestructure} className="flex-1 bg-white border border-amber-200 text-amber-600 hover:bg-amber-50 py-2.5 rounded-xl text-xs font-bold transition-all">
                                     Tolak
                                 </button>
                             </div>
@@ -295,6 +321,33 @@ Terima kasih. 🙏
                 </div>
 
             </div>
+
+            {/* CUSTOM POPUP MODAL CONFIRMATION UNTUK RESTRUKTURISASI */}
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative animate-in zoom-in-95 duration-200 border border-white/20 text-center">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'approve' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
+                            {confirmModal.type === 'approve' ? <CheckCircle size={32} /> : <AlertTriangle size={32} />}
+                        </div>
+                        <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
+                            {confirmModal.type === 'approve' ? 'Konfirmasi Persetujuan' : 'Tolak Perpanjangan'}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed mb-8 px-4">
+                            {confirmModal.type === 'approve' ? (
+                                <>Apakah Anda yakin ingin menyetujui perpanjangan tenor menjadi <b>{loan.restructure_req_duration} Bulan</b>?</>
+                            ) : (
+                                <>Apakah Anda yakin ingin menolak pengajuan perpanjangan tenor ini?</>
+                            )}
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="py-3 bg-slate-100 text-slate-600 font-black rounded-xl text-[10px] uppercase tracking-widest active:scale-95 transition-transform" disabled={isProcessing}>Batal</button>
+                            <button onClick={confirmModal.type === 'approve' ? handleApproveRestructure : handleRejectRestructure} disabled={isProcessing} className={`py-3 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition-transform ${confirmModal.type === 'approve' ? 'bg-amber-600 shadow-amber-900/20' : 'bg-rose-600 shadow-rose-900/20'}`}>
+                                {isProcessing ? 'Proses...' : `Ya, ${confirmModal.type === 'approve' ? 'Setujui' : 'Tolak'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
