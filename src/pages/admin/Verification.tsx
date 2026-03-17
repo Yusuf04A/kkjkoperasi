@@ -543,8 +543,8 @@ export const AdminVerification = () => {
                         {activeTab === 'active' && (
                             <>
                                 <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv, .xlsx, .xls" className="hidden" />
-                                <button onClick={() => fileInputRef.current?.click()} className="p-2.5 px-6 bg-blue-600 text-white font-medium text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 uppercase tracking-widest shadow-sm"><Upload size={16} /> IMPORT</button>
-                                <button onClick={handleExportCSV} className="p-2.5 px-6 bg-emerald-600 text-white font-medium text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 uppercase tracking-widest shadow-sm"><Download size={16} /> EXPORT</button>
+                                <button onClick={() => fileInputRef.current?.click()} className="p-2.5 px-6 bg-blue-600 text-white font-semibold text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-sm"><Upload size={16} /> Import</button>
+                                <button onClick={handleExportCSV} className="p-2.5 px-6 bg-emerald-600 text-white font-semibold text-xs rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-sm"><Download size={16} /> Export Excel</button>
                             </>
                         )}
                         <button onClick={fetchUsers} className="p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:bg-gray-50 transition-colors"><RefreshCw size={20} className={cn("text-gray-400", loading && "animate-spin")} /></button>
@@ -553,12 +553,12 @@ export const AdminVerification = () => {
             </div>
 
             <div className="flex gap-8 mb-6 border-b border-gray-100">
-                <button onClick={() => setActiveTab('pending')} className={cn("pb-4 px-2 font-semibold text-xs tracking-widest transition-all relative", activeTab === 'pending' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
-                    VERIFIKASI BARU {users.length > 0 && activeTab === 'pending' && <span className="ml-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-[9px] tracking-normal font-normal">{users.length}</span>}
+                <button onClick={() => setActiveTab('pending')} className={cn("pb-4 px-2 font-semibold text-sm tracking-wide transition-all relative", activeTab === 'pending' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
+                    Verifikasi baru {users.length > 0 && activeTab === 'pending' && <span className="ml-2 bg-orange-500 text-white px-2 py-0.5 rounded-full text-[9px] tracking-normal font-normal">{users.length}</span>}
                     {activeTab === 'pending' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#136f42] animate-in slide-in-from-left duration-300"></div>}
                 </button>
-                <button onClick={() => setActiveTab('active')} className={cn("pb-4 px-2 font-semibold text-xs tracking-widest transition-all relative", activeTab === 'active' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
-                    DATA ANGGOTA AKTIF
+                <button onClick={() => setActiveTab('active')} className={cn("pb-4 px-2 font-semibold text-sm tracking-wide transition-all relative", activeTab === 'active' ? "text-[#136f42]" : "text-gray-400 hover:text-gray-600")}>
+                    Data anggota aktif
                     {activeTab === 'active' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#136f42] animate-in slide-in-from-left duration-300"></div>}
                 </button>
             </div>
