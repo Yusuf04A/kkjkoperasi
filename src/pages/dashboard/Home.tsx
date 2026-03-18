@@ -6,7 +6,7 @@ import {
     Eye, EyeOff, PlusCircle, ArrowUpRight, ArrowRightLeft,
     History, ArrowRight, Wallet, Building, Coins, ShieldCheck,
     Download, Share2, X, ShoppingBag,
-    Search, ShoppingCart, ChevronRight, Plus
+    Search, ShoppingCart, ChevronRight, Plus, ArrowDownRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { NewsCarousel } from '../../components/dashboard/NewsCarousel';
@@ -262,7 +262,8 @@ export const Home = () => {
 
     const quickActions = [
         { label: 'Top Up', icon: PlusCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', link: '/transaksi/topup' },
-        { label: 'Tarik', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
+        { label: 'Tarik Tunai', icon: ArrowUpRight, color: 'text-orange-600', bg: 'bg-orange-50', link: '/transaksi/tarik' },
+        { label: 'Setoran', icon: ArrowDownRight, color: 'text-indigo-600', bg: 'bg-indigo-50', link: '/transaksi/setor' },
         { label: 'Kirim', icon: ArrowRightLeft, color: 'text-blue-600', bg: 'bg-blue-50', link: '/transaksi/kirim' },
         { label: 'Riwayat', icon: History, color: 'text-purple-600', bg: 'bg-purple-50', link: '/transaksi/riwayat' },
     ];
@@ -340,21 +341,44 @@ export const Home = () => {
                 <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 flex flex-col md:flex-row gap-8 items-center text-left">
                     {/* Aset Section */}
                     <div onClick={() => setShowDetailAssets(true)} className="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-gray-100 pb-4 md:pb-0 md:pr-8 cursor-pointer group p-2 rounded-lg transition-all active:scale-[0.98]">
-                        <div className="flex justify-between items-center mb-1 text-slate-500 uppercase font-bold text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="group-hover:text-[#136f42]">total Aset</span>
-                                <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }}>{showBalance ? <Eye size={14} /> : <EyeOff size={14} />}</button>
+                        <div className="flex justify-between items-start mb-1">
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-slate-500 uppercase font-bold text-xs group-hover:text-[#136f42]">total Aset</span>
+                                    <button onClick={(e) => { e.stopPropagation(); setShowBalance(!showBalance); }} className="text-slate-400">
+                                        {showBalance ? <Eye size={14} /> : <EyeOff size={14} />}
+                                    </button>
+                                </div>
+                                <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors tracking-tighter">
+                                    {showBalance ? formatRpUpper(otherSavings.reduce((acc, curr) => acc + curr.val, 0)) : 'Rp ••••••••••'}
+                                </div>
                             </div>
-                            <div className="bg-green-50 text-[#136f42] text-[10px] px-2 py-0.5 rounded italic font-black uppercase">Detail <ArrowRight size={10} className="inline ml-1" /></div>
-                        </div>
-                        <div className="text-2xl lg:text-3xl font-bold text-gray-900 group-hover:text-[#136f42] transition-colors tracking-tighter">
-                            {showBalance ? formatRpUpper(otherSavings.reduce((acc, curr) => acc + curr.val, 0)) : 'Rp ••••••••••'}
+                            <div className="flex flex-col items-stretch gap-1.5 pt-1">
+                    {/* TOMBOL DETAIL - Glassmorphism & Hover Glow */}
+<div className="group w-[100px] h-[28px] flex items-center justify-between gap-2 bg-white/80 backdrop-blur-sm text-[#136f42] text-[9px] px-3 rounded-full font-black tracking-wider uppercase ring-1 ring-[#136f42]/10 hover:ring-[#136f42]/30 hover:bg-green-50/50 shadow-[0_2px_10px_-3px_rgba(19,111,66,0.05)] transition-all duration-300 cursor-pointer overflow-hidden">
+    <span className="relative z-10">Detail</span>
+    <div className="transition-transform duration-300 group-hover:translate-x-1">
+        <ArrowRight size={10} strokeWidth={1.5} />
+    </div>
+</div>
+
+{/* TOMBOL SETOR - Deep Gradient & Active Depth */}
+<div 
+    onClick={(e) => { e.stopPropagation(); navigate('/transaksi/setor'); }} 
+    className="group w-[100px] h-[28px] flex items-center justify-between gap-2 bg-gradient-to-br from-[#136f42] to-[#1a8551] text-white text-[9px] px-3 rounded-full font-black tracking-wider uppercase hover:brightness-110 active:scale-95 transition-all duration-300 shadow-[0_4px_12px_-2px_rgba(19,111,66,0.3)] cursor-pointer"
+>
+    <span>Setor</span>
+    <div className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:translate-y-0.5">
+        <ArrowDownRight size={10} strokeWidth={1.5} />
+    </div>
+</div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Quick Actions Grid (Refined) */}
                     <div className="w-full md:w-7/12">
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-5 gap-2 sm:gap-4">
                             {quickActions.map((action) => (
                                 <Link key={action.label} to={action.link} className="flex flex-col items-center group">
                                     <div className={cn(
@@ -363,9 +387,9 @@ export const Home = () => {
                                         "group-active:scale-90 group-hover:shadow-md",
                                         action.bg
                                     )}>
-                                        <action.icon className={cn("w-6 h-6", action.color)} />
+                                        <action.icon className={cn("w-5 h-5 sm:w-6 sm:h-6", action.color)} />
                                     </div>
-                                    <span className="text-[11px] font-bold text-slate-700 group-hover:text-[#136f42] text-center leading-tight tracking-wide transition-colors">
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-700 group-hover:text-[#136f42] text-center leading-tight tracking-wide transition-colors">
                                         {action.label}
                                     </span>
                                 </Link>
