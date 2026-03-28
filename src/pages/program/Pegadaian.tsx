@@ -332,8 +332,17 @@ export const Pegadaian = () => {
                       <h4 className="font-black text-gray-900 text-sm truncate pr-2 tracking-tight">{item.item_name}</h4>
                       <div className="flex gap-1.5 items-center">
                         <span className="text-[9px] px-2.5 py-1 rounded-full font-black tracking-tighter border bg-blue-50 text-blue-700 border-blue-100 flex items-center gap-1"><CalendarDays size={10} /> {item.tenor_bulan || 4} Bulan</span>
-                        <span className={cn("text-[9px] px-2.5 py-1 rounded-full font-black tracking-tighter border", item.status === 'approved' ? "bg-amber-50 text-amber-700 border-amber-100" : item.status === 'completed' ? "bg-green-50 text-green-700 border-green-100" : "bg-gray-50 text-gray-400 border-gray-100")}>
-                          {item.status === 'approved' ? 'Disetujui' : item.status === 'completed' ? 'Selesai' : 'Tertunda'}
+                        <span className={cn(
+                          "text-[9px] px-2.5 py-1 rounded-full font-black tracking-tighter border",
+                          item.status === 'approved' ? "bg-amber-50 text-amber-700 border-amber-100" :
+                          item.status === 'completed' ? "bg-green-50 text-green-700 border-green-100" :
+                          item.status === 'rejected' ? "bg-red-50 text-red-700 border-red-100" :
+                          "bg-gray-50 text-gray-500 border-gray-200"
+                        )}>
+                          {item.status === 'approved' ? 'Disetujui' :
+                           item.status === 'completed' ? 'Selesai' :
+                           item.status === 'rejected' ? 'Ditolak' :
+                           'Tertunda'}
                         </span>
                       </div>
                     </div>

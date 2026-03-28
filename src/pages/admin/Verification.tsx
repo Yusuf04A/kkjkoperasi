@@ -64,14 +64,23 @@ export const AdminVerification = () => {
         setIsProcessing(true);
         const toastId = toast.loading('memverifikasi & mengisi saldo...');
         try {
-            const { count } = await supabase
+            const { data: latestMembers } = await supabase
                 .from('profiles')
-                .select('*', { count: 'exact', head: true })
-                .eq('role', 'member')
-                .eq('status', 'active')
-                .not('member_id', 'is', null);
+                .select('member_id')
+                .not('member_id', 'is', null)
+                .order('member_id', { ascending: false })
+                .limit(1);
 
-            const seq = (count || 0) + 1;
+            let seq = 1;
+            if (latestMembers && latestMembers.length > 0) {
+                const lastId = latestMembers[0].member_id;
+                const lastSeqStr = lastId.substring(lastId.length - 4);
+                const lastSeqNum = parseInt(lastSeqStr, 10);
+                if (!isNaN(lastSeqNum)) {
+                    seq = lastSeqNum + 1;
+                }
+            }
+
             const now = new Date();
             const yy = String(now.getFullYear()).slice(2);
             const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -154,6 +163,25 @@ export const AdminVerification = () => {
 
             if (totalBalance > 0) {
                 throw new Error(`gagal: anggota masih memiliki saldo ${formatRupiah(totalBalance)}.`);
+            }
+
+            // Hapus data terkait sebelum menghapus profil untuk menghindari foreign key constraint error
+            const tablesWithUserId = [
+                'savings_withdrawals',
+                'transactions',
+                'notifications',
+                'tamasa_transactions',
+                'tamasa_balances',
+                'inflip_investments',
+                'installments',
+                'loans',
+                'pawn_transactions',
+                'shop_orders',
+                'lhu_member_details'
+            ];
+
+            for (const table of tablesWithUserId) {
+                await supabase.from(table).delete().eq('user_id', userId);
             }
 
             const { error } = await supabase.from('profiles').delete().eq('id', userId);
@@ -418,8 +446,23 @@ export const AdminVerification = () => {
 
                     let newMemberId = rawMemberId ? String(rawMemberId).trim() : '';
                     if (!newMemberId) {
-                        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).not('member_id', 'is', null);
-                        const seq = (count || 0) + 1;
+                        const { data: latestMembers } = await supabase
+                            .from('profiles')
+                            .select('member_id')
+                            .not('member_id', 'is', null)
+                            .order('member_id', { ascending: false })
+                            .limit(1);
+
+                        let seq = 1;
+                        if (latestMembers && latestMembers.length > 0) {
+                            const lastId = latestMembers[0].member_id;
+                            const lastSeqStr = lastId.substring(lastId.length - 4);
+                            const lastSeqNum = parseInt(lastSeqStr, 10);
+                            if (!isNaN(lastSeqNum)) {
+                                seq = lastSeqNum + 1;
+                            }
+                        }
+                        
                         const yy = String(new Date().getFullYear()).slice(2);
                         const mm = String(new Date().getMonth() + 1).padStart(2, '0');
                         newMemberId = `KKJ-${yy}${mm}${String(seq).padStart(4, '0')}`;

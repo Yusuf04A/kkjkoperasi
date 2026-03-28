@@ -110,22 +110,91 @@ export const Login = () => {
         if (!loginId) return toast.error("Masukkan nomor HP");
         setIsLoading(true);
 
-        let formattedPhone = loginId;
-        if (formattedPhone.startsWith('08')) {
-            formattedPhone = '628' + formattedPhone.substring(2);
-        } else if (formattedPhone.startsWith('8')) {
-            formattedPhone = '628' + formattedPhone.substring(1);
-        }
+        try {
+            // FORMAT NOMOR HP UNTUK PENGECEKAN
+            const cleanPhone = loginId.replace(/\D/g, '');
+            let baseNumber = cleanPhone;
+            if (cleanPhone.startsWith('628')) {
+                baseNumber = cleanPhone.substring(2);
+            } else if (cleanPhone.startsWith('08')) {
+                baseNumber = cleanPhone.substring(1);
+            } else if (cleanPhone.startsWith('8')) {
+                baseNumber = cleanPhone;
+            }
 
-        const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
-        setGeneratedOtp(newOtp);
+            const phone08 = '0' + baseNumber;
+            const phone62 = '62' + baseNumber;
+            const phonePlus62 = '+62' + baseNumber;
 
-        const success = await sendOtpToFonnte(formattedPhone, newOtp);
-        if (success) {
-            toast.success("OTP berhasil dikirim!");
-            setOtpStep(2);
-            setCountdown(60);
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('status, phone, full_name')
+                .or(`phone.eq.${phone08},phone.eq.${phone62},phone.eq.${phonePlus62}`)
+                .single();
+
+            if (error || !profile) {
+                toast.error("Nomor HP tidak terdaftar di sistem!");
+                setIsLoading(false);
+                return;
+            }
+
+            if (profile.status === 'pending') {
+                playSuccessSound();
+                setModalConfig({
+                    isOpen: true,
+                    title: "Menunggu Verifikasi Admin",
+                    message: `Halo ${profile.full_name}, pendaftaran Anda masih dalam tahap verifikasi oleh admin Koperasi KKJ. Mohon tunggu maksimal 1x24 jam.`,
+                    type: 'error'
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            if (profile.status === 'rejected') {
+                playSuccessSound();
+                setModalConfig({
+                    isOpen: true,
+                    title: "Pendaftaran Ditolak",
+                    message: `Mohon maaf ${profile.full_name}, pendaftaran akun Anda telah ditolak oleh Admin. Silakan hubungi pengurus Koperasi KKJ untuk info lebih lanjut.`,
+                    type: 'error'
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            if (profile.status !== 'active') {
+                playSuccessSound();
+                setModalConfig({
+                    isOpen: true,
+                    title: "Akun Dinonaktifkan",
+                    message: `Maaf ${profile.full_name}, akun Anda saat ini tidak aktif. Silakan hubungi Admin Koperasi KKJ.`,
+                    type: 'error'
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            let formattedPhone = loginId;
+            if (formattedPhone.startsWith('08')) {
+                formattedPhone = '628' + formattedPhone.substring(2);
+            } else if (formattedPhone.startsWith('8')) {
+                formattedPhone = '628' + formattedPhone.substring(1);
+            }
+
+            const newOtp = Math.floor(1000 + Math.random() * 9000).toString();
+            setGeneratedOtp(newOtp);
+
+            const success = await sendOtpToFonnte(formattedPhone, newOtp);
+            if (success) {
+                toast.success("OTP berhasil dikirim!");
+                setOtpStep(2);
+                setCountdown(60);
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Terjadi kesalahan saat memeriksa data");
         }
+        
         setIsLoading(false);
     };
 
@@ -288,6 +357,24 @@ export const Login = () => {
                     playSuccessSound();
                     setModalConfig({
                         isOpen: true, title: "Akun Belum Aktif", message: `Halo ${profile.full_name}, akun Anda masih menunggu verifikasi admin. Silakan tunggu maksimal 1x24 jam.`, type: 'error'
+                    });
+                    await supabase.auth.signOut();
+                    return;
+                }
+
+                if (profile?.status === 'rejected') {
+                    playSuccessSound();
+                    setModalConfig({
+                        isOpen: true, title: "Pendaftaran Ditolak", message: `Mohon maaf ${profile.full_name}, akun admin Anda telah ditolak.`, type: 'error'
+                    });
+                    await supabase.auth.signOut();
+                    return;
+                }
+
+                if (profile?.status !== 'active') {
+                    playSuccessSound();
+                    setModalConfig({
+                        isOpen: true, title: "Akun Dinonaktifkan", message: `Maaf ${profile.full_name}, akun Anda saat ini tidak aktif.`, type: 'error'
                     });
                     await supabase.auth.signOut();
                     return;

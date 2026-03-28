@@ -308,8 +308,17 @@ export const Inflip = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-black text-gray-900 text-sm truncate pr-2 group-hover:text-[#136f42] transition-colors">{inv.project?.title}</h4>
-                      <span className="bg-green-50 text-green-700 text-[8px] px-2 py-1 rounded-full font-black tracking-widest border border-green-100">
-                        Aktif
+                      <span className={cn(
+                        "text-[8px] px-2 py-1 rounded-full font-black tracking-widest border uppercase",
+                        inv.status === 'active' ? "bg-green-50 text-green-700 border-green-100" :
+                        inv.status === 'pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                        inv.status === 'rejected' ? "bg-red-50 text-red-600 border-red-100" :
+                        "bg-gray-50 text-gray-600 border-gray-100"
+                      )}>
+                        {inv.status === 'active' ? 'Aktif' :
+                         inv.status === 'pending' ? 'Tunda' :
+                         inv.status === 'rejected' ? 'Ditolak' :
+                         inv.status}
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-400 mb-3 flex items-center gap-1 font-bold">
