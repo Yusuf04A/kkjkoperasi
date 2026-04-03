@@ -131,6 +131,18 @@ export const AdminVerification = () => {
 
             if (error) throw error;
 
+            // Force override tapro_balance in case a DB trigger overrides it to 250000
+            await supabase.from('profiles').update({
+                tapro_balance: 0,
+                simwa_balance: 0,
+                siqurma_balance: 0,
+                siwalima_balance: 0,
+                siuji_balance: 0,
+                simade_balance: 0,
+                sipena_balance: 0,
+                sihara_balance: 0
+            }).eq('id', userId);
+
             await supabase.from('notifications').insert({
                 user_id: userId,
                 title: 'akun aktif!',
