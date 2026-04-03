@@ -36,7 +36,7 @@ export const AdminVerification = () => {
         let query = supabase
             .from('profiles')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: activeTab === 'active' ? true : false });
 
         if (activeTab === 'pending') {
             query = query.eq('status', 'pending');
@@ -618,6 +618,7 @@ export const AdminVerification = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50/30 border-b border-gray-100">
                             <tr>
+                                <th className="p-4 text-[10px] font-semibold text-gray-400 w-12 text-center">No</th>
                                 <th className="p-4 text-[10px] font-semibold text-gray-400">Anggota</th>
                                 <th className="p-4 text-[10px] font-semibold text-gray-400">Kontak</th>
                                 <th className="p-4 text-[10px] font-semibold text-gray-400">Registrasi</th>
@@ -627,12 +628,15 @@ export const AdminVerification = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
-                                <tr><td colSpan={5} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#136f42]" size={32} /></td></tr>
+                                <tr><td colSpan={6} className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#136f42]" size={32} /></td></tr>
                             ) : filteredUsers.length === 0 ? (
-                                <tr><td colSpan={5} className="p-20 text-center text-gray-400 font-normal text-sm italic">Tidak ada data anggota ditemukan.</td></tr>
+                                <tr><td colSpan={6} className="p-20 text-center text-gray-400 font-normal text-sm italic">Tidak ada data anggota ditemukan.</td></tr>
                             ) : (
-                                filteredUsers.map((u) => (
+                                filteredUsers.map((u, index) => (
                                     <tr key={u.id} className="hover:bg-gray-50/20 transition-all group">
+                                        <td className="p-4 text-center font-medium text-gray-500 text-xs">
+                                            {index + 1}
+                                        </td>
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-lg border border-gray-100 overflow-hidden bg-white flex items-center justify-center shrink-0">
