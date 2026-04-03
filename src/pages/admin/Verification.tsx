@@ -64,28 +64,52 @@ export const AdminVerification = () => {
         setIsProcessing(true);
         const toastId = toast.loading('memverifikasi & mengisi saldo...');
         try {
-            const { data: latestMembers } = await supabase
+            // Ambil SEMUA member_id yang ada untuk mencari sequence tertinggi
+            const { data: allMembers } = await supabase
                 .from('profiles')
                 .select('member_id')
                 .not('member_id', 'is', null)
-                .order('member_id', { ascending: false })
-                .limit(1);
+                .like('member_id', 'KKJ-%');
 
-            let seq = 1;
-            if (latestMembers && latestMembers.length > 0) {
-                const lastId = latestMembers[0].member_id;
-                const lastSeqStr = lastId.substring(lastId.length - 4);
-                const lastSeqNum = parseInt(lastSeqStr, 10);
-                if (!isNaN(lastSeqNum)) {
-                    seq = lastSeqNum + 1;
+            let maxSeq = 0;
+            if (allMembers && allMembers.length > 0) {
+                for (const m of allMembers) {
+                    const mid = m.member_id || '';
+                    const seqStr = mid.substring(mid.length - 4);
+                    const seqNum = parseInt(seqStr, 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
                 }
             }
 
             const now = new Date();
             const yy = String(now.getFullYear()).slice(2);
             const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const nnak = String(seq).padStart(4, '0');
-            const memberId = `KKJ-${yy}${mm}${nnak}`;
+
+            // Coba generate NIAK dengan retry jika terjadi duplikat
+            let memberId = '';
+            let seq = maxSeq + 1;
+            let success = false;
+
+            for (let attempt = 0; attempt < 5; attempt++) {
+                const nnak = String(seq + attempt).padStart(4, '0');
+                memberId = `KKJ-${yy}${mm}${nnak}`;
+
+                // Cek apakah member_id sudah ada
+                const { data: existing } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('member_id', memberId)
+                    .limit(1);
+
+                if (!existing || existing.length === 0) {
+                    success = true;
+                    break;
+                }
+            }
+
+            if (!success) throw new Error('Gagal membuat NIAK unik setelah 5 percobaan.');
 
             const { error } = await supabase
                 .from('profiles')
@@ -93,7 +117,15 @@ export const AdminVerification = () => {
                     status: 'active',
                     member_id: memberId,
                     is_verified: true,
-                    simpok_balance: 250000
+                    simpok_balance: 250000,
+                    tapro_balance: 0,
+                    simwa_balance: 0,
+                    siqurma_balance: 0,
+                    siwalima_balance: 0,
+                    siuji_balance: 0,
+                    simade_balance: 0,
+                    sipena_balance: 0,
+                    sihara_balance: 0
                 })
                 .eq('id', userId);
 
@@ -340,16 +372,22 @@ export const AdminVerification = () => {
                     }
                 }
 
-                // Parse Saldo
-                const c_simpok = colSimpok ? (Number(row[colSimpok]) || 0) : 0;
-                const c_simwa = colSimwa ? (Number(row[colSimwa]) || 0) : 0;
-                const c_tapro = colTapro ? (Number(row[colTapro]) || 0) : 0;
-                const c_siqurma = colSiqurma ? (Number(row[colSiqurma]) || 0) : 0;
-                const c_siwalima = colSiwalima ? (Number(row[colSiwalima]) || 0) : 0;
-                const c_siuji = colSiuji ? (Number(row[colSiuji]) || 0) : 0;
-                const c_simade = colSimade ? (Number(row[colSimade]) || 0) : 0;
-                const c_sipena = colSipena ? (Number(row[colSipena]) || 0) : 0;
-                const c_sihara = colSihara ? (Number(row[colSihara]) || 0) : 0;
+                const parseRp = (val: any) => {
+                    if (val === undefined || val === null) return 0;
+                    if (typeof val === 'number') return val;
+                    const clean = String(val).replace(/\D/g, '');
+                    return clean ? parseInt(clean, 10) : 0;
+                };
+
+                const c_simpok = colSimpok ? parseRp(row[colSimpok]) : 0;
+                const c_simwa = colSimwa ? parseRp(row[colSimwa]) : 0;
+                const c_tapro = colTapro ? parseRp(row[colTapro]) : 0;
+                const c_siqurma = colSiqurma ? parseRp(row[colSiqurma]) : 0;
+                const c_siwalima = colSiwalima ? parseRp(row[colSiwalima]) : 0;
+                const c_siuji = colSiuji ? parseRp(row[colSiuji]) : 0;
+                const c_simade = colSimade ? parseRp(row[colSimade]) : 0;
+                const c_sipena = colSipena ? parseRp(row[colSipena]) : 0;
+                const c_sihara = colSihara ? parseRp(row[colSihara]) : 0;
 
                 // 1. Cari user berdasarkan ID Anggota ATAU Phone
                 let existingUser = null;
@@ -523,6 +561,19 @@ export const AdminVerification = () => {
                         });
 
                     if (!profileError) {
+                        // Force override in case a DB trigger overrides tapro_balance to 250000 during INSERT
+                        await supabase.from('profiles').update({
+                            tapro_balance: c_tapro,
+                            simpok_balance: c_simpok,
+                            simwa_balance: c_simwa,
+                            siqurma_balance: c_siqurma,
+                            siwalima_balance: c_siwalima,
+                            siuji_balance: c_siuji,
+                            simade_balance: c_simade,
+                            sipena_balance: c_sipena,
+                            sihara_balance: c_sihara
+                        }).eq('id', newUserId);
+                        
                         const recordTxNew = async (amt: number, t: string) => {
                             if (amt > 0) {
                                 await supabase.from('transactions').insert({

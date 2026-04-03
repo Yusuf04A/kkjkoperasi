@@ -60,18 +60,41 @@ export const AdminBuatAkun = () => {
             if (!adminSession) throw new Error('Sesi superadmin tidak ditemukan. Silakan login ulang.');
 
             // 0. Generate NIAK terlebih dahulu (sebelum akun dibuat)
-            const { count } = await supabase
+            const { data: allMembers } = await supabase
                 .from('profiles')
-                .select('*', { count: 'exact', head: true })
-                .eq('role', 'member')
-                .eq('status', 'active')
-                .not('member_id', 'is', null);
-            const seq = (count || 0) + 1;
+                .select('member_id')
+                .not('member_id', 'is', null)
+                .like('member_id', 'KKJ-%');
+
+            let maxSeq = 0;
+            if (allMembers && allMembers.length > 0) {
+                for (const m of allMembers) {
+                    const mid = m.member_id || '';
+                    const seqStr = mid.substring(mid.length - 4);
+                    const seqNum = parseInt(seqStr, 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                }
+            }
+
             const now = new Date();
             const yy = String(now.getFullYear()).slice(2);
             const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const nnak = String(seq).padStart(4, '0');
-            const memberId = `KKJ-${yy}${mm}${nnak}`;
+
+            let memberId = '';
+            let seq = maxSeq + 1;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                const nnak = String(seq + attempt).padStart(4, '0');
+                memberId = `KKJ-${yy}${mm}${nnak}`;
+                const { data: existing } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('member_id', memberId)
+                    .limit(1);
+                if (!existing || existing.length === 0) break;
+                if (attempt === 4) throw new Error('Gagal membuat NIAK unik setelah 5 percobaan.');
+            }
 
             // 1. Buat akun baru (signUp otomatis sign-in user baru)
             const deterministicPassword = `${phone.trim()}Kkj2026!`;
@@ -117,6 +140,14 @@ export const AdminBuatAkun = () => {
                     member_id: memberId,
                     is_verified: true,
                     simpok_balance: 250000,
+                    tapro_balance: 0,
+                    simwa_balance: 0,
+                    siqurma_balance: 0,
+                    siwalima_balance: 0,
+                    siuji_balance: 0,
+                    simade_balance: 0,
+                    sipena_balance: 0,
+                    sihara_balance: 0
                 }, { onConflict: 'id' });
 
             // 3. ✅ Restore sesi superadmin
@@ -127,6 +158,22 @@ export const AdminBuatAkun = () => {
             // Sync ulang store Zustand agar nama/role superadmin kembali
             await checkSession();
             setIsRestoringSession(false);
+
+            if (!profileError) {
+                // Force update to bypass any default values or BEFORE INSERT triggers from the database
+                // THIS MUST RUN AFTER RESTORING ADMIN SESSION SO RLS PERMITS IT
+                await supabase.from('profiles').update({
+                    tapro_balance: 0,
+                    simwa_balance: 0,
+                    siqurma_balance: 0,
+                    siwalima_balance: 0,
+                    siuji_balance: 0,
+                    simade_balance: 0,
+                    sipena_balance: 0,
+                    sihara_balance: 0
+                }).eq('id', newUserId);
+            }
+
 
             if (profileError) throw new Error('Akun dibuat, tapi gagal set profil: ' + profileError.message);
 
