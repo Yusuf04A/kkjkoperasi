@@ -9,6 +9,7 @@ import { formatRupiah, cn } from '../../lib/utils';
 import { Link, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { id as indonesia } from 'date-fns/locale';
+import * as XLSX from 'xlsx';
 
 export const AdminFinancing = () => {
     const location = useLocation();
@@ -171,54 +172,171 @@ export const AdminFinancing = () => {
             return;
         }
 
-        const headers = ['Member ID', 'Nama Anggota', 'Tipe Pembiayaan', 'Nominal', 'Tenor', 'Status', 'Tanggal Pengajuan'];
-
-        const tableRows = loans.map(loan => {
+        const dataToExport = loans.map(loan => {
             let detailType = loan.type;
             if (loan.type === 'Kredit Barang' && loan.details?.is_custom) detailType += ' (Kustom)';
+            
+            let detailString = '-';
+            if (loan.details) {
+                if (loan.type === 'Kredit Barang') detailString = loan.details.item || '-';
+                else if (loan.type === 'Modal Usaha') detailString = loan.details.business_name || '-';
+                else if (loan.type === 'Biaya Pelatihan') detailString = loan.details.training_name || '-';
+                else if (loan.type === 'Biaya Pendidikan') detailString = loan.details.child_name || '-';
+            }
 
-            return `
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 4px;">${loan.profiles?.member_id || '-'}</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${loan.profiles?.full_name || '-'}</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${detailType}</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${loan.amount || 0}</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${loan.duration} Bulan</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${loan.status}</td>
-                <td style="border: 1px solid #ddd; padding: 4px;">${format(new Date(loan.created_at), 'yyyy-MM-dd HH:mm:ss')}</td>
-            </tr>
-        `}).join('');
+            return {
+                'Member ID': loan.profiles?.member_id || '-',
+                'Nama Anggota': loan.profiles?.full_name || '-',
+                'Tipe Pembiayaan': detailType,
+                'Detail (Barang/Usaha/Pendidikan/Pelatihan)': detailString,
+                'Nominal': loan.amount || 0,
+                'Tenor (Bulan)': loan.duration,
+                'Status': loan.status,
+                'Tanggal Pengajuan': format(new Date(loan.created_at), 'yyyy-MM-dd HH:mm:ss')
+            };
+        });
 
-        const htmlContent = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head>
-                <meta charset="UTF-8">
-            </head>
-            <body>
-                <table border="1" style="border-collapse: collapse; width: 100%;">
-                    <thead>
-                        <tr>
-                            ${headers.map(h => `<th style="background-color: #136f42; color: white; border: 1px solid #136f42; padding: 8px; font-weight: bold;">${h}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
-                </table>
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Laporan_Pembiayaan_${format(new Date(), 'dd-MMM-yyyy')}.xls`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Pembiayaan");
+        XLSX.writeFile(workbook, `Laporan_Pembiayaan_${format(new Date(), 'dd-MMM-yyyy')}.xlsx`);
 
         toast.success("Excel berhasil diunduh!");
+    };
+
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsProcessing(true);
+        const toastId = toast.loading('Memproses data import...');
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const bstr = evt.target?.result;
+                    const workbook = XLSX.read(bstr, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (data.length === 0) throw new Error("File Excel kosong");
+
+                    // Validate profiles first to fetch user_id
+                    const memberIds = data.map((row: any) => row['Member ID']).filter(Boolean);
+                    if (memberIds.length === 0) throw new Error("Tidak ada 'Member ID' di file yang diimport");
+
+                    const { data: profiles, error: profileErr } = await supabase
+                        .from('profiles')
+                        .select('id, member_id')
+                        .in('member_id', memberIds);
+
+                    if (profileErr) throw profileErr;
+                    
+                    const profileMap = new Map();
+                    profiles?.forEach(p => profileMap.set(p.member_id, p.id));
+
+                    const insertPayload = [];
+                    for (const row of data as any[]) {
+                        const memberId = row['Member ID'];
+                        const userId = profileMap.get(memberId);
+                        
+                        if (!userId) {
+                            console.warn(`Member ID ${memberId} tidak ditemukan.`);
+                            continue; // Skip unknown members
+                        }
+
+                        const typeString = row['Tipe Pembiayaan'] || 'Kredit Barang';
+                        const type = typeString.replace(' (Kustom)', '');
+                        const nominal = parseInt(row['Nominal']) || 0;
+                        const tenorStr = row['Tenor (Bulan)'] || row['Tenor'];
+                        const duration = parseInt(String(tenorStr).replace(/\D/g, '')) || 12;
+
+                        // Normalize status
+                        const rawStatus = String(row['Status'] || row['status'] || 'active').trim().toLowerCase();
+                        const validStatuses = ['pending', 'active', 'paid', 'rejected'];
+                        const status = validStatuses.includes(rawStatus) ? rawStatus : 'active';
+
+                        const detailStr = row['Detail (Barang/Usaha/Pendidikan/Pelatihan)'] || '-';
+
+                        let ratePerBulan = 0;
+                        if (type === 'Kredit Barang' || type === 'Modal Usaha') ratePerBulan = (0.10 / 12);
+                        else ratePerBulan = 0.006;
+                        
+                        const margin = nominal * ratePerBulan * duration;
+                        const monthly_payment = Math.ceil((nominal + margin) / duration);
+
+                        let details = {};
+                        if (type.includes('Kredit Barang')) details = { item: detailStr, is_custom: typeString.includes('Kustom') };
+                        else if (type === 'Modal Usaha') details = { business_name: detailStr };
+                        else if (type === 'Biaya Pelatihan') details = { training_name: detailStr };
+                        else if (type === 'Biaya Pendidikan') details = { child_name: detailStr };
+
+                        insertPayload.push({
+                            user_id: userId,
+                            amount: nominal,
+                            duration: duration,
+                            type: type,
+                            status: status,
+                            monthly_payment: monthly_payment,
+                            margin_rate: (type === 'Kredit Barang' || type === 'Modal Usaha') ? 10 : 0.6,
+                            details: details
+                        });
+                    }
+
+                    if (insertPayload.length === 0) throw new Error("Tidak ada data valid yang bisa diimport.");
+
+                    const { data: insertedLoans, error: insertErr } = await supabase.from('loans').insert(insertPayload).select();
+                    if (insertErr) throw insertErr;
+
+                    // Buat jadwal angsuran / tagihan (installments) untuk pinjaman yang baru diimport
+                    if (insertedLoans && insertedLoans.length > 0) {
+                        const installmentsPayload = [];
+                        for (const loan of insertedLoans) {
+                            // HANYA buat angsuran jika statusnya active atau paid
+                            if (loan.status === 'active' || loan.status === 'paid') {
+                                for (let i = 1; i <= loan.duration; i++) {
+                                    const dueDate = new Date();
+                                    dueDate.setMonth(dueDate.getMonth() + i);
+
+                                    installmentsPayload.push({
+                                        loan_id: loan.id,
+                                        user_id: loan.user_id,
+                                        amount: loan.monthly_payment,
+                                        due_date: dueDate.toISOString().split('T')[0], // yyyy-MM-dd
+                                        status: loan.status === 'paid' ? 'paid' : 'unpaid'
+                                    });
+                                }
+                            }
+                        }
+
+                        if (installmentsPayload.length > 0) {
+                            const { error: instErr } = await supabase.from('installments').insert(installmentsPayload);
+                            if (instErr) {
+                                console.error("Gagal batch insert installments:", instErr);
+                                toast.error(`Gagal membuat angsuran: ${instErr.message}`);
+                                throw instErr;
+                            }
+                        }
+                    }
+
+                    toast.success(`${insertPayload.length} data pembiayaan dan jadwal angsuran berhasil diimport!`, { id: toastId });
+                    fetchLoans(); // Refresh table
+                } catch (err: any) {
+                    toast.error(`Gagal import: ${err.message}`, { id: toastId });
+                } finally {
+                    setIsProcessing(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            };
+            reader.readAsBinaryString(file);
+        } catch (err: any) {
+            toast.error(`Gagal: ${err.message}`, { id: toastId });
+            setIsProcessing(false);
+        }
     };
 
     const renderDetailBadge = (loan: any) => {
@@ -246,6 +364,16 @@ export const AdminFinancing = () => {
                         <p className="text-xs font-bold text-slate-500">Monitoring pengajuan dan penambahan barang kustom ke katalog.</p>
                     </div>
                     <div className="flex gap-2">
+                        <input
+                            type="file"
+                            accept=".xls,.xlsx"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handleImportExcel}
+                        />
+                        <button onClick={() => fileInputRef.current?.click()} className="p-2.5 px-4 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                            <Download size={18} className="rotate-180" /> Import Excel
+                        </button>
                         <button onClick={handleExportExcel} className="p-2.5 px-4 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 shadow-sm transition-all active:scale-95 flex items-center gap-2">
                             <Download size={18} /> Export Excel
                         </button>

@@ -47,10 +47,14 @@ export const FinancingMenu = () => {
 
     // 🔥 LOGIKA FILTER CERDAS: Menyembunyikan "Ditolak" jika sudah ada pengajuan baru 🔥
     const filteredLoans = useMemo(() => {
-        // Ambil daftar nama barang yang sedang aktif atau sedang diverifikasi
+        // Ambil daftar nama barang/usaha yang sedang aktif atau sedang diverifikasi
         const activeItemNames = loans
             .filter(l => l.status === 'active' || l.status === 'pending')
-            .map(l => (l.details?.name || l.details?.item || '').toLowerCase());
+            .map(l => {
+                if (!l.details) return null;
+                return (l.details.name || l.details.item || l.details.business_name || l.details.training_name || l.details.child_name || '').toLowerCase();
+            })
+            .filter(name => name !== null && name !== '');
 
         if (activeTab === 'verifikasi') {
             return loans.filter(l => l.status === 'pending');
@@ -61,7 +65,11 @@ export const FinancingMenu = () => {
             return loans.filter(l => {
                 if (l.status === 'paid') return true;
                 if (l.status === 'rejected') {
-                    const itemName = (l.details?.name || l.details?.item || '').toLowerCase();
+                    if (!l.details) return true;
+                    const itemName = (l.details.name || l.details.item || l.details.business_name || l.details.training_name || l.details.child_name || '').toLowerCase();
+                    
+                    if (!itemName) return true; // Jangan sembunyikan jika tidak ada nama penanda
+
                     // JIKA barang ini sudah ada di daftar 'pending' atau 'active', sembunyikan yang 'rejected'
                     const alreadyReapplied = activeItemNames.includes(itemName);
                     return !alreadyReapplied;
@@ -236,13 +244,13 @@ export const FinancingMenu = () => {
                                                     </Link>
                                                 )}
                                             </div>
-                                            {loan.status === 'rejected' && loan.reason && (
+                                            {loan.status === 'rejected' && (
                                                 <div className="flex items-start gap-2 bg-rose-50 p-2.5 rounded-xl border border-rose-100 mt-2">
                                                     <AlertCircle size={14} className="text-rose-600 shrink-0 mt-0.5" />
                                                     <div>
                                                         <p className="text-[9px] font-black text-rose-800 uppercase tracking-widest mb-0.5">Alasan Penolakan</p>
                                                         <p className="text-[10px] text-rose-700 font-medium leading-relaxed normal-case">
-                                                            {loan.reason}
+                                                            {loan.reason || "Pengajuan pembiayaan tidak disetujui / dibatalkan oleh sistem."}
                                                         </p>
                                                     </div>
                                                 </div>
